@@ -36,13 +36,19 @@ public partial class Main : Node2D
 
     private WorldState _world = null!;
     private SimulationEngine _engine = null!;
-    private JsController _controllerA = null!;
+    private ControllerSlot _slotA = null!;
     private JsController _controllerB = null!;
+    private ProgramEditor _editor = null!;
+    private CanvasLayer _editorLayer = null!;
+    private ColorRect _editorDimmer = null!;
+    private string _deployedSourceA = string.Empty;
+    private string _capturePath = "res://screenshots/m0-combat.png";
     private readonly List<TimedEvent> _history = new();
 
     private double _tickAccumulator;
     private bool _paused;
     private bool _captureRequested;
+    private bool _captureEditor;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -51,16 +57,43 @@ public partial class Main : Node2D
     {
         var arguments = OS.GetCmdlineArgs().Concat(OS.GetCmdlineUserArgs()).ToArray();
         GD.Print($"SEEDFIELD_READY args={string.Join(' ', arguments)}");
+
         ResetScenario();
-        _paused = arguments.Contains("--capture");
+        BuildProgramEditor();
+
+        _captureEditor = arguments.Contains("--capture-editor");
+        _paused = arguments.Contains("--capture") || _captureEditor;
         _captureRequested = _paused;
-        _status = _paused ? "combat frame · capture" : "running";
+        _capturePath = _captureEditor
+            ? "res://screenshots/m0-program-editor.png"
+            : "res://screenshots/m0-combat.png";
+
+        if (_captureEditor)
+        {
+            OpenProgramEditor();
+            _editor.Source = Scenarios.ScriptA.Replace(
+                "distance(gunner, target) <= 3500",
+                "distance(gunner, target) <= 4200");
+            DeployProgram();
+            for (var i = 0; i < 12; i++)
+            {
+                StepOnce();
+            }
+
+            _editor.SetStatus($"deployed v{_slotA.Version} · stepped to tick {_world.Tick}", false);
+            _status = "program editor · paused";
+        }
+        else
+        {
+            _status = _paused ? "combat frame · capture" : "running";
+        }
+
         QueueRedraw();
     }
 
     public override void _ExitTree()
     {
-        _controllerA?.Dispose();
+        _slotA?.Dispose();
         _controllerB?.Dispose();
     }
 
@@ -88,9 +121,30 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
-    public override void _UnhandledInput(InputEvent @event)
+    public override void _Input(InputEvent @event)
     {
         if (@event is not InputEventKey key || !key.Pressed || key.Echo)
+        {
+            return;
+        }
+
+        if (key.Keycode == Key.F1)
+        {
+            ToggleProgramEditor();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (_editorLayer.Visible && key.Keycode == Key.Enter && key.CtrlPressed)
+        {
+            DeployProgram();
+            GetViewport().SetInputAsHandled();
+        }
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is not InputEventKey key || !key.Pressed || key.Echo || _editorLayer.Visible)
         {
             return;
         }
@@ -115,14 +169,80 @@ public partial class Main : Node2D
         }
     }
 
+    private void BuildProgramEditor()
+    {
+        _editorLayer = new CanvasLayer { Layer = 20, Visible = false };
+        AddChild(_editorLayer);
+
+        _editorDimmer = new ColorRect { Color = new Color(0, 0, 0, 0.55f) };
+        _editorDimmer.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _editorLayer.AddChild(_editorDimmer);
+
+        _editor = new ProgramEditor();
+        _editor.DeployRequested += DeployProgram;
+        _editor.CloseRequested += CloseProgramEditor;
+        _editorLayer.AddChild(_editor);
+        _editor.Source = _deployedSourceA;
+    }
+
+    private void ToggleProgramEditor()
+    {
+        if (_editorLayer.Visible)
+        {
+            CloseProgramEditor();
+        }
+        else
+        {
+            OpenProgramEditor();
+        }
+    }
+
+    private void OpenProgramEditor()
+    {
+        _editorLayer.Visible = true;
+        _paused = true;
+        _status = "program editor · paused";
+        _editor.FocusEditor();
+        QueueRedraw();
+    }
+
+    private void CloseProgramEditor()
+    {
+        _editorLayer.Visible = false;
+        _paused = _captureRequested;
+        _status = _paused ? "capture" : "running";
+        QueueRedraw();
+    }
+
+    private void DeployProgram()
+    {
+        var result = _slotA.Deploy(_editor.Source);
+        if (result.Success)
+        {
+            _deployedSourceA = _editor.Source;
+            _editor.SetStatus($"deployed v{result.Version} at tick {_world.Tick}", false);
+        }
+        else
+        {
+            _editor.SetStatus($"deploy failed; still v{result.Version}: {result.Error}", true);
+        }
+
+        QueueRedraw();
+    }
+
     private void ResetScenario()
     {
-        _controllerA?.Dispose();
+        _slotA?.Dispose();
         _controllerB?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(_deployedSourceA))
+        {
+            _deployedSourceA = Scenarios.ScriptA;
+        }
 
         _world = Scenarios.BuildWorld();
         _engine = new SimulationEngine(_world);
-        _controllerA = new JsController("A", Scenarios.ScriptA);
+        _slotA = new ControllerSlot("A", _deployedSourceA);
         _controllerB = new JsController("B", Scenarios.ScriptB);
 
         _history.Clear();
@@ -149,16 +269,13 @@ public partial class Main : Node2D
     {
         var intents = new List<Intent>();
 
-        foreach (var (civilization, controller) in new[]
-                 {
-                     ("A", _controllerA),
-                     ("B", _controllerB),
-                 })
-        {
-            var decision = controller.Decide(_engine.BuildObservation(civilization));
-            intents.AddRange(decision.Intents);
-            _faultCount += decision.Faults.Count;
-        }
+        var decisionA = _slotA.Decide(_engine.BuildObservation("A"));
+        intents.AddRange(decisionA.Intents);
+        _faultCount += decisionA.Faults.Count;
+
+        var decisionB = _controllerB.Decide(_engine.BuildObservation("B"));
+        intents.AddRange(decisionB.Intents);
+        _faultCount += decisionB.Faults.Count;
 
         var result = _engine.Step(intents);
         foreach (var simulationEvent in result.Events)
@@ -182,7 +299,7 @@ public partial class Main : Node2D
     {
         RenderingServer.ForceDraw();
         var image = GetViewport().GetTexture().GetImage();
-        var path = ProjectSettings.GlobalizePath("res://screenshots/m0-combat.png");
+        var path = ProjectSettings.GlobalizePath(_capturePath);
         var directory = System.IO.Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(directory))
         {
@@ -423,7 +540,8 @@ public partial class Main : Node2D
             new Vector2(24, 88),
             $"tick {_world.Tick}   entities {_world.EnumerateEntities().Count()}   " +
             $"shots {stats.ShotsFired}   damage {stats.DamageDealt}   " +
-            $"messages {stats.MessagesDelivered}   E spent {stats.EnergySpentTotal}   faults {_faultCount}",
+            $"messages {stats.MessagesDelivered}   E spent {stats.EnergySpentTotal}   " +
+            $"faults {_faultCount}   A program v{_slotA.Version}",
             HorizontalAlignment.Left,
             -1,
             13,
@@ -503,7 +621,7 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 716),
-            "SPACE pause · N single tick · R reset · F12 screenshot · simulation is authoritative; this view only renders events",
+            "SPACE pause · N single tick · R reset · F1 program editor · F12 screenshot · simulation is authoritative",
             HorizontalAlignment.Left,
             -1,
             11,

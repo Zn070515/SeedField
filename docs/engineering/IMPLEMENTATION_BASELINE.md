@@ -59,6 +59,7 @@ tests/SeedField.Runtime.Js.Tests/
 - FNV-1a 64 状态哈希；5,000 Tick 双跑一致。
 - Jint 沙箱：语句数、内存、超时限制；禁止 `eval`/`Function` 字符串编译；不暴露 CLR 宿主对象；观察与意图仅以 JSON 文本交换。
 - Godot 4.7.2 Mono 可视切片：渲染实体、射程环、射击轨迹、消息脉冲与事件日志；两个单位由真实 Jint 脚本驱动，Godot 不承担任何战斗结算。
+- 控制器热部署：`ControllerSlot` 原子替换控制器并递增版本；加载失败保留旧版本；Godot 内 `F1` 编辑器 + `Ctrl+Enter` 部署。
 
 ### 尚未实现
 
@@ -125,6 +126,16 @@ SCREENSHOT_SAVED .../screenshots/m0-combat.png (Ok)
 
 截图见 `game/SeedField.Game/screenshots/m0-combat.png` 与 `docs/engineering/evidence/2026-11-16-godot-visual-slice.md`。该画面证明“真实 JS 驱动 + Godot 事件回放”链路；它仍是原型绘制，不是正式美术验收。
 
+### 5.2 游戏内程序编辑与热部署
+
+Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部署：
+
+- 编辑时暂停；关闭编辑器后继续。
+- 部署新建 Jint 控制器并原子替换，版本号递增。
+- 加载失败保留旧控制器与旧版本，错误显示在状态栏。
+- `--capture-editor` 实测：编辑射程阈值 `3500 → 4200`，部署为 v2，推进到 Tick 53，截图 `screenshots/m0-program-editor.png`。
+- `ControllerSlotTests` 覆盖成功替换、失败回退、脚本保留三类行为。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -147,6 +158,7 @@ SCREENSHOT_SAVED .../screenshots/m0-combat.png (Ok)
 ## 8. 下一步（按依赖顺序）
 
 1. 迭代可视切片：正式相机/缩放、核心区与通信网络表现、诊断面板；补装导出模板后再做 Windows 包。
+2. 程序版本持久化：把 `ControllerSlot` 的部署脚本与版本写入存档，重启后仍可恢复。
 2. 引入 `DeterministicRandom` 与种子状态，进入哈希；为命中/损伤变体提供可复现实验。
 3. 建立版本化 `WorldSave` 最小 schema 与迁移测试。
 4. 多区域：区域索引、跨区消息队列、离屏区推进一致性测试。

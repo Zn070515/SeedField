@@ -34,8 +34,9 @@
 |---|---|
 | 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
 | 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
-| 客户端 | **Godot 4.7.2 Mono 可视切片可运行（net10.0）** |
-| 验证 | 19 个仿真测试 + 7 个 Jint 测试通过；600 Tick 双跑哈希一致；已提交真实截图 |
+| 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
+| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器（net10.0）** |
+| 验证 | 19 个仿真测试 + 10 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗与编辑器截图已提交 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -47,7 +48,7 @@
 | 仿真核心 | [`src/SeedField.Simulation`](src/SeedField.Simulation) | 唯一权威 `WorldState`、Tick、验证、事件、哈希 |
 | 脚本运行时 | [`src/SeedField.Runtime.Js`](src/SeedField.Runtime.Js) | Jint 4.18.0；JSON 进/JSON 出，不暴露 CLR |
 | Headless | [`src/SeedField.Headless`](src/SeedField.Headless) | 双文明纵切片 Runner |
-| 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片；只渲染 `SimulationEvent` |
+| 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片与程序编辑器；只渲染 `SimulationEvent` |
 
 ## 快速开始
 
@@ -56,8 +57,9 @@ dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
 
-godot --path game/SeedField.Game                  # 实时可视化
-godot --path game/SeedField.Game -- --capture     # 自动截图后退出
+godot --path game/SeedField.Game                  # 实时可视化，F1 打开程序编辑器
+godot --path game/SeedField.Game -- --capture     # 战斗截图
+godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 ```
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
@@ -71,6 +73,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`ADR-0001`](docs/engineering/adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10.0 运行时目标 |
 | [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |
 | [`visual slice`](docs/engineering/evidence/2026-11-16-godot-visual-slice.md) | Godot 画面、截图与 net10.0 运行证据 |
+| [`program deployment`](docs/engineering/evidence/2026-11-16-program-deployment.md) | 游戏内 JS 编辑、热部署与失败回退证据 |
 
 ## 工程原则
 
