@@ -8,7 +8,7 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 39 passed
+SeedField.Simulation.Tests: 41 passed
 SeedField.Runtime.Js.Tests: 13 passed
 ```
 
@@ -36,7 +36,7 @@ godot --path game/SeedField.Game -- --save-smoke
 SEEDFIELD_PRERUN tick=41 shots=3 entities=3
 SCREENSHOT_SAVED .../screenshots/m0-workshop.png (Ok)
 
-SAVE_SMOKE ok=True before=cf8469ead9793a2f mutated=6bb3e5559010d383 after=cf8469ead9793a2f tick=41 A=v1 B=v1
+SAVE_SMOKE ok=True before=8558d1c83b09b6ea mutated=0ddc3e88fafcf366 after=8558d1c83b09b6ea tick=41 A=v1 B=v1
 ```
 
 ![Workshop panel](../../../game/SeedField.Game/screenshots/m0-workshop.png)
@@ -44,10 +44,11 @@ SAVE_SMOKE ok=True before=cf8469ead9793a2f mutated=6bb3e5559010d383 after=cf8469
 画面内容：
 
 - `FIVE BRANCHES 5/5 · PvE READY`：蓝图注册表覆盖全部五个分支。
-- 每个设计列出最新版本与分支标签（E/S/C/T/X）。
-- A 侧三个实例：Scout Mk2（由 v1 显式升级）、Strike Frame、Power Cell。
+- 每个设计列出最新版本、分支标签（E/S/C/T/X）与 M 成本。
+- A 侧三个实例：Scout Mk2（由 v1 显式升级）、Strike Frame、Power Cell；面板显示 C/S 能力与本地 M 库存。
 - 部署与升级都由 `SimulationCore` 执行；Godot 只发请求并显示结果。
-- 部署材料成本与存储 S 容量尚未强制，已在面板中标注为 M1 原型缺口。
+- 部署从区域本地 M 库存扣费（面板显示 `A M 350`）；不足时拒绝。
+- 收件箱容量取己方 `StateModule.StorageCapacity` 之和；超限时最旧消息过期。
 
 ## 存档行为
 
@@ -59,7 +60,7 @@ SAVE_SMOKE ok=True before=cf8469ead9793a2f mutated=6bb3e5559010d383 after=cf8469
 ## 未覆盖
 
 - 多区域、跨区通信/物流。
-- 工坊扣 M 与制造时间。
-- 存储 S 容量强制。
+- 制造队列与生产时间。
+- 存储容量为 0 时的产品规则（当前按“无历史”处理）。
 - 旧存档迁移（当前仅 schema v1）。
 - 正式美术与导出包。

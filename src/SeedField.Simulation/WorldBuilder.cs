@@ -40,6 +40,17 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder AddStock(string regionId, string civilizationId, long material)
+    {
+        if (!_world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new InvalidOperationException($"Unknown region '{regionId}'.");
+        }
+
+        region.AddMaterial(civilizationId, material);
+        return this;
+    }
+
     public WorldBuilder AddEntity(EntityDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);

@@ -30,6 +30,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.DamageDealt);
         Append(ref hash, world.Statistics.EntitiesDestroyed);
         Append(ref hash, world.Statistics.MessagesDelivered);
+        Append(ref hash, world.Statistics.MessagesExpired);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -38,6 +39,13 @@ public static class WorldStateHasher
             Append(ref hash, region.WidthMm);
             Append(ref hash, region.HeightMm);
             Append(ref hash, region.IsCoreRegion);
+            Append(ref hash, region.Stocks.Count);
+            foreach (var stock in region.Stocks)
+            {
+                Append(ref hash, stock.Key);
+                Append(ref hash, stock.Value.Material);
+            }
+
             Append(ref hash, region.Entities.Count);
 
             foreach (var entity in region.Entities.Values)
@@ -91,6 +99,7 @@ public static class WorldStateHasher
             Append(ref hash, blueprint.MaxHealth);
             Append(ref hash, blueprint.EnergyCapacity);
             Append(ref hash, blueprint.ControllerProgramId ?? string.Empty);
+            Append(ref hash, blueprint.MaterialCost);
             AppendModule(ref hash, blueprint.Sensor);
             AppendModule(ref hash, blueprint.Weapon);
             AppendModule(ref hash, blueprint.Drive);

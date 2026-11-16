@@ -122,6 +122,72 @@ public sealed class EconomyConstraintTests
     }
 
     [Fact]
+    public void DeploymentConsumesLocalMaterialAndRejectsWhenInsufficient()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 50)
+            .Build();
+        var blueprint = world.Workshop.Publish(new DeviceBlueprint(
+            "block",
+            0,
+            "Block",
+            10,
+            10,
+            Power: new PowerModule(1, 10),
+            MaterialCost: 30));
+
+        DeploymentService.Deploy(world, blueprint, "A", "r0", new Vec2(100, 100));
+
+        Assert.Equal(20, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(30, world.Statistics.MaterialSpentTotal);
+
+        var exception = Assert.Throws<BlueprintValidationException>(() =>
+            DeploymentService.Deploy(world, blueprint, "A", "r0", new Vec2(200, 200)));
+        Assert.Equal("INSUFFICIENT_MATERIAL", exception.Code);
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+        Assert.Equal(20, loaded.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+    }
+
+    [Fact]
+    public void StorageCapacityExpiresOldestInboxMessages()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 0),
+                State: new StateModule(ComputePerTick: 10, StorageCapacity: 2)))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        TickResult? lastResult = null;
+        for (var i = 0; i < 3; i++)
+        {
+            lastResult = engine.Step(new Intent[]
+            {
+                new SendMessageIntent(new EntityId(1), "A", $"topic-{i}", $"payload-{i}"),
+            });
+            Assert.True(lastResult.IntentResults[0].Accepted);
+        }
+
+        var inbox = world.GetInbox("A");
+        Assert.Equal(new long[] { 2, 3 }, inbox.Select(message => message.Id));
+        Assert.Equal(3, world.Statistics.MessagesDelivered);
+        Assert.Equal(1, world.Statistics.MessagesExpired);
+        Assert.Contains(lastResult!.Events, item => item is MessageExpired { MessageId: 1 });
+    }
+
+    [Fact]
     public void PowerAndStateModulesSurviveDeploymentAndSaveLoad()
     {
         var world = new WorldBuilder()

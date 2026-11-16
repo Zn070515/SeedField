@@ -13,6 +13,11 @@
 </p>
 
 <p>
+  <a href="https://github.com/Zn070515/SeedField/actions/workflows/ci.yml"><img src="https://github.com/Zn070515/SeedField/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Zn070515/SeedField/actions/workflows/dependency-review.yml"><img src="https://github.com/Zn070515/SeedField/actions/workflows/dependency-review.yml/badge.svg" alt="Dependency review"></a>
+</p>
+
+<p>
   <a href="#项目现状">项目现状</a> ·
   <a href="#工程结构">工程结构</a> ·
   <a href="#快速开始">快速开始</a> ·
@@ -35,9 +40,9 @@
 | 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
 | 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
-| 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例、显式升级、核心区最新产品登记 |
+| 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 39 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊截图已提交 |
+| 验证 | 41 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -54,6 +59,7 @@
 ## 快速开始
 
 ```powershell
+pwsh tools/setup-git-hooks.ps1
 dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
@@ -71,6 +77,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | 文档 | 内容 |
 |---|---|
 | [`IMPLEMENTATION_BASELINE.md`](docs/engineering/IMPLEMENTATION_BASELINE.md) | 已确认规则、真实代码状态、风险与下一步 |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | 分支、提交格式、验证门禁与 PR 流程 |
+| [`ENGINEERING_STANDARDS.md`](docs/engineering/ENGINEERING_STANDARDS.md) | 权威来源、确定性、schema、依赖与发布标准 |
 | [`DECISION_REGISTER.md`](docs/design-bible/v1.9-rev2/00-START-HERE/DECISION_REGISTER.md) | CONFIRMED / BASELINE / OPEN 决策主索引 |
 | [`ADR-0001`](docs/engineering/adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10.0 运行时目标 |
 | [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |
@@ -91,4 +99,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；工坊部署尚未扣 M、存储 S 容量尚未强制；多区域、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；多区域、PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

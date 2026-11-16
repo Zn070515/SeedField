@@ -22,6 +22,8 @@ public sealed class SimulationStatistics
     public long EntitiesDestroyed { get; internal set; }
 
     public long MessagesDelivered { get; internal set; }
+
+    public long MessagesExpired { get; internal set; }
 }
 
 /// <summary>

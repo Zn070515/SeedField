@@ -79,7 +79,8 @@ public static class WorldSaveSerializer
                 world.Statistics.ShotsFired,
                 world.Statistics.DamageDealt,
                 world.Statistics.EntitiesDestroyed,
-                world.Statistics.MessagesDelivered),
+                world.Statistics.MessagesDelivered,
+                world.Statistics.MessagesExpired),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray());
     }
 
@@ -196,6 +197,25 @@ public static class WorldSaveSerializer
                     NextWeaponReadyTick = entityData.NextWeaponReadyTick,
                 };
                 region.Entities.Add(entity.Id, entity);
+            }
+
+            foreach (var stockData in regionData.Stocks ?? Array.Empty<StockSaveData>())
+            {
+                if (stockData.Material < 0)
+                {
+                    throw Invalid(
+                        "INVALID_STOCK",
+                        $"Region '{region.Id}' has a negative material stock.");
+                }
+
+                if (region.Stocks.ContainsKey(stockData.CivilizationId))
+                {
+                    throw Invalid(
+                        "DUPLICATE_STOCK",
+                        $"Region '{region.Id}' has two stocks for '{stockData.CivilizationId}'.");
+                }
+
+                region.AddMaterial(stockData.CivilizationId, stockData.Material);
             }
         }
 
@@ -391,7 +411,8 @@ public static class WorldSaveSerializer
                 : new StateSaveData(
                     blueprint.State.ComputePerTick,
                     blueprint.State.StorageCapacity),
-            blueprint.ControllerProgramId);
+            blueprint.ControllerProgramId,
+            blueprint.MaterialCost);
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -429,7 +450,8 @@ public static class WorldSaveSerializer
                 : new StateModule(
                     blueprint.State.ComputePerTick,
                     blueprint.State.StorageCapacity),
-            blueprint.ControllerProgramId);
+            blueprint.ControllerProgramId,
+            blueprint.MaterialCost);
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -437,7 +459,10 @@ public static class WorldSaveSerializer
             region.WidthMm,
             region.HeightMm,
             region.IsCoreRegion,
-            region.Entities.Values.Select(ToEntity).ToArray());
+            region.Entities.Values.Select(ToEntity).ToArray(),
+            region.Stocks
+                .Select(stock => new StockSaveData(stock.Key, stock.Value.Material))
+                .ToArray());
 
     private static EntitySaveData ToEntity(EntityState entity) =>
         new(
@@ -534,6 +559,7 @@ public static class WorldSaveSerializer
         world.Statistics.DamageDealt = statistics.DamageDealt;
         world.Statistics.EntitiesDestroyed = statistics.EntitiesDestroyed;
         world.Statistics.MessagesDelivered = statistics.MessagesDelivered;
+        world.Statistics.MessagesExpired = statistics.MessagesExpired;
     }
 
     private static SaveFormatException Invalid(string code, string message) => new(code, message);

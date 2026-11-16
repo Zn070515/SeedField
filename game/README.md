@@ -42,7 +42,8 @@ godot --path game/SeedField.Game -- --capture-workshop   # 工坊截图
 - 每个蓝图版本不可变；发布 v2 不会改变已部署实例。
 - 部署生成新实例并记录 `BlueprintId + Version`；升级必须显式执行。
 - 五分支覆盖由蓝图注册表计算；`5/5` 时 HUD 显示 `PvE READY`。
-- 部署的材料成本与存储 S 容量尚未强制，属于已知 M1 缺口。
+- 部署从区域本地库存扣除蓝图 M 成本；不足时拒绝并显示原因。
+- 收件箱受己方 `StateModule.StorageCapacity` 总和控制，超限时最旧消息过期。
 
 ## 存档
 

@@ -72,7 +72,7 @@ public partial class WorkshopPanel : PanelContainer
         deployRow.AddChild(deploy);
         var deployHint = new Label
         {
-            Text = "Material cost is not enforced in this M1 prototype.",
+            Text = "Deployment deducts the design's M cost from the local stock.",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         deployHint.AddThemeFontSizeOverride("font_size", 11);
@@ -126,7 +126,8 @@ public partial class WorkshopPanel : PanelContainer
             var latest = group.OrderBy(blueprint => blueprint.Version).Last();
             _blueprintIds.Add(latest.BlueprintId);
             _blueprints.AddItem(
-                $"{latest.BlueprintId} v{latest.Version} · {latest.Name} · {DescribeBranches(latest.Branches)}");
+                $"{latest.BlueprintId} v{latest.Version} · {latest.Name} · " +
+                $"{DescribeBranches(latest.Branches)} · M{latest.MaterialCost}");
         }
 
         if (_blueprints.ItemCount > 0)
@@ -144,7 +145,8 @@ public partial class WorkshopPanel : PanelContainer
             _entityIds.Add(entity.Id);
             _instances.AddItem(
                 $"{entity.Id} · {entity.BlueprintId} v{entity.BlueprintVersion} · " +
-                $"HP {entity.Health}/{entity.MaxHealth} · E {entity.Energy}");
+                $"HP {entity.Health}/{entity.MaxHealth} · E {entity.Energy} · " +
+                $"C {entity.State?.ComputePerTick ?? 0} · S {entity.State?.StorageCapacity ?? 0}");
         }
 
         if (_instances.ItemCount > 0)
@@ -155,9 +157,12 @@ public partial class WorkshopPanel : PanelContainer
         var coverage = world.Workshop.Coverage;
         var missing = DeviceBranch.All & ~coverage;
         var ready = missing == DeviceBranch.None;
+        var stock = world.Regions.TryGetValue("frontier", out var frontier)
+            ? frontier.GetMaterial("A")
+            : 0;
         _coverage.Text = ready
-            ? "FIVE BRANCHES 5/5 · PvE READY"
-            : $"FIVE BRANCHES INCOMPLETE · missing {missing}";
+            ? $"FIVE BRANCHES 5/5 · PvE READY · A M {stock}"
+            : $"FIVE BRANCHES INCOMPLETE · missing {missing} · A M {stock}";
         _coverage.Modulate = ready
             ? new Color(0.50f, 0.95f, 0.60f)
             : new Color(1.00f, 0.82f, 0.35f);

@@ -15,21 +15,27 @@ internal static class Scenarios
     {
         var world = new WorldBuilder()
             .AddRegion("frontier", WidthMm, HeightMm)
+            .AddStock("frontier", "A", 500)
+            .AddStock("frontier", "B", 500)
             .Build();
 
         var workshop = world.Workshop;
         workshop.Publish(new DeviceBlueprint(
             "power", 0, "Power Cell", 60, 5_000,
-            Power: new PowerModule(EnergyPerTick: 4, StorageCapacity: 5_000)));
+            Power: new PowerModule(EnergyPerTick: 4, StorageCapacity: 5_000),
+            MaterialCost: 20));
         workshop.Publish(new DeviceBlueprint(
             "sensing", 0, "Sensor Suite", 60, 0,
-            Sensor: new SensorModule(5_000)));
+            Sensor: new SensorModule(5_000),
+            MaterialCost: 30));
         workshop.Publish(new DeviceBlueprint(
             "comm", 0, "Comm Relay", 60, 0,
-            Comm: new CommModule(1, 1, BandwidthPerTick: 1)));
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            MaterialCost: 30));
         workshop.Publish(new DeviceBlueprint(
             "state", 0, "State Core", 60, 0,
-            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64)));
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            MaterialCost: 40));
 
         var strike = workshop.Publish(new DeviceBlueprint(
             "strike", 0, "Strike Frame", 150, 5_000,
@@ -39,7 +45,8 @@ internal static class Scenarios
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
             Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000),
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
-            ControllerProgramId: "program.strike"));
+            ControllerProgramId: "program.strike",
+            MaterialCost: 80));
 
         var scoutV1 = workshop.Publish(new DeviceBlueprint(
             "scout", 0, "Scout Mk1", 120, 5_000,
@@ -48,7 +55,8 @@ internal static class Scenarios
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
             Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000),
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
-            ControllerProgramId: "program.scout.v1"));
+            ControllerProgramId: "program.scout.v1",
+            MaterialCost: 50));
 
         workshop.Publish(new DeviceBlueprint(
             "scout", 0, "Scout Mk2", 140, 5_000,
@@ -57,7 +65,8 @@ internal static class Scenarios
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
             Power: new PowerModule(EnergyPerTick: 3, StorageCapacity: 5_000),
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
-            ControllerProgramId: "program.scout.v2"));
+            ControllerProgramId: "program.scout.v2",
+            MaterialCost: 60));
 
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", new Vec2(2_000, 4_000));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(3_000, 4_000));

@@ -517,6 +517,33 @@ public sealed class SimulationEngine
                 World.Inboxes.Add(message.ToCivilizationId, inbox);
             }
 
+            var (hasStorage, capacity) = GetMessageStorage(message.ToCivilizationId);
+            if (hasStorage)
+            {
+                if (capacity <= 0)
+                {
+                    World.Statistics.MessagesExpired += 1;
+                    events.Add(new MessageExpired(
+                        tick,
+                        message.Id,
+                        message.ToCivilizationId,
+                        "storage capacity is zero"));
+                    continue;
+                }
+
+                while (inbox.Count >= capacity)
+                {
+                    var expired = inbox[0];
+                    inbox.RemoveAt(0);
+                    World.Statistics.MessagesExpired += 1;
+                    events.Add(new MessageExpired(
+                        tick,
+                        expired.Id,
+                        message.ToCivilizationId,
+                        "inbox storage full"));
+                }
+            }
+
             inbox.Add(new DeliveredMessage(
                 message.Id,
                 message.FromEntityId,
@@ -534,6 +561,30 @@ public sealed class SimulationEngine
                 message.ToCivilizationId,
                 message.Topic));
         }
+    }
+
+    /// <summary>
+    /// Storage S is the sum of own State module capacities. No State module means the
+    /// legacy unlimited inbox; a zero-capacity module retains no history.
+    /// </summary>
+    private (bool HasStorage, int Capacity) GetMessageStorage(string civilizationId)
+    {
+        var hasStorage = false;
+        var capacity = 0;
+
+        foreach (var entity in World.EnumerateEntities())
+        {
+            if (!string.Equals(entity.CivilizationId, civilizationId, StringComparison.Ordinal) ||
+                entity.State is null)
+            {
+                continue;
+            }
+
+            hasStorage = true;
+            capacity += Math.Max(0, entity.State.StorageCapacity);
+        }
+
+        return (hasStorage, capacity);
     }
 
     private void RegenerateCores(long tick, List<SimulationEvent> events)

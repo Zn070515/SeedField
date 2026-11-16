@@ -22,7 +22,8 @@ public sealed record DeviceBlueprint(
     CommModule? Comm = null,
     PowerModule? Power = null,
     StateModule? State = null,
-    string? ControllerProgramId = null)
+    string? ControllerProgramId = null,
+    long MaterialCost = 0)
 {
     public DeviceBranch Branches
     {
@@ -160,6 +161,13 @@ public sealed class WorkshopService
         if (blueprint.EnergyCapacity < 0)
         {
             throw new BlueprintValidationException("INVALID_ENERGY", "Energy capacity must be non-negative.");
+        }
+
+        if (blueprint.MaterialCost < 0)
+        {
+            throw new BlueprintValidationException(
+                "INVALID_MATERIAL",
+                "Material cost must be non-negative.");
         }
 
         if (blueprint.Branches == DeviceBranch.None)

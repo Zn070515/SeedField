@@ -46,6 +46,12 @@ public sealed record MessageDelivered(
     string ToCivilizationId,
     string Topic) : SimulationEvent(Tick);
 
+public sealed record MessageExpired(
+    long Tick,
+    long MessageId,
+    string CivilizationId,
+    string Reason) : SimulationEvent(Tick);
+
 public sealed record IntentRejected(
     long Tick,
     EntityId EntityId,

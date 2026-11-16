@@ -22,7 +22,10 @@ public sealed record RegionSaveData(
     int WidthMm,
     int HeightMm,
     bool IsCoreRegion,
-    EntitySaveData[] Entities);
+    EntitySaveData[] Entities,
+    StockSaveData[]? Stocks = null);
+
+public sealed record StockSaveData(string CivilizationId, long Material);
 
 public sealed record EntitySaveData(
     long Id,
@@ -73,7 +76,8 @@ public sealed record BlueprintSaveData(
     CommSaveData? Comm,
     PowerSaveData? Power,
     StateSaveData? State,
-    string? ControllerProgramId);
+    string? ControllerProgramId,
+    long MaterialCost = 0);
 
 public sealed record SeedCoreProductSaveData(
     DeviceBranch Branch,
@@ -121,7 +125,8 @@ public sealed record StatisticsSaveData(
     long ShotsFired,
     long DamageDealt,
     long EntitiesDestroyed,
-    long MessagesDelivered);
+    long MessagesDelivered,
+    long MessagesExpired = 0);
 
 public sealed class SaveFormatException : Exception
 {

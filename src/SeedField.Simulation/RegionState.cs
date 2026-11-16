@@ -36,9 +36,52 @@ public sealed class RegionState
 
     public SortedDictionary<EntityId, EntityState> Entities { get; } = new();
 
+    /// <summary>Local material stock per civilization. Materials do not teleport.</summary>
+    public SortedDictionary<string, RegionStock> Stocks { get; } = new(StringComparer.Ordinal);
+
     public bool Contains(Vec2 position) =>
         position.X >= 0 && position.Y >= 0 && position.X <= WidthMm && position.Y <= HeightMm;
 
     public EntityState? FindEntity(EntityId id) =>
         Entities.TryGetValue(id, out var entity) ? entity : null;
+
+    public long GetMaterial(string civilizationId) =>
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.Material : 0;
+
+    public void AddMaterial(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (!Stocks.TryGetValue(civilizationId, out var stock))
+        {
+            stock = new RegionStock();
+            Stocks.Add(civilizationId, stock);
+        }
+
+        stock.Material += amount;
+    }
+
+    public bool TryConsumeMaterial(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (!Stocks.TryGetValue(civilizationId, out var stock) || stock.Material < amount)
+        {
+            return false;
+        }
+
+        stock.Material -= amount;
+        return true;
+    }
+}
+
+public sealed class RegionStock
+{
+    public long Material { get; internal set; }
 }

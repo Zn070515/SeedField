@@ -36,6 +36,17 @@ public static class DeploymentService
                 "Deployment position is outside the region.");
         }
 
+        if (blueprint.MaterialCost > 0 &&
+            !region.TryConsumeMaterial(civilizationId, blueprint.MaterialCost))
+        {
+            throw new BlueprintValidationException(
+                "INSUFFICIENT_MATERIAL",
+                $"Region '{regionId}' has {region.GetMaterial(civilizationId)} M; " +
+                $"{blueprint.BlueprintId} v{blueprint.Version} needs {blueprint.MaterialCost}.");
+        }
+
+        world.Statistics.MaterialSpentTotal += blueprint.MaterialCost;
+
         var definition = new EntityDefinition(
             new EntityId(world.NextEntityId++),
             civilizationId,
