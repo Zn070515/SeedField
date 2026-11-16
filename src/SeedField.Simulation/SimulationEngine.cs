@@ -25,6 +25,7 @@ public sealed class SimulationEngine
         var results = new List<IntentResult>();
         var computeUsed = new Dictionary<EntityId, int>();
         var bandwidthUsed = new Dictionary<EntityId, int>();
+        var linkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
 
         GeneratePower();
 
@@ -34,7 +35,7 @@ public sealed class SimulationEngine
             // canonical order regardless of how controllers were concatenated.
             foreach (var intent in intents.OrderBy(intent => intent.EntityId.Value))
             {
-                ProcessIntent(intent, tick, events, results, computeUsed, bandwidthUsed);
+                ProcessIntent(intent, tick, events, results, computeUsed, bandwidthUsed, linkUsage);
             }
         }
 
@@ -212,7 +213,8 @@ public sealed class SimulationEngine
         List<SimulationEvent> events,
         List<IntentResult> results,
         Dictionary<EntityId, int> computeUsed,
-        Dictionary<EntityId, int> bandwidthUsed)
+        Dictionary<EntityId, int> bandwidthUsed,
+        Dictionary<string, int> linkUsage)
     {
         if (intent is null)
         {
@@ -255,7 +257,7 @@ public sealed class SimulationEngine
                 ProcessAttack(entity, region, attack, tick, events, results);
                 break;
             case SendMessageIntent send:
-                ProcessSendMessage(entity, send, tick, events, results, bandwidthUsed);
+                ProcessSendMessage(entity, send, tick, events, results, bandwidthUsed, linkUsage);
                 break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
@@ -414,7 +416,8 @@ public sealed class SimulationEngine
         long tick,
         List<SimulationEvent> events,
         List<IntentResult> results,
-        Dictionary<EntityId, int> bandwidthUsed)
+        Dictionary<EntityId, int> bandwidthUsed,
+        Dictionary<string, int> linkUsage)
     {
         if (entity.Comm is null)
         {
@@ -438,6 +441,69 @@ public sealed class SimulationEngine
         {
             Reject(intent, SimulationErrorCode.InvalidAction, "Message topic is required.", tick, events, results);
             return;
+        }
+
+        var targetRegionId = string.IsNullOrWhiteSpace(intent.TargetRegionId)
+            ? entity.RegionId
+            : intent.TargetRegionId;
+
+        if (!World.Regions.ContainsKey(targetRegionId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"Target region '{targetRegionId}' does not exist.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        IReadOnlyList<RegionLink> route = Array.Empty<RegionLink>();
+        if (!string.Equals(targetRegionId, entity.RegionId, StringComparison.Ordinal))
+        {
+            if (!HasCommEndpoint(targetRegionId, entity.CivilizationId))
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.NoRoute,
+                    $"No own comm endpoint in target region '{targetRegionId}'.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+
+            var path = FindMessagePath(entity.RegionId, targetRegionId);
+            if (path is null)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.NoRoute,
+                    $"No link path from '{entity.RegionId}' to '{targetRegionId}'.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+
+            foreach (var link in path)
+            {
+                if (link.MessagesPerTick > 0 &&
+                    linkUsage.GetValueOrDefault(link.Id) >= link.MessagesPerTick)
+                {
+                    Reject(
+                        intent,
+                        SimulationErrorCode.NoBandwidth,
+                        $"Link '{link.Id}' bandwidth is exhausted for this tick.",
+                        tick,
+                        events,
+                        results);
+                    return;
+                }
+            }
+
+            route = path;
         }
 
         var cost = entity.Comm.EnergyCostPerMessage;
@@ -465,16 +531,25 @@ public sealed class SimulationEngine
             bandwidthUsed[entity.Id] = used + 1;
         }
 
+        foreach (var link in route)
+        {
+            if (link.MessagesPerTick > 0)
+            {
+                linkUsage[link.Id] = linkUsage.GetValueOrDefault(link.Id) + 1;
+            }
+        }
+
         entity.Energy -= cost;
         World.Statistics.EnergySpentTotal += cost;
 
         var messageId = World.NextMessageId++;
-        var latency = Math.Max(1, entity.Comm.LatencyTicks);
+        var latency = Math.Max(1, entity.Comm.LatencyTicks + route.Sum(link => link.LatencyTicks));
         var envelope = new MessageEnvelope(
             messageId,
             entity.Id,
             entity.CivilizationId,
             intent.ToCivilizationId,
+            targetRegionId,
             intent.Topic,
             intent.Payload ?? string.Empty,
             tick,
@@ -487,11 +562,59 @@ public sealed class SimulationEngine
             messageId,
             entity.Id,
             intent.ToCivilizationId,
+            targetRegionId,
             intent.Topic,
             envelope.DeliverTick,
             cost));
 
         Accept(intent, $"Message {messageId} queued for tick {envelope.DeliverTick}.", results);
+    }
+
+    private bool HasCommEndpoint(string regionId, string civilizationId) =>
+        World.Regions[regionId].Entities.Values.Any(entity =>
+            string.Equals(entity.CivilizationId, civilizationId, StringComparison.Ordinal) &&
+            entity.Comm is not null);
+
+    /// <summary>
+    /// Breadth-first route with deterministic link-id ordering. Ties therefore follow
+    /// the lowest link id, not latency; latency is summed over the chosen path.
+    /// </summary>
+    private IReadOnlyList<RegionLink>? FindMessagePath(string sourceRegionId, string targetRegionId)
+    {
+        if (string.Equals(sourceRegionId, targetRegionId, StringComparison.Ordinal))
+        {
+            return Array.Empty<RegionLink>();
+        }
+
+        var visited = new HashSet<string>(StringComparer.Ordinal) { sourceRegionId };
+        var queue = new Queue<(string RegionId, List<RegionLink> Path)>();
+        queue.Enqueue((sourceRegionId, new List<RegionLink>()));
+
+        while (queue.Count > 0)
+        {
+            var (regionId, path) = queue.Dequeue();
+
+            foreach (var link in World.Links.Values
+                         .Where(link => link.Connects(regionId))
+                         .OrderBy(link => link.Id, StringComparer.Ordinal))
+            {
+                var next = link.Other(regionId);
+                if (!visited.Add(next))
+                {
+                    continue;
+                }
+
+                var nextPath = new List<RegionLink>(path) { link };
+                if (string.Equals(next, targetRegionId, StringComparison.Ordinal))
+                {
+                    return nextPath;
+                }
+
+                queue.Enqueue((next, nextPath));
+            }
+        }
+
+        return null;
     }
 
     private void DeliverDueMessages(long tick, List<SimulationEvent> events)
@@ -548,6 +671,7 @@ public sealed class SimulationEngine
                 message.Id,
                 message.FromEntityId,
                 message.FromCivilizationId,
+                message.TargetRegionId,
                 message.Topic,
                 message.Payload,
                 message.SentTick,
@@ -559,6 +683,7 @@ public sealed class SimulationEngine
                 message.Id,
                 message.FromEntityId,
                 message.ToCivilizationId,
+                message.TargetRegionId,
                 message.Topic));
         }
     }

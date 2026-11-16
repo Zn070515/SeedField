@@ -31,7 +31,8 @@ public sealed record SendMessageIntent(
     EntityId EntityId,
     string ToCivilizationId,
     string Topic,
-    string Payload) : Intent(EntityId)
+    string Payload,
+    string? TargetRegionId = null) : Intent(EntityId)
 {
     public override IntentKind Kind => IntentKind.SendMessage;
 }

@@ -54,6 +54,7 @@ public static class ObservationBuilder
                 message.Id,
                 message.FromEntityId.Value,
                 message.FromCivilizationId,
+                message.TargetRegionId,
                 message.Topic,
                 message.Payload,
                 message.SentTick,

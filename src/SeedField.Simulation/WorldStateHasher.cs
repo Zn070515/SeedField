@@ -86,6 +86,16 @@ public static class WorldStateHasher
             }
         }
 
+        Append(ref hash, world.Links.Count);
+        foreach (var link in world.Links.Values)
+        {
+            Append(ref hash, link.Id);
+            Append(ref hash, link.RegionA);
+            Append(ref hash, link.RegionB);
+            Append(ref hash, link.LatencyTicks);
+            Append(ref hash, link.MessagesPerTick);
+        }
+
         var blueprints = world.Workshop.GetAllVersions()
             .OrderBy(blueprint => blueprint.BlueprintId, StringComparer.Ordinal)
             .ThenBy(blueprint => blueprint.Version)
@@ -149,6 +159,7 @@ public static class WorldStateHasher
             Append(ref hash, message.FromEntityId.Value);
             Append(ref hash, message.FromCivilizationId);
             Append(ref hash, message.ToCivilizationId);
+            Append(ref hash, message.TargetRegionId);
             Append(ref hash, message.Topic);
             Append(ref hash, message.Payload);
             Append(ref hash, message.SentTick);
@@ -166,6 +177,7 @@ public static class WorldStateHasher
                 Append(ref hash, message.Id);
                 Append(ref hash, message.FromEntityId.Value);
                 Append(ref hash, message.FromCivilizationId);
+                Append(ref hash, message.TargetRegionId);
                 Append(ref hash, message.Topic);
                 Append(ref hash, message.Payload);
                 Append(ref hash, message.SentTick);

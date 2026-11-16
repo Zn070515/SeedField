@@ -35,6 +35,7 @@ public sealed record MessageQueued(
     long MessageId,
     EntityId FromEntityId,
     string ToCivilizationId,
+    string TargetRegionId,
     string Topic,
     long DeliverTick,
     long EnergySpent) : SimulationEvent(Tick);
@@ -44,6 +45,7 @@ public sealed record MessageDelivered(
     long MessageId,
     EntityId FromEntityId,
     string ToCivilizationId,
+    string TargetRegionId,
     string Topic) : SimulationEvent(Tick);
 
 public sealed record MessageExpired(

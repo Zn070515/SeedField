@@ -13,9 +13,14 @@ internal static class Program
 {
     private const int Ticks = 600;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+        if (args.Contains("--multi-region"))
+        {
+            return RunMultiRegionDemo();
+        }
 
         var first = RunScenario();
         var second = RunScenario();
@@ -31,6 +36,56 @@ internal static class Program
 
         return first.FinalHash == second.FinalHash ? 0 : 1;
     }
+
+    private static int RunMultiRegionDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 1_000, 1_000)
+            .AddRegion("r1", 1_000, 1_000)
+            .AddRegion("r2", 1_000, 1_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 2)
+            .AddLink("l12", "r1", "r2", latencyTicks: 3)
+            .AddEntity(CommsEndpoint(1, "r0"))
+            .AddEntity(CommsEndpoint(2, "r1"))
+            .AddEntity(CommsEndpoint(3, "r2"))
+            .Build();
+
+        var engine = new SimulationEngine(world);
+        var send = engine.Step(new Intent[]
+        {
+            new SendMessageIntent(new EntityId(1), "A", "route", "payload", "r2"),
+        });
+
+        var queued = send.Events.OfType<MessageQueued>().Single();
+        Console.WriteLine(
+            $"MULTI_REGION queued id={queued.MessageId} sentTick={queued.Tick} " +
+            $"deliverTick={queued.DeliverTick} target={queued.TargetRegionId}");
+
+        while (world.Tick < queued.DeliverTick)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
+
+        var message = world.GetInbox("A").Single();
+        var ok = message.TargetRegionId == "r2" && message.DeliveredTick == 6;
+        Console.WriteLine(
+            $"MULTI_REGION delivered id={message.Id} tick={message.DeliveredTick} " +
+            $"target={message.TargetRegionId} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static EntityDefinition CommsEndpoint(long id, string regionId) =>
+        new(
+            new EntityId(id),
+            "A",
+            regionId,
+            new Vec2(100, 100),
+            MaxHealth: 10,
+            Energy: 10,
+            EnergyCapacity: 10,
+            Material: 0,
+            Comm: new CommModule(1, EnergyCostPerMessage: 0));
 
     private static RunReport RunScenario()
     {

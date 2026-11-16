@@ -40,6 +40,42 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder AddLink(
+        string id,
+        string regionA,
+        string regionB,
+        int latencyTicks,
+        int messagesPerTick = 0)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new ArgumentException("Link id is required.", nameof(id));
+        }
+
+        if (_world.Links.ContainsKey(id))
+        {
+            throw new InvalidOperationException($"Link '{id}' already exists.");
+        }
+
+        if (!_world.Regions.ContainsKey(regionA) || !_world.Regions.ContainsKey(regionB))
+        {
+            throw new InvalidOperationException("Both link regions must exist.");
+        }
+
+        if (string.Equals(regionA, regionB, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("A region cannot link to itself.");
+        }
+
+        if (latencyTicks < 0 || messagesPerTick < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(latencyTicks), "Link values must be non-negative.");
+        }
+
+        _world.Links.Add(id, new RegionLink(id, regionA, regionB, latencyTicks, messagesPerTick));
+        return this;
+    }
+
     public WorldBuilder AddStock(string regionId, string civilizationId, long material)
     {
         if (!_world.Regions.TryGetValue(regionId, out var region))

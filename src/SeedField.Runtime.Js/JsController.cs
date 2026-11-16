@@ -216,8 +216,11 @@ public sealed class JsController : IDisposable
                 var payload = TryGetString(element, "payload", out var payloadValue)
                     ? payloadValue
                     : string.Empty;
+                var targetRegionId = TryGetString(element, "targetRegionId", out var targetRegion)
+                    ? targetRegion
+                    : null;
 
-                intent = new SendMessageIntent(entityId, toCiv, topic, payload);
+                intent = new SendMessageIntent(entityId, toCiv, topic, payload, targetRegionId);
                 return true;
 
             case "wait":
@@ -314,6 +317,7 @@ public sealed class JsController : IDisposable
                     message.MessageId,
                     message.FromEntityId,
                     message.FromCivilizationId,
+                    message.TargetRegionId,
                     message.Topic,
                     message.Payload,
                     message.SentTick,
@@ -339,6 +343,7 @@ public sealed class JsController : IDisposable
             long MessageId,
             long FromEntityId,
             string FromCivilizationId,
+            string TargetRegionId,
             string Topic,
             string Payload,
             long SentTick,

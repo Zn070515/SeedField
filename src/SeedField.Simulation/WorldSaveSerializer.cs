@@ -81,7 +81,15 @@ public static class WorldSaveSerializer
                 world.Statistics.EntitiesDestroyed,
                 world.Statistics.MessagesDelivered,
                 world.Statistics.MessagesExpired),
-            world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray());
+            world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
+            world.Links.Values
+                .Select(link => new LinkSaveData(
+                    link.Id,
+                    link.RegionA,
+                    link.RegionB,
+                    link.LatencyTicks,
+                    link.MessagesPerTick))
+                .ToArray());
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -224,6 +232,38 @@ public static class WorldSaveSerializer
             throw Invalid("NO_REGIONS", "A save must contain at least one region.");
         }
 
+        foreach (var linkData in data.Links ?? Array.Empty<LinkSaveData>())
+        {
+            if (string.IsNullOrWhiteSpace(linkData.Id) ||
+                world.Links.ContainsKey(linkData.Id))
+            {
+                throw Invalid("DUPLICATE_LINK", "Region link ids must be unique and non-empty.");
+            }
+
+            if (!world.Regions.ContainsKey(linkData.RegionA) ||
+                !world.Regions.ContainsKey(linkData.RegionB) ||
+                string.Equals(linkData.RegionA, linkData.RegionB, StringComparison.Ordinal))
+            {
+                throw Invalid(
+                    "INVALID_LINK",
+                    $"Link '{linkData.Id}' must connect two distinct existing regions.");
+            }
+
+            if (linkData.LatencyTicks < 0 || linkData.MessagesPerTick < 0)
+            {
+                throw Invalid("INVALID_LINK", $"Link '{linkData.Id}' has negative values.");
+            }
+
+            world.Links.Add(
+                linkData.Id,
+                new RegionLink(
+                    linkData.Id,
+                    linkData.RegionA,
+                    linkData.RegionB,
+                    linkData.LatencyTicks,
+                    linkData.MessagesPerTick));
+        }
+
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())
         {
             try
@@ -320,11 +360,16 @@ public static class WorldSaveSerializer
                 throw Invalid("INVALID_MESSAGE", $"Message '{message.Id}' has invalid timing.");
             }
 
+            var targetRegionId = ResolveTargetRegionId(
+                world,
+                message.TargetRegionId,
+                message.FromEntityId);
             var envelope = new MessageEnvelope(
                 message.Id,
                 new EntityId(message.FromEntityId),
                 message.FromCivilizationId,
                 message.ToCivilizationId,
+                targetRegionId,
                 message.Topic,
                 message.Payload,
                 message.SentTick,
@@ -352,10 +397,15 @@ public static class WorldSaveSerializer
                         $"Delivered message '{message.Id}' has invalid timing.");
                 }
 
+                var targetRegionId = ResolveTargetRegionId(
+                    world,
+                    message.TargetRegionId,
+                    message.FromEntityId);
                 inbox.Add(new DeliveredMessage(
                     message.Id,
                     new EntityId(message.FromEntityId),
                     message.FromCivilizationId,
+                    targetRegionId,
                     message.Topic,
                     message.Payload,
                     message.SentTick,
@@ -536,7 +586,8 @@ public static class WorldSaveSerializer
             message.Topic,
             message.Payload,
             message.SentTick,
-            message.DeliverTick);
+            message.DeliverTick,
+            message.TargetRegionId);
 
     private static DeliveredMessageSaveData ToDeliveredMessage(DeliveredMessage message) =>
         new(
@@ -546,7 +597,8 @@ public static class WorldSaveSerializer
             message.Topic,
             message.Payload,
             message.SentTick,
-            message.DeliveredTick);
+            message.DeliveredTick,
+            message.TargetRegionId);
 
     private static void ApplyStatistics(WorldState world, StatisticsSaveData statistics)
     {
@@ -560,6 +612,20 @@ public static class WorldSaveSerializer
         world.Statistics.EntitiesDestroyed = statistics.EntitiesDestroyed;
         world.Statistics.MessagesDelivered = statistics.MessagesDelivered;
         world.Statistics.MessagesExpired = statistics.MessagesExpired;
+    }
+
+    private static string ResolveTargetRegionId(
+        WorldState world,
+        string savedTargetRegionId,
+        long fromEntityId)
+    {
+        if (!string.IsNullOrWhiteSpace(savedTargetRegionId))
+        {
+            return savedTargetRegionId;
+        }
+
+        var sender = world.FindEntity(new EntityId(fromEntityId));
+        return sender?.RegionId ?? world.Regions.Keys.First();
     }
 
     private static SaveFormatException Invalid(string code, string message) => new(code, message);

@@ -15,7 +15,15 @@ public sealed record WorldSaveData(
     MessageSaveData[] InFlightMessages,
     InboxSaveData[] Inboxes,
     StatisticsSaveData Statistics,
-    BlueprintSaveData[]? Blueprints = null);
+    BlueprintSaveData[]? Blueprints = null,
+    LinkSaveData[]? Links = null);
+
+public sealed record LinkSaveData(
+    string Id,
+    string RegionA,
+    string RegionB,
+    int LatencyTicks,
+    int MessagesPerTick);
 
 public sealed record RegionSaveData(
     string Id,
@@ -103,7 +111,8 @@ public sealed record MessageSaveData(
     string Topic,
     string Payload,
     long SentTick,
-    long DeliverTick);
+    long DeliverTick,
+    string TargetRegionId = "");
 
 public sealed record DeliveredMessageSaveData(
     long Id,
@@ -112,7 +121,8 @@ public sealed record DeliveredMessageSaveData(
     string Topic,
     string Payload,
     long SentTick,
-    long DeliveredTick);
+    long DeliveredTick,
+    string TargetRegionId = "");
 
 public sealed record InboxSaveData(string CivilizationId, DeliveredMessageSaveData[] Messages);
 

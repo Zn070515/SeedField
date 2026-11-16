@@ -17,6 +17,7 @@ public sealed record ObservedMessage(
     long MessageId,
     long FromEntityId,
     string FromCivilizationId,
+    string TargetRegionId,
     string Topic,
     string Payload,
     long SentTick,

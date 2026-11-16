@@ -40,6 +40,9 @@ public sealed class WorldState
 
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Explicit bidirectional region links.</summary>
+    public SortedDictionary<string, RegionLink> Links { get; } = new(StringComparer.Ordinal);
+
     public SortedDictionary<string, SeedCoreState> Cores { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
