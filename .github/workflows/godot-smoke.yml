@@ -20,7 +20,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Build game project
-        run: dotnet build game/SeedField.Game/SeedField.Game.csproj -c Release
+        run: dotnet build game/SeedField.Game/SeedField.Game.csproj -c Debug
 
       - name: Download Godot 4.7.2 Mono
         shell: pwsh
