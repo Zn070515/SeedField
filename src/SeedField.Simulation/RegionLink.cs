@@ -10,7 +10,8 @@ public sealed record RegionLink(
     string RegionA,
     string RegionB,
     int LatencyTicks,
-    int MessagesPerTick = 0)
+    int MessagesPerTick = 0,
+    int MaterialPerTick = 0)
 {
     public bool Connects(string regionId) =>
         string.Equals(RegionA, regionId, StringComparison.Ordinal) ||

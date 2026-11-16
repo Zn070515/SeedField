@@ -73,7 +73,8 @@ public static class ObservationBuilder
                 shipment.ToRegionId,
                 shipment.Amount,
                 shipment.SentTick,
-                shipment.ArriveTick))
+                shipment.ArriveTick,
+                shipment.Route))
             .ToList();
 
         return new Observation(

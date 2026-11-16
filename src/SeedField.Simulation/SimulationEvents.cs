@@ -62,7 +62,8 @@ public sealed record MaterialShipped(
     string FromRegionId,
     string ToRegionId,
     long Amount,
-    long ArriveTick) : SimulationEvent(Tick);
+    long ArriveTick,
+    string Route) : SimulationEvent(Tick);
 
 public sealed record MaterialArrived(
     long Tick,

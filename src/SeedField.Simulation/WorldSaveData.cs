@@ -25,7 +25,8 @@ public sealed record LinkSaveData(
     string RegionA,
     string RegionB,
     int LatencyTicks,
-    int MessagesPerTick);
+    int MessagesPerTick,
+    int MaterialPerTick = 0);
 
 public sealed record MaterialShipmentSaveData(
     long Id,
@@ -33,7 +34,7 @@ public sealed record MaterialShipmentSaveData(
     string CivilizationId,
     string FromRegionId,
     string ToRegionId,
-    string LinkId,
+    string Route,
     long Amount,
     long SentTick,
     long ArriveTick);

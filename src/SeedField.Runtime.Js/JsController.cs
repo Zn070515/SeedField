@@ -345,7 +345,8 @@ public sealed class JsController : IDisposable
                     shipment.ToRegionId,
                     shipment.Amount,
                     shipment.SentTick,
-                    shipment.ArriveTick))]);
+                    shipment.ArriveTick,
+                    shipment.Route))]);
 
         private sealed record ObservationDto(
             long Tick,
@@ -360,7 +361,8 @@ public sealed class JsController : IDisposable
             string ToRegionId,
             long Amount,
             long SentTick,
-            long ArriveTick);
+            long ArriveTick,
+            string Route);
 
         private sealed record EntityDto(
             long EntityId,

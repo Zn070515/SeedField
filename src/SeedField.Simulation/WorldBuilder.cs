@@ -45,7 +45,8 @@ public sealed class WorldBuilder
         string regionA,
         string regionB,
         int latencyTicks,
-        int messagesPerTick = 0)
+        int messagesPerTick = 0,
+        int materialPerTick = 0)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -67,12 +68,14 @@ public sealed class WorldBuilder
             throw new InvalidOperationException("A region cannot link to itself.");
         }
 
-        if (latencyTicks < 0 || messagesPerTick < 0)
+        if (latencyTicks < 0 || messagesPerTick < 0 || materialPerTick < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(latencyTicks), "Link values must be non-negative.");
         }
 
-        _world.Links.Add(id, new RegionLink(id, regionA, regionB, latencyTicks, messagesPerTick));
+        _world.Links.Add(
+            id,
+            new RegionLink(id, regionA, regionB, latencyTicks, messagesPerTick, materialPerTick));
         return this;
     }
 

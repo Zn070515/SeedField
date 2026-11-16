@@ -26,6 +26,7 @@ public sealed class SimulationEngine
         var computeUsed = new Dictionary<EntityId, int>();
         var bandwidthUsed = new Dictionary<EntityId, int>();
         var linkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
+        var materialLinkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
 
         GeneratePower();
 
@@ -35,7 +36,15 @@ public sealed class SimulationEngine
             // canonical order regardless of how controllers were concatenated.
             foreach (var intent in intents.OrderBy(intent => intent.EntityId.Value))
             {
-                ProcessIntent(intent, tick, events, results, computeUsed, bandwidthUsed, linkUsage);
+                ProcessIntent(
+                    intent,
+                    tick,
+                    events,
+                    results,
+                    computeUsed,
+                    bandwidthUsed,
+                    linkUsage,
+                    materialLinkUsage);
             }
         }
 
@@ -215,7 +224,8 @@ public sealed class SimulationEngine
         List<IntentResult> results,
         Dictionary<EntityId, int> computeUsed,
         Dictionary<EntityId, int> bandwidthUsed,
-        Dictionary<string, int> linkUsage)
+        Dictionary<string, int> linkUsage,
+        Dictionary<string, int> materialLinkUsage)
     {
         if (intent is null)
         {
@@ -261,7 +271,7 @@ public sealed class SimulationEngine
                 ProcessSendMessage(entity, send, tick, events, results, bandwidthUsed, linkUsage);
                 break;
             case TransferMaterialIntent transfer:
-                ProcessTransferMaterial(entity, region, transfer, tick, events, results);
+                ProcessTransferMaterial(entity, region, transfer, tick, events, results, materialLinkUsage);
                 break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
@@ -581,7 +591,8 @@ public sealed class SimulationEngine
         TransferMaterialIntent intent,
         long tick,
         List<SimulationEvent> events,
-        List<IntentResult> results)
+        List<IntentResult> results,
+        Dictionary<string, int> materialLinkUsage)
     {
         if (entity.Drive is null)
         {
@@ -619,23 +630,33 @@ public sealed class SimulationEngine
             return;
         }
 
-        var link = World.Links.Values
-            .Where(candidate =>
-                candidate.Connects(sourceRegion.Id) &&
-                candidate.Connects(intent.TargetRegionId))
-            .OrderBy(candidate => candidate.Id, StringComparer.Ordinal)
-            .FirstOrDefault();
-
-        if (link is null)
+        var path = FindMessagePath(sourceRegion.Id, intent.TargetRegionId);
+        if (path is null)
         {
             Reject(
                 intent,
                 SimulationErrorCode.NoRoute,
-                $"No direct link from '{sourceRegion.Id}' to '{intent.TargetRegionId}'.",
+                $"No link path from '{sourceRegion.Id}' to '{intent.TargetRegionId}'.",
                 tick,
                 events,
                 results);
             return;
+        }
+
+        foreach (var link in path)
+        {
+            if (link.MaterialPerTick > 0 &&
+                materialLinkUsage.GetValueOrDefault(link.Id) >= link.MaterialPerTick)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.NoBandwidth,
+                    $"Link '{link.Id}' material capacity is exhausted for this tick.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
         }
 
         if (!sourceRegion.TryConsumeMaterial(entity.CivilizationId, intent.Amount))
@@ -651,18 +672,27 @@ public sealed class SimulationEngine
             return;
         }
 
+        var route = string.Join(">", path.Select(link => link.Id));
         var shipmentId = World.NextShipmentId++;
-        var arriveTick = tick + Math.Max(1, link.LatencyTicks);
+        var arriveTick = tick + Math.Max(1, path.Sum(link => link.LatencyTicks));
         var shipment = new MaterialShipment(
             shipmentId,
             entity.Id,
             entity.CivilizationId,
             sourceRegion.Id,
             intent.TargetRegionId,
-            link.Id,
+            route,
             intent.Amount,
             tick,
             arriveTick);
+
+        foreach (var link in path)
+        {
+            if (link.MaterialPerTick > 0)
+            {
+                materialLinkUsage[link.Id] = materialLinkUsage.GetValueOrDefault(link.Id) + 1;
+            }
+        }
 
         World.InTransitMaterial.Add(shipment);
         World.Statistics.MaterialShippedTotal += intent.Amount;
@@ -674,7 +704,8 @@ public sealed class SimulationEngine
             sourceRegion.Id,
             intent.TargetRegionId,
             intent.Amount,
-            arriveTick));
+            arriveTick,
+            route));
 
         Accept(
             intent,

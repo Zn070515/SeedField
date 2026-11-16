@@ -22,7 +22,7 @@ public sealed record MaterialShipment(
     string CivilizationId,
     string FromRegionId,
     string ToRegionId,
-    string LinkId,
+    string Route,
     long Amount,
     long SentTick,
     long ArriveTick);

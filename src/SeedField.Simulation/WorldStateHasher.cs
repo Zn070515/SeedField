@@ -98,7 +98,7 @@ public static class WorldStateHasher
             Append(ref hash, shipment.CivilizationId);
             Append(ref hash, shipment.FromRegionId);
             Append(ref hash, shipment.ToRegionId);
-            Append(ref hash, shipment.LinkId);
+            Append(ref hash, shipment.Route);
             Append(ref hash, shipment.Amount);
             Append(ref hash, shipment.SentTick);
             Append(ref hash, shipment.ArriveTick);
@@ -112,6 +112,7 @@ public static class WorldStateHasher
             Append(ref hash, link.RegionB);
             Append(ref hash, link.LatencyTicks);
             Append(ref hash, link.MessagesPerTick);
+            Append(ref hash, link.MaterialPerTick);
         }
 
         var blueprints = world.Workshop.GetAllVersions()

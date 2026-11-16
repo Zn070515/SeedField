@@ -87,7 +87,9 @@ internal static class Program
         var world = new WorldBuilder()
             .AddRegion("r0", 1_000, 1_000)
             .AddRegion("r1", 1_000, 1_000)
-            .AddLink("l01", "r0", "r1", latencyTicks: 3)
+            .AddRegion("r2", 1_000, 1_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 2)
+            .AddLink("l12", "r1", "r2", latencyTicks: 3)
             .AddStock("r0", "A", 100)
             .AddEntity(new EntityDefinition(
                 new EntityId(1),
@@ -104,13 +106,14 @@ internal static class Program
         var engine = new SimulationEngine(world);
         var result = engine.Step(new Intent[]
         {
-            new TransferMaterialIntent(new EntityId(1), "r1", 40),
+            new TransferMaterialIntent(new EntityId(1), "r2", 40),
         });
 
         var shipped = result.Events.OfType<MaterialShipped>().Single();
         Console.WriteLine(
             $"LOGISTICS shipped amount={shipped.Amount} arriveTick={shipped.ArriveTick} " +
-            $"source={world.Regions["r0"].GetMaterial("A")} target={world.Regions["r1"].GetMaterial("A")}");
+            $"route={shipped.Route} source={world.Regions["r0"].GetMaterial("A")} " +
+            $"target={world.Regions["r2"].GetMaterial("A")}");
 
         while (world.Tick < shipped.ArriveTick)
         {
@@ -118,8 +121,11 @@ internal static class Program
         }
 
         var source = world.Regions["r0"].GetMaterial("A");
-        var target = world.Regions["r1"].GetMaterial("A");
-        var ok = source == 60 && target == 40 && world.InTransitMaterial.Count == 0;
+        var target = world.Regions["r2"].GetMaterial("A");
+        var ok = source == 60 &&
+                 target == 40 &&
+                 shipped.Route == "l01>l12" &&
+                 world.InTransitMaterial.Count == 0;
         Console.WriteLine(
             $"LOGISTICS arrived tick={world.Tick} source={source} target={target} ok={ok}");
 

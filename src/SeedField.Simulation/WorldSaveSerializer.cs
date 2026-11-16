@@ -90,7 +90,8 @@ public static class WorldSaveSerializer
                     link.RegionA,
                     link.RegionB,
                     link.LatencyTicks,
-                    link.MessagesPerTick))
+                    link.MessagesPerTick,
+                    link.MaterialPerTick))
                 .ToArray(),
             world.InTransitMaterial
                 .OrderBy(shipment => shipment.Id)
@@ -100,7 +101,7 @@ public static class WorldSaveSerializer
                     shipment.CivilizationId,
                     shipment.FromRegionId,
                     shipment.ToRegionId,
-                    shipment.LinkId,
+                    shipment.Route,
                     shipment.Amount,
                     shipment.SentTick,
                     shipment.ArriveTick))
@@ -277,7 +278,8 @@ public static class WorldSaveSerializer
                     linkData.RegionA,
                     linkData.RegionB,
                     linkData.LatencyTicks,
-                    linkData.MessagesPerTick));
+                    linkData.MessagesPerTick,
+                    linkData.MaterialPerTick));
         }
 
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())
@@ -451,13 +453,11 @@ public static class WorldSaveSerializer
 
             if (!world.Regions.ContainsKey(shipmentData.FromRegionId) ||
                 !world.Regions.ContainsKey(shipmentData.ToRegionId) ||
-                !world.Links.TryGetValue(shipmentData.LinkId, out var shippingLink) ||
-                !shippingLink.Connects(shipmentData.FromRegionId) ||
-                !shippingLink.Connects(shipmentData.ToRegionId))
+                !IsValidShipmentRoute(world, shipmentData))
             {
                 throw Invalid(
                     "INVALID_SHIPMENT_ROUTE",
-                    $"Shipment '{shipmentData.Id}' references a missing region or link.");
+                    $"Shipment '{shipmentData.Id}' references a missing region or invalid route.");
             }
 
             world.InTransitMaterial.Add(new MaterialShipment(
@@ -466,7 +466,7 @@ public static class WorldSaveSerializer
                 shipmentData.CivilizationId,
                 shipmentData.FromRegionId,
                 shipmentData.ToRegionId,
-                shipmentData.LinkId,
+                shipmentData.Route,
                 shipmentData.Amount,
                 shipmentData.SentTick,
                 shipmentData.ArriveTick));
@@ -678,6 +678,27 @@ public static class WorldSaveSerializer
         world.Statistics.MessagesExpired = statistics.MessagesExpired;
         world.Statistics.MaterialShippedTotal = statistics.MaterialShippedTotal;
         world.Statistics.MaterialDeliveredTotal = statistics.MaterialDeliveredTotal;
+    }
+
+    private static bool IsValidShipmentRoute(WorldState world, MaterialShipmentSaveData shipment)
+    {
+        if (string.IsNullOrWhiteSpace(shipment.Route))
+        {
+            return false;
+        }
+
+        var currentRegion = shipment.FromRegionId;
+        foreach (var linkId in shipment.Route.Split('>', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!world.Links.TryGetValue(linkId, out var link) || !link.Connects(currentRegion))
+            {
+                return false;
+            }
+
+            currentRegion = link.Other(currentRegion);
+        }
+
+        return string.Equals(currentRegion, shipment.ToRegionId, StringComparison.Ordinal);
     }
 
     private static string ResolveTargetRegionId(

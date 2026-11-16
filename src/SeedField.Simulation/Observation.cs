@@ -29,7 +29,8 @@ public sealed record ObservedShipment(
     string ToRegionId,
     long Amount,
     long SentTick,
-    long ArriveTick);
+    long ArriveTick,
+    string Route);
 
 public sealed record Observation(
     long Tick,
