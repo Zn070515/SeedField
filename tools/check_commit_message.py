@@ -69,7 +69,10 @@ def main() -> int:
     if args.revision_range:
         subjects = subjects_for_range(args.revision_range)
     else:
-        subjects = subjects_for_range("HEAD")
+        try:
+            subjects = subjects_for_range("HEAD~1..HEAD")
+        except subprocess.CalledProcessError:
+            subjects = subjects_for_range("HEAD")
 
     if not subjects:
         print("no commit subjects to check")
