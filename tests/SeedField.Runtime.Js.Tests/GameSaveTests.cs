@@ -29,7 +29,7 @@ public sealed class GameSaveTests
         var world = BuildWorld();
         using var slot = new ControllerSlot("A", WaitScript);
         var json = GameSaveSerializer.Save(world, new[] { slot });
-        var v1 = json.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 1");
+        var v1 = json.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1");
 
         var loaded = GameSaveSerializer.Load(v1);
 
@@ -39,12 +39,29 @@ public sealed class GameSaveTests
     }
 
     [Fact]
+    public void GameSavePersistsOpponentPackageMetadata()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var json = GameSaveSerializer.Save(
+            world,
+            new[] { slot },
+            "builtin.turtle",
+            "0.1.0");
+
+        var loaded = GameSaveSerializer.Load(json);
+
+        Assert.Equal("builtin.turtle", loaded.OpponentPackageId);
+        Assert.Equal("0.1.0", loaded.OpponentPackageVersion);
+    }
+
+    [Fact]
     public void GameSaveRejectsUnknownSchemaVersion()
     {
         var world = BuildWorld();
         using var slot = new ControllerSlot("A", WaitScript);
         var json = GameSaveSerializer.Save(world, new[] { slot });
-        var unsupported = json.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99");
+        var unsupported = json.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99");
 
         var exception = Assert.Throws<SaveFormatException>(() =>
             GameSaveSerializer.Load(unsupported));

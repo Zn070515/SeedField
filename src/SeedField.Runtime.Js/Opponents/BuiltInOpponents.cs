@@ -6,6 +6,12 @@ namespace SeedField.Runtime.Js;
 /// </summary>
 public static class BuiltInOpponents
 {
+    public static IReadOnlyList<OpponentPackage> All => new[] { Skirmisher, Turtle };
+
+    public static OpponentPackage? Find(string packageId) =>
+        All.FirstOrDefault(package =>
+            string.Equals(package.Manifest.PackageId, packageId, StringComparison.Ordinal));
+
     public static OpponentPackage Skirmisher { get; } = Create(
         "builtin.skirmisher",
         "0.1.0",

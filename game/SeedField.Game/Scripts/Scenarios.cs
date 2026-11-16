@@ -42,7 +42,8 @@ internal static class Scenarios
         workshop.Publish(new DeviceBlueprint(
             "power", 0, "Power Cell", 60, 5_000,
             Power: new PowerModule(EnergyPerTick: 4, StorageCapacity: 5_000),
-            MaterialCost: 20));
+            MaterialCost: 20,
+            BuildTicks: 2));
         workshop.Publish(new DeviceBlueprint(
             "sensing", 0, "Sensor Suite", 60, 0,
             Sensor: new SensorModule(5_000),

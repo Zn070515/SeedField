@@ -13,12 +13,16 @@ public partial class WorkshopPanel : PanelContainer
 
     public event Action<EntityId>? UpgradeRequested;
 
+    public event Action<long>? CancelConstructionRequested;
+
     private Label _coverage = null!;
     private ItemList _blueprints = null!;
     private ItemList _instances = null!;
+    private ItemList _orders = null!;
     private Label _status = null!;
     private readonly List<string> _blueprintIds = new();
     private readonly List<EntityId> _entityIds = new();
+    private readonly List<long> _orderIds = new();
 
     public override void _Ready()
     {
@@ -34,8 +38,8 @@ public partial class WorkshopPanel : PanelContainer
         style.SetCornerRadiusAll(6);
         AddThemeStyleboxOverride("panel", style);
 
-        Position = new Vector2(300, 40);
-        Size = new Vector2(680, 640);
+        Position = new Vector2(300, 24);
+        Size = new Vector2(680, 672);
         CustomMinimumSize = Size;
 
         var margin = new MarginContainer();
@@ -62,7 +66,7 @@ public partial class WorkshopPanel : PanelContainer
         blueprintLabel.Modulate = new Color(0.55f, 0.68f, 0.78f);
         box.AddChild(blueprintLabel);
 
-        _blueprints = new ItemList { CustomMinimumSize = new Vector2(640, 170) };
+        _blueprints = new ItemList { CustomMinimumSize = new Vector2(640, 120) };
         box.AddChild(_blueprints);
 
         var deployRow = new HBoxContainer();
@@ -85,7 +89,7 @@ public partial class WorkshopPanel : PanelContainer
         instanceLabel.Modulate = new Color(0.55f, 0.68f, 0.78f);
         box.AddChild(instanceLabel);
 
-        _instances = new ItemList { CustomMinimumSize = new Vector2(640, 130) };
+        _instances = new ItemList { CustomMinimumSize = new Vector2(640, 90) };
         box.AddChild(_instances);
 
         var upgradeRow = new HBoxContainer();
@@ -102,6 +106,21 @@ public partial class WorkshopPanel : PanelContainer
         upgradeHint.Modulate = new Color(0.55f, 0.68f, 0.78f);
         upgradeRow.AddChild(upgradeHint);
         box.AddChild(upgradeRow);
+
+        var queueLabel = new Label { Text = "A-SIDE CONSTRUCTION QUEUE" };
+        queueLabel.AddThemeFontSizeOverride("font_size", 12);
+        queueLabel.Modulate = new Color(0.55f, 0.68f, 0.78f);
+        box.AddChild(queueLabel);
+
+        _orders = new ItemList { CustomMinimumSize = new Vector2(640, 80) };
+        box.AddChild(_orders);
+
+        var cancelRow = new HBoxContainer();
+        cancelRow.AddThemeConstantOverride("separation", 12);
+        var cancel = new Button { Text = "CANCEL SELECTED ORDER (FULL REFUND)" };
+        cancel.Pressed += OnCancelPressed;
+        cancelRow.AddChild(cancel);
+        box.AddChild(cancelRow);
 
         _status = new Label { Text = "ready", AutowrapMode = TextServer.AutowrapMode.WordSmart };
         _status.AddThemeFontSizeOverride("font_size", 12);
@@ -154,6 +173,27 @@ public partial class WorkshopPanel : PanelContainer
             _instances.Select(0);
         }
 
+        _orderIds.Clear();
+        _orders.Clear();
+        foreach (var order in world.ConstructionOrders
+                     .Where(order => string.Equals(
+                         order.CivilizationId,
+                         "A",
+                         StringComparison.Ordinal))
+                     .OrderBy(order => order.CompleteTick)
+                     .ThenBy(order => order.Id))
+        {
+            _orderIds.Add(order.Id);
+            _orders.AddItem(
+                $"{order.Id} · {order.BlueprintId} v{order.BlueprintVersion} · " +
+                $"ready t{order.CompleteTick} · M{order.MaterialPaid}");
+        }
+
+        if (_orders.ItemCount > 0)
+        {
+            _orders.Select(0);
+        }
+
         var coverage = world.Workshop.Coverage;
         var missing = DeviceBranch.All & ~coverage;
         var ready = missing == DeviceBranch.None;
@@ -204,6 +244,18 @@ public partial class WorkshopPanel : PanelContainer
         }
 
         DeployRequested?.Invoke(_blueprintIds[selected[0]]);
+    }
+
+    private void OnCancelPressed()
+    {
+        var selected = _orders.GetSelectedItems();
+        if (selected.Length == 0 || selected[0] < 0 || selected[0] >= _orderIds.Count)
+        {
+            SetStatus("select a construction order first", true);
+            return;
+        }
+
+        CancelConstructionRequested?.Invoke(_orderIds[selected[0]]);
     }
 
     private void OnUpgradePressed()

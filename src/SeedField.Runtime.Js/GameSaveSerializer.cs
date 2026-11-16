@@ -8,11 +8,15 @@ public sealed record ControllerSaveData(string CivilizationId, int Version, stri
 public sealed record GameSaveData(
     int SchemaVersion,
     WorldSaveData World,
-    ControllerSaveData[] Controllers);
+    ControllerSaveData[] Controllers,
+    string? OpponentPackageId = null,
+    string? OpponentPackageVersion = null);
 
 public sealed record LoadedGame(
     WorldState World,
-    IReadOnlyList<ControllerSlot> Controllers);
+    IReadOnlyList<ControllerSlot> Controllers,
+    string? OpponentPackageId = null,
+    string? OpponentPackageVersion = null);
 
 /// <summary>
 /// Composition-level save: authoritative world plus the deployed controller programs
@@ -20,7 +24,7 @@ public sealed record LoadedGame(
 /// </summary>
 public static class GameSaveSerializer
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
     public const int OldestSupportedSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions Options = new()
@@ -30,7 +34,11 @@ public static class GameSaveSerializer
         WriteIndented = true,
     };
 
-    public static string Save(WorldState world, IEnumerable<ControllerSlot> controllers)
+    public static string Save(
+        WorldState world,
+        IEnumerable<ControllerSlot> controllers,
+        string? opponentPackageId = null,
+        string? opponentPackageVersion = null)
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(controllers);
@@ -44,7 +52,9 @@ public static class GameSaveSerializer
                     controller.Version,
                     controller.DeployedScript))
                 .OrderBy(controller => controller.CivilizationId, StringComparer.Ordinal)
-                .ToArray());
+                .ToArray(),
+            opponentPackageId,
+            opponentPackageVersion);
 
         return JsonSerializer.Serialize(data, Options);
     }
@@ -126,6 +136,10 @@ public static class GameSaveSerializer
             }
         }
 
-        return new LoadedGame(world, controllers);
+        return new LoadedGame(
+            world,
+            controllers,
+            data.OpponentPackageId,
+            data.OpponentPackageVersion);
     }
 }

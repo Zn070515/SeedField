@@ -76,9 +76,9 @@ tests/SeedField.Runtime.Js.Tests/
 - 摧毁库存审计：`EntityInventoryLost` 与 `EnergyLostTotal`/`MaterialLostTotal` 进入事件、统计、存档与哈希。
 - 控制点目标：多控制点、独占驻留计时、争夺/离开重置、占领数量阈值胜负；Godot HUD 与 `--capture-victory`。
 - 跨文明通信：目标文明必须在目标区域有 Comm 端点；消息进入目标文明收件箱。
-- 内置离线对手：受信任包清单校验（schema/路径/大小/入口），Skirmisher/Turtle；Godot `--opponent-turtle` 可选；第三方导入仍关闭。
+- 内置离线对手：受信任包清单校验（schema/路径/大小/入口），Skirmisher/Turtle；Godot `--opponent-turtle` 可选；选择写入游戏存档并随读档恢复；第三方导入仍关闭。
 - 建造队列：`BuildTicks` 蓝图先扣 M，到期由引擎生成实体；订单进入存档/哈希。
-- 建造取消：`CancelConstructionCommand` 退款并产生 `ConstructionCancelled`；退款统计进入存档/哈希。
+- 建造取消：`CancelConstructionCommand` 退款并产生 `ConstructionCancelled`；退款统计进入存档/哈希；工坊队列 UI 可选中取消。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
@@ -168,7 +168,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=fc5ef2... mutated=5361d2... after=fc5ef2...`（Skirmisher）。
+- 实测：`SAVE_SMOKE ok=True before=5c8fee... mutated=c1bf1e... after=5c8fee...`（Skirmisher）；Turtle `2952e9...`。
 
 ### 5.5 多区域与跨区消息
 

@@ -120,7 +120,8 @@ public partial class Main : Node2D
             _workshop.SelectBlueprint("power");
             _workshop.SelectInstance(new EntityId(1));
             _workshop.SetStatus(
-                $"deployed power v1 · upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
+                $"queued power v1 (t{_world.ConstructionOrders.FirstOrDefault()?.CompleteTick}) " +
+                $"· upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
                 false);
             _status = "workshop · paused";
         }
@@ -305,6 +306,7 @@ public partial class Main : Node2D
         _workshop = new WorkshopPanel();
         _workshop.DeployRequested += DeployFromWorkshop;
         _workshop.UpgradeRequested += UpgradeFromWorkshop;
+        _workshop.CancelConstructionRequested += CancelConstructionFromWorkshop;
         _workshop.CloseRequested += CloseWorkshop;
         _workshopLayer.AddChild(_workshop);
         _workshop.Refresh(_world);
@@ -419,6 +421,22 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
+    private void CancelConstructionFromWorkshop(long orderId)
+    {
+        var result = _engine.ExecuteDeploymentCommand(new CancelConstructionCommand(
+            "A",
+            orderId));
+
+        _workshop.SetStatus(
+            result.Success
+                ? result.Message
+                : $"cancel failed [{result.ErrorCode}]: {result.Message}",
+            !result.Success);
+
+        _workshop.Refresh(_world);
+        QueueRedraw();
+    }
+
     private Vec2 NextWorkshopSpawn()
     {
         var index = _workshopSpawnIndex++;
@@ -506,7 +524,11 @@ public partial class Main : Node2D
     {
         try
         {
-            var json = GameSaveSerializer.Save(_world, new[] { _slotA, _slotB });
+            var json = GameSaveSerializer.Save(
+                _world,
+                new[] { _slotA, _slotB },
+                _opponent.Manifest.PackageId,
+                _opponent.Manifest.Version);
             System.IO.File.WriteAllText(SaveAbsolutePath, json);
             var message = $"saved tick {_world.Tick} · A v{_slotA.Version}";
             _status = message;
@@ -538,6 +560,12 @@ public partial class Main : Node2D
             else
             {
                 var loaded = GameSaveSerializer.Load(System.IO.File.ReadAllText(SaveAbsolutePath));
+                if (loaded.OpponentPackageId is { } opponentId &&
+                    BuiltInOpponents.Find(opponentId) is { } opponent)
+                {
+                    _opponent = opponent;
+                }
+
                 var slotA = loaded.Controllers.FirstOrDefault(controller =>
                     controller.CivilizationId == "A");
                 var slotB = loaded.Controllers.FirstOrDefault(controller =>
@@ -650,6 +678,13 @@ public partial class Main : Node2D
         foreach (var simulationEvent in result.Events)
         {
             _history.Add(new TimedEvent(result.Tick, simulationEvent));
+
+            if (simulationEvent is EntityDeployed deployedEvent &&
+                _world.FindEntity(deployedEvent.EntityId) is { } deployedEntity &&
+                _deviceControllers.All(controller => controller.EntityId != deployedEntity.Id))
+            {
+                RegisterDeviceController(deployedEntity);
+            }
         }
 
         PruneHistory();
