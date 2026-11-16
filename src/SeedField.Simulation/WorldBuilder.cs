@@ -104,17 +104,25 @@ public sealed class WorldBuilder
             throw new ArgumentOutOfRangeException(nameof(position), "Control point is outside the region.");
         }
 
-        if (_world.ControlPoint is not null)
+        if (_world.ControlPoints.ContainsKey(id))
         {
-            throw new InvalidOperationException("This prototype supports one control point per world.");
+            throw new InvalidOperationException($"Control point '{id}' already exists.");
         }
 
-        _world.ControlPoint = new ControlPointState(
+        _world.ControlPoints.Add(
             id,
-            regionId,
-            position,
-            radiusMm,
-            holdTicksRequired);
+            new ControlPointState(
+                id,
+                regionId,
+                position,
+                radiusMm,
+                holdTicksRequired));
+        return this;
+    }
+
+    public WorldBuilder SetVictoryCondition(int capturedPointsToWin)
+    {
+        _world.Match = new MatchState(new MatchRules(capturedPointsToWin));
         return this;
     }
 

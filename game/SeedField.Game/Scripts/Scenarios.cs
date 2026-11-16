@@ -18,11 +18,24 @@ internal static class Scenarios
             .AddStock("frontier", "A", 500)
             .AddStock("frontier", "B", 500)
             .AddControlPoint(
-                "relay",
+                "relay-west",
+                "frontier",
+                new Vec2(5_000, 4_000),
+                radiusMm: 1_200,
+                holdTicksRequired: 12)
+            .AddControlPoint(
+                "relay-center",
                 "frontier",
                 new Vec2(8_000, 4_000),
-                radiusMm: 1_500,
-                holdTicksRequired: 20)
+                radiusMm: 1_200,
+                holdTicksRequired: 12)
+            .AddControlPoint(
+                "relay-east",
+                "frontier",
+                new Vec2(11_000, 4_000),
+                radiusMm: 1_200,
+                holdTicksRequired: 12)
+            .SetVictoryCondition(capturedPointsToWin: 2)
             .Build();
 
         var workshop = world.Workshop;
@@ -124,13 +137,14 @@ internal static class Scenarios
                     target: { x: target.x, y: target.y }
                 });
             } else if (!target && me.hasDrive) {
-                var destination = obs.controlPoint
-                    ? { x: obs.controlPoint.x, y: obs.controlPoint.y }
+                var objective = nearestObjective(obs, me);
+                var destination = objective
+                    ? { x: objective.x, y: objective.y }
                     : (obs.civilizationId === "A"
                         ? { x: 10000, y: 4000 }
                         : { x: 6000, y: 4000 });
                 var last = lastContact(obs);
-                if (last && !obs.controlPoint) {
+                if (last && !objective) {
                     destination = JSON.parse(last.payload);
                 }
                 intents.push({
@@ -141,6 +155,23 @@ internal static class Scenarios
             }
 
             return intents;
+        }
+
+        function nearestObjective(obs, me) {
+            var best = null;
+            var bestDistance = 1e18;
+            var points = obs.controlPoints || [];
+            for (var i = 0; i < points.length; i++) {
+                if (points[i].ownerCivilizationId === obs.civilizationId) {
+                    continue;
+                }
+                var d = distance(me, points[i]);
+                if (d < bestDistance) {
+                    bestDistance = d;
+                    best = points[i];
+                }
+            }
+            return best;
         }
 
         function lastContact(obs) {

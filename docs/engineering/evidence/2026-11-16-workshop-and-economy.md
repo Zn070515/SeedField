@@ -8,7 +8,7 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 84 passed
+SeedField.Simulation.Tests: 86 passed
 SeedField.Runtime.Js.Tests: 13 passed
 ```
 
@@ -36,7 +36,7 @@ godot --path game/SeedField.Game -- --save-smoke
 SEEDFIELD_PRERUN tick=41 shots=3 entities=3
 SCREENSHOT_SAVED .../screenshots/m0-workshop.png (Ok)
 
-SAVE_SMOKE ok=True before=8f50ddb2d2b54659 mutated=d2aad66c312d9faf after=8f50ddb2d2b54659 tick=39 A=v1 B=v1
+SAVE_SMOKE ok=True before=f09576c84f159349 mutated=d2903e47180489fb after=f09576c84f159349 tick=39 A=v1 B=v1
 ```
 
 ![Workshop panel](../../../game/SeedField.Game/screenshots/m0-workshop.png)

@@ -121,14 +121,14 @@ public partial class Main : Node2D
         }
         else if (_captureVictory)
         {
-            for (var i = 0; i < 2_000 && _world.ControlPoint?.IsCaptured != true; i++)
+            for (var i = 0; i < 3_000 && _world.Match?.IsFinished != true; i++)
             {
                 StepOnce();
             }
 
-            _status = _world.ControlPoint is { IsCaptured: true } point
-                ? $"victory {point.OwnerCivilizationId} · tick {_world.Tick}"
-                : $"no capture · tick {_world.Tick}";
+            _status = _world.Match is { IsFinished: true } match
+                ? $"victory {match.WinnerCivilizationId} · tick {_world.Tick}"
+                : $"no victory · tick {_world.Tick}";
         }
         else
         {
@@ -752,40 +752,38 @@ public partial class Main : Node2D
 
     private void DrawControlPoint()
     {
-        var point = _world.ControlPoint;
-        if (point is null)
+        foreach (var point in _world.ControlPoints.Values)
         {
-            return;
+            var center = Map(point.Position);
+            var radius = point.RadiusMm * MapScale;
+            var color = point.OwnerCivilizationId switch
+            {
+                "A" => Cyan,
+                "B" => Orange,
+                _ => Amber,
+            };
+
+            DrawCircle(center, radius, new Color(color, 0.05f));
+            DrawArc(center, radius, 0, Mathf.Tau, 80, new Color(color, 0.6f), 2f, true);
+            DrawCircle(center, 5f, new Color(color, 0.8f));
+
+            var name = point.Id.Replace("relay-", string.Empty).ToUpperInvariant();
+            var label = point.IsCaptured
+                ? $"{name} · {point.OwnerCivilizationId}"
+                : point.HoldingCivilizationId is null
+                    ? $"{name} · CONTESTED"
+                    : $"{name} · {point.HoldingCivilizationId} " +
+                      $"{point.HoldTicks}/{point.HoldTicksRequired}";
+
+            DrawString(
+                HudFont,
+                center + new Vector2(-46, -radius - 10),
+                label,
+                HorizontalAlignment.Left,
+                -1,
+                11,
+                color);
         }
-
-        var center = Map(point.Position);
-        var radius = point.RadiusMm * MapScale;
-        var color = point.OwnerCivilizationId switch
-        {
-            "A" => Cyan,
-            "B" => Orange,
-            _ => Amber,
-        };
-
-        DrawCircle(center, radius, new Color(color, 0.05f));
-        DrawArc(center, radius, 0, Mathf.Tau, 80, new Color(color, 0.6f), 2f, true);
-        DrawCircle(center, 5f, new Color(color, 0.8f));
-
-        var label = point.IsCaptured
-            ? $"RELAY · {point.OwnerCivilizationId} CAPTURED"
-            : point.HoldingCivilizationId is null
-                ? "RELAY · CONTESTED"
-                : $"RELAY · {point.HoldingCivilizationId} " +
-                  $"{point.HoldTicks}/{point.HoldTicksRequired}";
-
-        DrawString(
-            HudFont,
-            center + new Vector2(-72, -radius - 10),
-            label,
-            HorizontalAlignment.Left,
-            -1,
-            12,
-            color);
     }
 
     private void DrawRanges()
@@ -958,6 +956,31 @@ public partial class Main : Node2D
             _paused ? Amber : Green);
         DrawString(HudFont, new Vector2(1_120, 60), _status, HorizontalAlignment.Left, 150, 11, Muted);
 
+        if (_world.Match is { } match)
+        {
+            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var point in _world.ControlPoints.Values)
+            {
+                if (point.OwnerCivilizationId is { } owner)
+                {
+                    counts[owner] = counts.GetValueOrDefault(owner) + 1;
+                }
+            }
+
+            var matchText = match.IsFinished
+                ? $"MATCH · WINNER {match.WinnerCivilizationId}"
+                : $"MATCH · A {counts.GetValueOrDefault("A")} / " +
+                  $"B {counts.GetValueOrDefault("B")} · first to {match.Rules.CapturedPointsToWin}";
+            DrawString(
+                HudFont,
+                new Vector2(24, 112),
+                matchText,
+                HorizontalAlignment.Left,
+                -1,
+                12,
+                match.IsFinished ? Green : Amber);
+        }
+
         var ready = _world.Workshop.IsMinimumUsable;
         DrawString(
             HudFont,
@@ -1056,7 +1079,8 @@ public partial class Main : Node2D
             or MessageQueued
             or CoreRegenerated
             or EntityBootstrapped
-            or ControlPointCaptured;
+            or ControlPointCaptured
+            or MatchEnded;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1083,7 +1107,9 @@ public partial class Main : Node2D
             EntityBootstrapped bootstrapped =>
                 $"t{bootstrapped.Tick,4}  {bootstrapped.BlueprintName} bootstrapped from core",
             ControlPointCaptured captured =>
-                $"t{captured.Tick,4}  relay captured by {captured.CivilizationId}",
+                $"t{captured.Tick,4}  {captured.ControlPointId} captured by {captured.CivilizationId}",
+            MatchEnded ended =>
+                $"t{ended.Tick,4}  match won by {ended.CivilizationId} ({ended.CapturedPoints} points)",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

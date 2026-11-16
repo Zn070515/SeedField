@@ -410,18 +410,22 @@ public sealed class JsController : IDisposable
                     shipment.ArriveTick,
                     shipment.Route))],
                 observation.ViewerEntityId,
-                observation.ControlPoint is null
+                [.. (observation.ControlPoints ?? Array.Empty<ObservedControlPoint>())
+                    .Select(point => new ControlPointDto(
+                        point.Id,
+                        point.RegionId,
+                        point.Position.X,
+                        point.Position.Y,
+                        point.RadiusMm,
+                        point.HoldTicksRequired,
+                        point.HoldingCivilizationId,
+                        point.HoldTicks,
+                        point.OwnerCivilizationId))],
+                observation.Match is null
                     ? null
-                    : new ControlPointDto(
-                        observation.ControlPoint.Id,
-                        observation.ControlPoint.RegionId,
-                        observation.ControlPoint.Position.X,
-                        observation.ControlPoint.Position.Y,
-                        observation.ControlPoint.RadiusMm,
-                        observation.ControlPoint.HoldTicksRequired,
-                        observation.ControlPoint.HoldingCivilizationId,
-                        observation.ControlPoint.HoldTicks,
-                        observation.ControlPoint.OwnerCivilizationId));
+                    : new MatchDto(
+                        observation.Match.CapturedPointsToWin,
+                        observation.Match.WinnerCivilizationId));
 
         private sealed record ObservationDto(
             long Tick,
@@ -431,7 +435,12 @@ public sealed class JsController : IDisposable
             List<ShipmentDto> Shipments,
             List<EnergyShipmentDto> EnergyShipments,
             long? ViewerEntityId,
-            ControlPointDto? ControlPoint);
+            List<ControlPointDto> ControlPoints,
+            MatchDto? Match);
+
+        private sealed record MatchDto(
+            int CapturedPointsToWin,
+            string? WinnerCivilizationId);
 
         private sealed record ControlPointDto(
             string Id,

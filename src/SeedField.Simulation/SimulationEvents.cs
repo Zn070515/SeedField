@@ -67,6 +67,12 @@ public sealed record ControlPointCaptured(
     string CivilizationId,
     int HoldTicks) : SimulationEvent(Tick);
 
+public sealed record MatchEnded(
+    long Tick,
+    string CivilizationId,
+    string? ControlPointId,
+    int CapturedPoints) : SimulationEvent(Tick);
+
 public sealed record MaterialShipped(
     long Tick,
     long ShipmentId,

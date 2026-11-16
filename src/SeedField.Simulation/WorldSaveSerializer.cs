@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -132,18 +132,15 @@ public static class WorldSaveSerializer
                     shipment.ArriveTick))
                 .ToArray(),
             world.NextEnergyShipmentId,
-            world.ControlPoint is null
+            null,
+            world.ControlPoints.Values
+                .Select(ToControlPointSave)
+                .ToArray(),
+            world.Match is null
                 ? null
-                : new ControlPointSaveData(
-                    world.ControlPoint.Id,
-                    world.ControlPoint.RegionId,
-                    world.ControlPoint.Position.X,
-                    world.ControlPoint.Position.Y,
-                    world.ControlPoint.RadiusMm,
-                    world.ControlPoint.HoldTicksRequired,
-                    world.ControlPoint.HoldingCivilizationId,
-                    world.ControlPoint.HoldTicks,
-                    world.ControlPoint.OwnerCivilizationId));
+                : new MatchSaveData(
+                    world.Match.Rules.CapturedPointsToWin,
+                    world.Match.WinnerCivilizationId));
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -593,7 +590,7 @@ public static class WorldSaveSerializer
 
         world.NextEnergyShipmentId = nextEnergyShipmentId;
 
-        if (data.ControlPoint is { } pointData)
+        foreach (var pointData in data.ControlPoints ?? Array.Empty<ControlPointSaveData>())
         {
             if (!world.Regions.TryGetValue(pointData.RegionId, out var pointRegion) ||
                 !pointRegion.Contains(new Vec2(pointData.X, pointData.Y)) ||
@@ -607,16 +604,36 @@ public static class WorldSaveSerializer
                 throw Invalid("INVALID_CONTROL_POINT", "Control point state is invalid.");
             }
 
-            world.ControlPoint = new ControlPointState(
-                pointData.Id,
-                pointData.RegionId,
-                new Vec2(pointData.X, pointData.Y),
-                pointData.RadiusMm,
-                pointData.HoldTicksRequired)
+            if (world.ControlPoints.ContainsKey(pointData.Id))
             {
-                HoldingCivilizationId = pointData.HoldingCivilizationId,
-                HoldTicks = pointData.HoldTicks,
-                OwnerCivilizationId = pointData.OwnerCivilizationId,
+                throw Invalid("DUPLICATE_CONTROL_POINT", "Control point ids must be unique.");
+            }
+
+            world.ControlPoints.Add(
+                pointData.Id,
+                new ControlPointState(
+                    pointData.Id,
+                    pointData.RegionId,
+                    new Vec2(pointData.X, pointData.Y),
+                    pointData.RadiusMm,
+                    pointData.HoldTicksRequired)
+                {
+                    HoldingCivilizationId = pointData.HoldingCivilizationId,
+                    HoldTicks = pointData.HoldTicks,
+                    OwnerCivilizationId = pointData.OwnerCivilizationId,
+                });
+        }
+
+        if (data.Match is { } matchData)
+        {
+            if (matchData.CapturedPointsToWin <= 0)
+            {
+                throw Invalid("INVALID_MATCH", "Match victory threshold must be positive.");
+            }
+
+            world.Match = new MatchState(new MatchRules(matchData.CapturedPointsToWin))
+            {
+                WinnerCivilizationId = matchData.WinnerCivilizationId,
             };
         }
 
@@ -839,7 +856,23 @@ public static class WorldSaveSerializer
             EnergyShipments = data.EnergyShipments ?? Array.Empty<EnergyShipmentSaveData>(),
             InFlightMessages = data.InFlightMessages ?? Array.Empty<MessageSaveData>(),
             Inboxes = data.Inboxes ?? Array.Empty<InboxSaveData>(),
+            ControlPoints = data.ControlPoints ??
+                            (data.ControlPoint is null
+                                ? Array.Empty<ControlPointSaveData>()
+                                : new[] { data.ControlPoint }),
         };
+
+    private static ControlPointSaveData ToControlPointSave(ControlPointState point) =>
+        new(
+            point.Id,
+            point.RegionId,
+            point.Position.X,
+            point.Position.Y,
+            point.RadiusMm,
+            point.HoldTicksRequired,
+            point.HoldingCivilizationId,
+            point.HoldTicks,
+            point.OwnerCivilizationId);
 
     private static bool IsValidShipmentRoute(WorldState world, MaterialShipmentSaveData shipment) =>
         IsValidRoute(world, shipment.FromRegionId, shipment.ToRegionId, shipment.Route);

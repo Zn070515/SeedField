@@ -57,6 +57,10 @@ public sealed record ObservedControlPoint(
     int HoldTicks,
     string? OwnerCivilizationId);
 
+public sealed record ObservedMatch(
+    int CapturedPointsToWin,
+    string? WinnerCivilizationId);
+
 public sealed record Observation(
     long Tick,
     string CivilizationId,
@@ -65,4 +69,5 @@ public sealed record Observation(
     IReadOnlyList<ObservedShipment> Shipments,
     IReadOnlyList<ObservedEnergyShipment> EnergyShipments,
     long? ViewerEntityId = null,
-    ObservedControlPoint? ControlPoint = null);
+    IReadOnlyList<ObservedControlPoint>? ControlPoints = null,
+    ObservedMatch? Match = null);

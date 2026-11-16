@@ -68,8 +68,12 @@ public sealed class WorldState
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
     public WorkshopService Workshop { get; } = new();
 
-    /// <summary>Optional single capture objective for a scenario.</summary>
-    public ControlPointState? ControlPoint { get; internal set; }
+    /// <summary>Optional capture objectives for a scenario, sorted by id.</summary>
+    public SortedDictionary<string, ControlPointState> ControlPoints { get; } =
+        new(StringComparer.Ordinal);
+
+    /// <summary>Optional match/victory rules for a scenario.</summary>
+    public MatchState? Match { get; internal set; }
 
     public List<MessageEnvelope> InFlightMessages { get; } = new();
 

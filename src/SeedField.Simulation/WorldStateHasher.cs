@@ -97,18 +97,25 @@ public static class WorldStateHasher
             }
         }
 
-        Append(ref hash, world.ControlPoint is not null);
-        if (world.ControlPoint is { } controlPoint)
+        Append(ref hash, world.ControlPoints.Count);
+        foreach (var point in world.ControlPoints.Values)
         {
-            Append(ref hash, controlPoint.Id);
-            Append(ref hash, controlPoint.RegionId);
-            Append(ref hash, controlPoint.Position.X);
-            Append(ref hash, controlPoint.Position.Y);
-            Append(ref hash, controlPoint.RadiusMm);
-            Append(ref hash, controlPoint.HoldTicksRequired);
-            Append(ref hash, controlPoint.HoldingCivilizationId ?? string.Empty);
-            Append(ref hash, controlPoint.HoldTicks);
-            Append(ref hash, controlPoint.OwnerCivilizationId ?? string.Empty);
+            Append(ref hash, point.Id);
+            Append(ref hash, point.RegionId);
+            Append(ref hash, point.Position.X);
+            Append(ref hash, point.Position.Y);
+            Append(ref hash, point.RadiusMm);
+            Append(ref hash, point.HoldTicksRequired);
+            Append(ref hash, point.HoldingCivilizationId ?? string.Empty);
+            Append(ref hash, point.HoldTicks);
+            Append(ref hash, point.OwnerCivilizationId ?? string.Empty);
+        }
+
+        Append(ref hash, world.Match is not null);
+        if (world.Match is { } match)
+        {
+            Append(ref hash, match.Rules.CapturedPointsToWin);
+            Append(ref hash, match.WinnerCivilizationId ?? string.Empty);
         }
 
         var shipments = world.InTransitMaterial.OrderBy(shipment => shipment.Id).ToList();

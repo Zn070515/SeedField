@@ -21,7 +21,13 @@ public sealed record WorldSaveData(
     long NextShipmentId = 0,
     EnergyShipmentSaveData[]? EnergyShipments = null,
     long NextEnergyShipmentId = 0,
-    ControlPointSaveData? ControlPoint = null);
+    ControlPointSaveData? ControlPoint = null,
+    ControlPointSaveData[]? ControlPoints = null,
+    MatchSaveData? Match = null);
+
+public sealed record MatchSaveData(
+    int CapturedPointsToWin,
+    string? WinnerCivilizationId);
 
 public sealed record ControlPointSaveData(
     string Id,

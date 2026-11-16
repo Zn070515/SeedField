@@ -100,7 +100,10 @@ public static class ObservationBuilder
             messages,
             shipments,
             energyShipments,
-            ControlPoint: ToObservedControlPoint(world.ControlPoint));
+            ControlPoints: world.ControlPoints.Values
+                .Select(ToObservedControlPoint)
+                .ToList(),
+            Match: ToObservedMatch(world.Match));
     }
 
     /// <summary>
@@ -184,10 +187,13 @@ public static class ObservationBuilder
                 shipment.Route))
             .ToList();
 
-        var controlPoint = world.ControlPoint is { } point &&
-                           string.Equals(point.RegionId, viewer.RegionId, StringComparison.Ordinal)
-            ? ToObservedControlPoint(point)
-            : null;
+        var controlPoints = world.ControlPoints.Values
+            .Where(point => string.Equals(
+                point.RegionId,
+                viewer.RegionId,
+                StringComparison.Ordinal))
+            .Select(ToObservedControlPoint)
+            .ToList();
 
         return new Observation(
             world.Tick,
@@ -197,21 +203,27 @@ public static class ObservationBuilder
             shipments,
             energyShipments,
             viewer.Id.Value,
-            controlPoint);
+            controlPoints,
+            ToObservedMatch(world.Match));
     }
 
-    private static ObservedControlPoint? ToObservedControlPoint(ControlPointState? point) =>
-        point is null
+    private static ObservedControlPoint ToObservedControlPoint(ControlPointState point) =>
+        new(
+            point.Id,
+            point.RegionId,
+            point.Position,
+            point.RadiusMm,
+            point.HoldTicksRequired,
+            point.HoldingCivilizationId,
+            point.HoldTicks,
+            point.OwnerCivilizationId);
+
+    private static ObservedMatch? ToObservedMatch(MatchState? match) =>
+        match is null
             ? null
-            : new ObservedControlPoint(
-                point.Id,
-                point.RegionId,
-                point.Position,
-                point.RadiusMm,
-                point.HoldTicksRequired,
-                point.HoldingCivilizationId,
-                point.HoldTicks,
-                point.OwnerCivilizationId);
+            : new ObservedMatch(
+                match.Rules.CapturedPointsToWin,
+                match.WinnerCivilizationId);
 
     private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>
         new(

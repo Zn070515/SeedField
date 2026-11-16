@@ -74,7 +74,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 统一部署命令：`DeployCommand`/`UpgradeCommand` 经 `ExecuteDeploymentCommand`，产出部署/升级事件；工坊 UI 不再直接调用低层服务。
 - 存档 schema v2：接受 v1 并迁移；世界与游戏存档均有迁移测试。
 - 摧毁库存审计：`EntityInventoryLost` 与 `EnergyLostTotal`/`MaterialLostTotal` 进入事件、统计、存档与哈希。
-- 控制点目标：独占驻留计时、争夺/离开重置、占领事件与胜负状态；Godot HUD 与 `--capture-victory`。
+- 控制点目标：多控制点、独占驻留计时、争夺/离开重置、占领数量阈值胜负；Godot HUD 与 `--capture-victory`。
 
 ### 尚未实现
 
@@ -163,7 +163,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=8f50dd... mutated=d2aad6... after=8f50dd...`。
+- 实测：`SAVE_SMOKE ok=True before=f09576... mutated=d2903e... after=f09576...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -208,10 +208,11 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ### 5.10 控制点目标
 
-- 单控制点、可配置区域/半径/驻留 Tick；同一 Tick 只有一个文明在圈内才累计，争夺或离开清零。
-- 达到驻留时长后产生 `ControlPointCaptured` 并记录 owner；占领后继续沙盒，不强制结束世界。
-- 控制点状态进入观察（通过实体位置/目标状态）与存档/哈希；Godot HUD 显示 `RELAY · <civ> n/m`。
-- Godot 实测：A 在 Tick 57 占领 relay；`--capture-victory` 生成 `m0-victory.png`。
+- 多个控制点，每个可配置区域/位置/半径/驻留 Tick；同一 Tick 只有一个文明在圈内才累计，争夺或离开清零。
+- 达到驻留时长后产生 `ControlPointCaptured` 并记录 owner；达到 `MatchRules.CapturedPointsToWin` 后产生 `MatchEnded`。
+- 控制点/胜负状态进入观察、存档（schema v3）与哈希；设备只看到同区域控制点。
+- Godot HUD 绘制每个点与比分；`--capture-victory` 跑到比赛结束。
+- Godot 实测：A 在 Tick 51 占 2 点（west/center）获胜；`m0-victory.png`。
 
 ## 6. 本轮工程假设（均为可替换原型决策）
 
@@ -237,7 +238,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
 | 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
 | 活动区域无性能收益 | 非活动区仍跑被动系统，未真正离屏简化 | 后续加入分区 Tick 预算与增量加载 |
-| 只有一个控制点 | 不能验证多目标/区域级胜负与外交 | 后续加入多目标与场景胜负条件 |
+| 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
 | 跨文明通信未开放 | 无法验证协议、结盟或断联对抗 | 先完成路由权限与情报过滤 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |

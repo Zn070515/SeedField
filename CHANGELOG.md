@@ -20,7 +20,7 @@
 - 设备级观察/控制器：每实体独立知识边界，Godot 切片改用设备控制器。
 - 统一部署/升级命令：`DeployCommand` / `UpgradeCommand` 与领域事件。
 - 存档 schema v2，支持 v1 迁移；摧毁实体库存损失进入统计。
-- 控制点 PvE 目标：独占驻留占领、争夺重置、胜负事件与 HUD。
+- 多控制点 PvE 目标：独占驻留占领、争夺重置、占领数量阈值胜负、HUD 与存档 v3。
 - `.github` CI、依赖审查、Dependabot、Issue/PR 模板与提交规范。
 
 ### Changed
