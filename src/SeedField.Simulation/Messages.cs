@@ -1,0 +1,25 @@
+namespace SeedField.Simulation;
+
+/// <summary>
+/// A message committed to the world's delivery queue. It must remain in flight for at
+/// least one full tick; sending never delivers in the same tick.
+/// </summary>
+public sealed record MessageEnvelope(
+    long Id,
+    EntityId FromEntityId,
+    string FromCivilizationId,
+    string ToCivilizationId,
+    string Topic,
+    string Payload,
+    long SentTick,
+    long DeliverTick);
+
+/// <summary>A message that has reached the recipient civilization's inbox.</summary>
+public sealed record DeliveredMessage(
+    long Id,
+    EntityId FromEntityId,
+    string FromCivilizationId,
+    string Topic,
+    string Payload,
+    long SentTick,
+    long DeliveredTick);

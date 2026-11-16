@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+.vs/
+
+# Godot
+.godot/
+game/.godot/
+*.translation
+
+# IDE
+.idea/
+.vscode/
+
+# Local run artifacts
+logs/
+*.tmp
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

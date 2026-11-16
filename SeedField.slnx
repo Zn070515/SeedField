@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SeedField.Headless/SeedField.Headless.csproj" />
+    <Project Path="src/SeedField.Runtime.Js/SeedField.Runtime.Js.csproj" />
+    <Project Path="src/SeedField.Simulation/SeedField.Simulation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SeedField.Runtime.Js.Tests/SeedField.Runtime.Js.Tests.csproj" />
+    <Project Path="tests/SeedField.Simulation.Tests/SeedField.Simulation.Tests.csproj" />
+  </Folder>
+</Solution>

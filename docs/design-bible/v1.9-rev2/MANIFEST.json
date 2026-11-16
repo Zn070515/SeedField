@@ -1,0 +1,208 @@
+{
+  "project": "SEED FIELD / 种子域",
+  "design_baseline": "V1.9 Rev2",
+  "created": "2026-11-16",
+  "scope": "full commercial single-player game, not M0-only",
+  "language": "zh-CN",
+  "encoding": "UTF-8",
+  "file_count": 39,
+  "files": [
+    {
+      "path": "00-START-HERE/DECISION_REGISTER.md",
+      "size_bytes": 4522,
+      "sha256": "5baf847a6b5ae45dc5c6c7f6c5acfea6ed4f68058aceac766d416db1330041ab"
+    },
+    {
+      "path": "00-START-HERE/MASTER_GDD.md",
+      "size_bytes": 4771,
+      "sha256": "faa9fb0a95a838d70f1e2fd75d58291672fe95694d7a7b837c980da8ebd7c7e7"
+    },
+    {
+      "path": "01-PRODUCT/PLAYER_EXPERIENCE_AND_MODES.md",
+      "size_bytes": 3707,
+      "sha256": "0a4d84972b39802e9dc422aacdc32897ffa644575fdf69e6dc7c8ae675a460e3"
+    },
+    {
+      "path": "01-PRODUCT/PRODUCT_VISION_AND_AUDIENCE.md",
+      "size_bytes": 3253,
+      "sha256": "4d783dd0ee9f055e776123f8450caaf0e277f39fc6c4bbed754ca4e9766b272d"
+    },
+    {
+      "path": "02-WORLD/CIVILIZATIONS_AND_NARRATIVE.md",
+      "size_bytes": 3780,
+      "sha256": "b673c71406e4390de8078076a1ae8e5347fcc470089354bfb6ab3db7c9f9ec4e"
+    },
+    {
+      "path": "02-WORLD/WORLD_BIBLE.md",
+      "size_bytes": 4609,
+      "sha256": "cc90cd85aba314b6bc3a6247bbedd6dfa7cd5b92f5752a6f0d14033a31ca079b"
+    },
+    {
+      "path": "02-WORLD/WORLD_REGIONS_AND_TOPOLOGY.md",
+      "size_bytes": 2859,
+      "sha256": "45de5bd32f1747e014bed17351adf1d63e0a7387e5d7c783db524dc7310ca761"
+    },
+    {
+      "path": "03-GAMEPLAY/COMBAT_TACTICS_AND_MODULES.md",
+      "size_bytes": 3245,
+      "sha256": "df8c128099d0b4ceecf80976a3829a2e1f2cbf309326a60a9b03fb673b49ff00"
+    },
+    {
+      "path": "03-GAMEPLAY/CORE_LOOP_AND_RULES.md",
+      "size_bytes": 3759,
+      "sha256": "b2b7ed554ca0ef130d4b897fb18a234e17d4961d430636ade75f599463d288af"
+    },
+    {
+      "path": "03-GAMEPLAY/CORE_ZONE_RECOVERY_AND_FAILURE.md",
+      "size_bytes": 3466,
+      "sha256": "b08ca3966eacb812df7604570380192f75d15594182896a741116b3bea884eef"
+    },
+    {
+      "path": "03-GAMEPLAY/ECONOMY_ENERGY_MATERIALS_COMPUTE.md",
+      "size_bytes": 4042,
+      "sha256": "f7eaa6f1a39a1abc41f34bab6d05b0b0024ede93a042875591c391bfa2321b7b"
+    },
+    {
+      "path": "03-GAMEPLAY/FIVE_BRANCHES_TUTORIAL_AND_UNLOCKS.md",
+      "size_bytes": 3253,
+      "sha256": "d05d078c085f74101fa1f34618066d697a964cd3eaf5f994f2baf007fe46cad4"
+    },
+    {
+      "path": "03-GAMEPLAY/OFFLINE_PVE_CIVILIZATION_PACKAGES.md",
+      "size_bytes": 3725,
+      "sha256": "ba55e19907ead729f221f23a25f8bb6c2d759ec4365bb080faaa42940f61c524"
+    },
+    {
+      "path": "03-GAMEPLAY/PROGRAMMING_AND_AUTOMATION.md",
+      "size_bytes": 3792,
+      "sha256": "a2593123535a3a2461b7590f0df3bba2d509b024c8f466b91a97c7811d7b83f1"
+    },
+    {
+      "path": "03-GAMEPLAY/TECH_PROGRESSION_RESEARCH_ENDINGS.md",
+      "size_bytes": 2877,
+      "sha256": "87cb696dcc8420c957d497a8c1431785b903e3ac90768ad15de17e166c53e595"
+    },
+    {
+      "path": "03-GAMEPLAY/WORKSHOP_DEVICES_AND_DEPLOYMENT.md",
+      "size_bytes": 3198,
+      "sha256": "470ebe8968e29c6dd5671f2ef6d12a10f64660425fcc3bd512c317fe04d7f9d7"
+    },
+    {
+      "path": "04-TECH/ARCHITECTURE_AND_COMPONENTS.md",
+      "size_bytes": 4197,
+      "sha256": "a8947252ebe782c4c93c840eb5e60a17cbc377d51302ac66ff61336cf6cd3486"
+    },
+    {
+      "path": "04-TECH/JS_RUNTIME_SAFETY_AND_EDITOR.md",
+      "size_bytes": 3545,
+      "sha256": "94dd21335ffe9c8a7f796e2d51388b4f7ac85cc19b6f5f17bcc923cc853a9f84"
+    },
+    {
+      "path": "04-TECH/PERFORMANCE_TESTING_AND_QUALITY.md",
+      "size_bytes": 3478,
+      "sha256": "c8d57bdf1923e16346e5099ce463fb3aead46d45ba59d40e8d94993b495716af"
+    },
+    {
+      "path": "04-TECH/SCHEMAS_SAVES_AND_OPPONENT_FILES.md",
+      "size_bytes": 3688,
+      "sha256": "e7b9bface6e7fa570aaf7371a924b6555700d343fe7205d40d705780e72ee919"
+    },
+    {
+      "path": "04-TECH/SIMULATION_TICK_AND_DETERMINISM.md",
+      "size_bytes": 3556,
+      "sha256": "569c984cfad2dfb213d021f2036d766c52a45d3b3c271ad7cf947dfd569034ed"
+    },
+    {
+      "path": "05-PRESENTATION/ART_DIRECTION_AND_VFX.md",
+      "size_bytes": 2386,
+      "sha256": "8697e7d46ddd0179ab65e25facb4328f139fd8e1292e9d079192843c191b6e09"
+    },
+    {
+      "path": "05-PRESENTATION/UI_UX_AUDIO_AND_ACCESSIBILITY.md",
+      "size_bytes": 2985,
+      "sha256": "19f68f35375a98f7dcba65e57d8b6a785e208c34ae9fbb926ea153551540f5f2"
+    },
+    {
+      "path": "06-PRODUCTION/FULL_GAME_ROADMAP.md",
+      "size_bytes": 7196,
+      "sha256": "75afef529c68319f7f14a28165dfc1b0ab1540acf5a8fb3d4bfb9cef3b01a4a8"
+    },
+    {
+      "path": "06-PRODUCTION/RELEASE_AND_COMMERCIAL.md",
+      "size_bytes": 2555,
+      "sha256": "d53727413f1ecc616bb6f99095e04c8e7aba48535b4e1d844aa48c9127f4be57"
+    },
+    {
+      "path": "06-PRODUCTION/RISK_REGISTER_AND_SCOPE.md",
+      "size_bytes": 3242,
+      "sha256": "7ee51e8e9b9ecbdb72d8bef7079b9ee36ff9cb4313adf39c9f02f20cacb92234"
+    },
+    {
+      "path": "07-AGENT/ACCEPTANCE_TRACEABILITY.md",
+      "size_bytes": 2097,
+      "sha256": "efd3f1151f3bda8b71ffa2ab6e746035c894f68bf4448c0e0c2acd0a834758d1"
+    },
+    {
+      "path": "07-AGENT/COPY_PASTE_START_PROMPT.md",
+      "size_bytes": 2258,
+      "sha256": "993bdf77fecd804858b4b39d1761894dd6e350586be5401648d5fcc41d743f28"
+    },
+    {
+      "path": "07-AGENT/MASTER_HANDOFF.md",
+      "size_bytes": 4253,
+      "sha256": "344c35ce409dbe20e024467a33840c2b90f42fc7eb0379ddf5cfe478b1a9d47b"
+    },
+    {
+      "path": "07-AGENT/WORKSTREAMS_AND_FIRST_ACTIONS.md",
+      "size_bytes": 3415,
+      "sha256": "b38f0a5f7a4d357d11faa5fb0fe4307a96dded16c79437e4c88ed67447ddcce1"
+    },
+    {
+      "path": "08-APPENDIX/FINAL_REVIEW_CHECKLIST.md",
+      "size_bytes": 2651,
+      "sha256": "38c2b0bc1f48d3902a2671187ded0a113c447317d212f6117baa531d68154ccc"
+    },
+    {
+      "path": "08-APPENDIX/GLOSSARY.md",
+      "size_bytes": 2775,
+      "sha256": "b264d651035207eefcfe108286870ffc73b1461efd02f0b609f1525fe0ded4ec"
+    },
+    {
+      "path": "08-APPENDIX/OPEN_QUESTIONS_AND_ADRS.md",
+      "size_bytes": 3874,
+      "sha256": "9989d7ba8ea92509bce8dbd675b3d09def055e04339106cc37507b59a7e290d2"
+    },
+    {
+      "path": "08-APPENDIX/SCENARIO_TEST_CASES.md",
+      "size_bytes": 3459,
+      "sha256": "6d0f4fc40f7301857e0bd829b28668618bdd89385a9a4e2a7455d87ba0ead4bb"
+    },
+    {
+      "path": "08-APPENDIX/SOURCE_NOTES_AND_VERSION_HISTORY.md",
+      "size_bytes": 3028,
+      "sha256": "0563044a7832fe58e963e554e28cd5d206093a3ab3052fea6812565793aeeae0"
+    },
+    {
+      "path": "AGENTS.md",
+      "size_bytes": 3194,
+      "sha256": "f37b0209236e230b53065fd5eae21cc4acf7b1d45b90f75b5fef386b1e8485e5"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size_bytes": 1045,
+      "sha256": "e58781176088454ccc2010e89f0dffa8f0a3a9a71dd2faae908f36777ad1e514"
+    },
+    {
+      "path": "GOAL.md",
+      "size_bytes": 3339,
+      "sha256": "741fcaff227acecd12ebc26445cd295e4f42dfae3d0496778360f6b614388859"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 4379,
+      "sha256": "67a7cddaf6e2e268247b37c4d7e9f9413f0d4e72fa718d86062ca1602cec517a"
+    }
+  ],
+  "authoritative_decision_index": "00-START-HERE/DECISION_REGISTER.md",
+  "agent_entry": "07-AGENT/MASTER_HANDOFF.md"
+}
