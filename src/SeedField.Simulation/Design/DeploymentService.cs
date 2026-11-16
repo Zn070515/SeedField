@@ -36,6 +36,13 @@ public static class DeploymentService
                 "Deployment position is outside the region.");
         }
 
+        if (CoreProtection.IsProtectedFrom(world, regionId, civilizationId))
+        {
+            throw new BlueprintValidationException(
+                "CORE_PROTECTED",
+                $"Region '{regionId}' is a protected core region for another civilization.");
+        }
+
         if (blueprint.MaterialCost > 0 &&
             !region.TryConsumeMaterial(civilizationId, blueprint.MaterialCost))
         {

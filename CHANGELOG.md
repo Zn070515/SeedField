@@ -31,5 +31,6 @@
 - 校验意图发起文明，阻止控制器操控其他文明实体。
 - 攻击必须对目标有传感器可见性，隐藏目标统一返回 `TargetUnknown`，避免 ID 探测。
 - 增加语义审查记录：`docs/engineering/reviews/2026-11-16-semantic-review.md`。
+- 核心区保护：拒绝外文明部署、核心区行动与含外文明核心实体的存档。
 
 [Unreleased]: https://github.com/Zn070515/SeedField/commits/main

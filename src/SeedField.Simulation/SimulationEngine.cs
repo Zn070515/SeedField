@@ -300,6 +300,18 @@ public sealed class SimulationEngine
             return;
         }
 
+        if (CoreProtection.IsProtectedFrom(World, region.Id, entity.CivilizationId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.CoreProtected,
+                $"Region '{region.Id}' is a protected core region for another civilization.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
         if (!IsRegionActive(region.Id))
         {
             Reject(

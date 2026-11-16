@@ -102,6 +102,7 @@ public enum SimulationErrorCode
     NoRoute,
     NoBandwidth,
     RegionInactive,
+    CoreProtected,
     ComputeBudgetExceeded,
     CoreNotAvailable,
     DeploymentRejected,

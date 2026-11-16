@@ -380,6 +380,24 @@ public static class WorldSaveSerializer
             world.Cores.Add(core.CivilizationId, core);
         }
 
+        foreach (var region in world.Regions.Values)
+        {
+            if (!region.IsCoreRegion)
+            {
+                continue;
+            }
+
+            foreach (var entity in region.Entities.Values)
+            {
+                if (CoreProtection.IsProtectedFrom(world, region.Id, entity.CivilizationId))
+                {
+                    throw Invalid(
+                        "FOREIGN_ENTITY_IN_CORE",
+                        $"Entity '{entity.Id}' of '{entity.CivilizationId}' is inside a protected core region.");
+                }
+            }
+        }
+
         var maxEntityId = 0L;
         foreach (var entity in world.EnumerateEntities())
         {
