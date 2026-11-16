@@ -56,7 +56,7 @@ public static class DeploymentService
         }
     }
 
-    public static void ConsumeMaterial(
+    public static long ConsumeMaterial(
         WorldState world,
         DeviceBlueprint blueprint,
         string civilizationId,
@@ -80,6 +80,7 @@ public static class DeploymentService
         }
 
         world.Statistics.MaterialSpentTotal += blueprint.MaterialCost;
+        return blueprint.MaterialCost;
     }
 
     public static EntityState CreateInstance(

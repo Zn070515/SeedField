@@ -44,6 +44,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.MaterialLostTotal);
         Append(ref hash, world.Statistics.ConstructionsStartedTotal);
         Append(ref hash, world.Statistics.ConstructionsCompletedTotal);
+        Append(ref hash, world.Statistics.MaterialRefundedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -151,6 +152,7 @@ public static class WorldStateHasher
             Append(ref hash, order.Position.Y);
             Append(ref hash, order.StartTick);
             Append(ref hash, order.CompleteTick);
+            Append(ref hash, order.MaterialPaid);
         }
 
         var energyShipments = world.InTransitEnergy

@@ -94,7 +94,8 @@ public static class WorldSaveSerializer
                 world.Statistics.EnergyLostTotal,
                 world.Statistics.MaterialLostTotal,
                 world.Statistics.ConstructionsStartedTotal,
-                world.Statistics.ConstructionsCompletedTotal),
+                world.Statistics.ConstructionsCompletedTotal,
+                world.Statistics.MaterialRefundedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -154,7 +155,8 @@ public static class WorldSaveSerializer
                     order.Position.X,
                     order.Position.Y,
                     order.StartTick,
-                    order.CompleteTick))
+                    order.CompleteTick,
+                    order.MaterialPaid))
                 .ToArray(),
             world.NextConstructionOrderId);
     }
@@ -657,6 +659,7 @@ public static class WorldSaveSerializer
         foreach (var orderData in data.ConstructionOrders ?? Array.Empty<ConstructionOrderSaveData>())
         {
             if (orderData.Id <= 0 ||
+                orderData.MaterialPaid < 0 ||
                 orderData.CompleteTick <= orderData.StartTick ||
                 !world.Regions.TryGetValue(orderData.RegionId, out var orderRegion) ||
                 !orderRegion.Contains(new Vec2(orderData.X, orderData.Y)) ||
@@ -675,7 +678,8 @@ public static class WorldSaveSerializer
                 orderData.RegionId,
                 new Vec2(orderData.X, orderData.Y),
                 orderData.StartTick,
-                orderData.CompleteTick));
+                orderData.CompleteTick,
+                orderData.MaterialPaid));
             maxConstructionOrderId = Math.Max(maxConstructionOrderId, orderData.Id);
         }
 
@@ -897,6 +901,7 @@ public static class WorldSaveSerializer
         world.Statistics.MaterialLostTotal = statistics.MaterialLostTotal;
         world.Statistics.ConstructionsStartedTotal = statistics.ConstructionsStartedTotal;
         world.Statistics.ConstructionsCompletedTotal = statistics.ConstructionsCompletedTotal;
+        world.Statistics.MaterialRefundedTotal = statistics.MaterialRefundedTotal;
     }
 
     /// <summary>

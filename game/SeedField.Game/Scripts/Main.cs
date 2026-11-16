@@ -41,6 +41,7 @@ public partial class Main : Node2D
     private ControllerSlot _slotA = null!;
     private ControllerSlot _slotB = null!;
     private readonly List<DeviceControllerSlot> _deviceControllers = new();
+    private OpponentPackage _opponent = BuiltInOpponents.Skirmisher;
     private ProgramEditor _editor = null!;
     private CanvasLayer _editorLayer = null!;
     private ColorRect _editorDimmer = null!;
@@ -65,6 +66,10 @@ public partial class Main : Node2D
     {
         var arguments = OS.GetCmdlineArgs().Concat(OS.GetCmdlineUserArgs()).ToArray();
         GD.Print($"SEEDFIELD_READY args={string.Join(' ', arguments)}");
+
+        _opponent = arguments.Contains("--opponent-turtle")
+            ? BuiltInOpponents.Turtle
+            : BuiltInOpponents.Skirmisher;
 
         ResetScenario();
         BuildProgramEditor();
@@ -600,7 +605,7 @@ public partial class Main : Node2D
         _world = Scenarios.BuildWorld();
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
-        _slotB = new ControllerSlot("B", BuiltInOpponents.Skirmisher.ProgramSource);
+        _slotB = new ControllerSlot("B", _opponent.ProgramSource);
         RebuildDeviceControllers();
 
         _history.Clear();
@@ -1057,8 +1062,8 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 716),
-            $"OPPONENT {BuiltInOpponents.Skirmisher.Manifest.PackageId} " +
-            $"v{BuiltInOpponents.Skirmisher.Manifest.Version} · " +
+            $"OPPONENT {_opponent.Manifest.PackageId} " +
+            $"v{_opponent.Manifest.Version} · " +
             "SPACE pause · N step · F1 program · F2 workshop · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,

@@ -20,7 +20,7 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 93 passed
+SeedField.Simulation.Tests: 95 passed
 SeedField.Runtime.Js.Tests: 22 passed
 ```
 

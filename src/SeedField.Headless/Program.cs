@@ -42,6 +42,11 @@ internal static class Program
             return RunConstructionDemo();
         }
 
+        if (args.Contains("--construction-cancel"))
+        {
+            return RunConstructionCancelDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -272,6 +277,39 @@ internal static class Program
         Console.WriteLine(
             $"CONSTRUCTION completed tick={world.Tick} entity={entity?.Id} " +
             $"material={world.Regions["r0"].GetMaterial("A")} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunConstructionCancelDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 100)
+            .Build();
+        var blueprint = world.Workshop.Publish(new DeviceBlueprint(
+            "fabricator",
+            0,
+            "Fabricator",
+            20,
+            10,
+            Power: new PowerModule(1, 10),
+            MaterialCost: 20,
+            BuildTicks: 3));
+        var engine = new SimulationEngine(world);
+        engine.ExecuteDeploymentCommand(new DeployCommand("A", blueprint, "r0", new Vec2(100, 100)));
+        var orderId = world.ConstructionOrders.Single().Id;
+
+        var result = engine.ExecuteDeploymentCommand(new CancelConstructionCommand("A", orderId));
+
+        var ok = result.Success &&
+                 world.ConstructionOrders.Count == 0 &&
+                 world.Regions["r0"].GetMaterial("A") == 100 &&
+                 world.Statistics.MaterialRefundedTotal == 20;
+        Console.WriteLine(
+            $"CONSTRUCTION_CANCEL ok={ok} orders={world.ConstructionOrders.Count} " +
+            $"material={world.Regions["r0"].GetMaterial("A")} " +
+            $"refunded={world.Statistics.MaterialRefundedTotal}");
 
         return ok ? 0 : 1;
     }

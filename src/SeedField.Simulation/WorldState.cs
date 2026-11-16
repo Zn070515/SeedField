@@ -41,6 +41,8 @@ public sealed class SimulationStatistics
 
     public long MaterialLostTotal { get; internal set; }
 
+    public long MaterialRefundedTotal { get; internal set; }
+
     public long ConstructionsStartedTotal { get; internal set; }
 
     public long ConstructionsCompletedTotal { get; internal set; }

@@ -48,10 +48,10 @@
 | 设备级知识 | 每实体独立观察/控制器；只感知本设备传感器与目标区域消息；不再文明级融合 |
 | 工程收口 | 统一部署/升级命令、存档 schema v2 + v1 迁移、摧毁库存损失审计 |
 | PvE 目标 | 多控制点：独占驻留、争夺重置、占领数量达到阈值即胜负；HUD 与胜利截图 |
-| 通信/对手 | 跨文明消息要求目标区 Comm 端点；内置受信任对手包 Skirmisher/Turtle；第三方导入关闭 |
-| 建造/恢复 | `BuildTicks` 建造队列（先付 M，到期部署）；核心区恢复统一命令入口 |
+| 通信/对手 | 跨文明消息要求目标区 Comm 端点；内置受信任对手 Skirmisher/Turtle 可选；第三方导入关闭 |
+| 建造/恢复 | `BuildTicks` 队列（先付 M，到期部署，可取消退款）；核心区恢复统一命令入口 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 93 个仿真测试 + 22 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | 95 个仿真测试 + 22 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -77,12 +77,14 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --logis
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energy
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-load
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction-cancel
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
 godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
+godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
@@ -109,6 +111,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`review closeout`](docs/engineering/evidence/2026-11-16-semantic-review-closeout.md) | 设备级知识、部署命令、存档 v2、资源损失收口证据 |
 | [`control point`](docs/engineering/evidence/2026-11-16-control-point.md) | 控制点占领、争夺重置与胜利截图证据 |
 | [`four-track batch`](docs/engineering/evidence/2026-11-17-four-track-batch.md) | 跨文明通信、内置对手、恢复命令、建造队列证据 |
+| [`cancel & opponents`](docs/engineering/evidence/2026-11-17-cancel-and-opponents.md) | 取消退款、对手选择与协议边界证据 |
 
 ## 工程原则
 

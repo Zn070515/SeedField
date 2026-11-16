@@ -36,7 +36,8 @@ public sealed record ConstructionOrderSaveData(
     int X,
     int Y,
     long StartTick,
-    long CompleteTick);
+    long CompleteTick,
+    long MaterialPaid = 0);
 
 public sealed record MatchSaveData(
     int CapturedPointsToWin,
@@ -206,7 +207,8 @@ public sealed record StatisticsSaveData(
     long EnergyLostTotal = 0,
     long MaterialLostTotal = 0,
     long ConstructionsStartedTotal = 0,
-    long ConstructionsCompletedTotal = 0);
+    long ConstructionsCompletedTotal = 0,
+    long MaterialRefundedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

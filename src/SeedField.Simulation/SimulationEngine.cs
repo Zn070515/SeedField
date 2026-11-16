@@ -209,7 +209,7 @@ public sealed class SimulationEngine
 
                     if (deploy.Blueprint.BuildTicks > 0)
                     {
-                        DeploymentService.ConsumeMaterial(
+                        var materialPaid = DeploymentService.ConsumeMaterial(
                             World,
                             deploy.Blueprint,
                             deploy.CivilizationId,
@@ -225,7 +225,8 @@ public sealed class SimulationEngine
                             deploy.RegionId,
                             deploy.Position,
                             tick,
-                            completeTick));
+                            completeTick,
+                            materialPaid));
                         World.Statistics.ConstructionsStartedTotal += 1;
 
                         var queued = new ConstructionQueued(
@@ -269,6 +270,8 @@ public sealed class SimulationEngine
                 }
                 case UpgradeCommand upgrade:
                     return ExecuteUpgrade(upgrade, tick);
+                case CancelConstructionCommand cancel:
+                    return ExecuteCancelConstruction(cancel, tick);
                 default:
                     return new DeploymentCommandResult(
                         false,
@@ -409,6 +412,50 @@ public sealed class SimulationEngine
             SimulationErrorCode.None,
             $"Restored {blueprint.Name} v{blueprint.Version} from the seed core.",
             bootstrapEvent);
+    }
+
+    private DeploymentCommandResult ExecuteCancelConstruction(
+        CancelConstructionCommand cancel,
+        long tick)
+    {
+        var order = World.ConstructionOrders.FirstOrDefault(candidate =>
+            candidate.Id == cancel.OrderId);
+        if (order is null ||
+            !string.Equals(
+                order.CivilizationId,
+                cancel.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return new DeploymentCommandResult(
+                false,
+                null,
+                SimulationErrorCode.DeploymentRejected,
+                $"Construction order '{cancel.OrderId}' is not available to this civilization.",
+                Array.Empty<SimulationEvent>());
+        }
+
+        World.ConstructionOrders.Remove(order);
+
+        if (World.Regions.TryGetValue(order.RegionId, out var region))
+        {
+            region.AddMaterial(order.CivilizationId, order.MaterialPaid);
+        }
+
+        World.Statistics.MaterialRefundedTotal += order.MaterialPaid;
+
+        var cancelled = new ConstructionCancelled(
+            tick,
+            order.Id,
+            order.CivilizationId,
+            order.BlueprintId,
+            order.MaterialPaid);
+
+        return new DeploymentCommandResult(
+            true,
+            null,
+            SimulationErrorCode.None,
+            $"Cancelled order {order.Id}; refunded {order.MaterialPaid} M.",
+            new SimulationEvent[] { cancelled });
     }
 
     private DeploymentCommandResult ExecuteUpgrade(UpgradeCommand upgrade, long tick)

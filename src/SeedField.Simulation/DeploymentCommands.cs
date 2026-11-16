@@ -13,6 +13,10 @@ public sealed record UpgradeCommand(
     EntityId EntityId,
     DeviceBlueprint Blueprint) : DeploymentCommand(CivilizationId);
 
+public sealed record CancelConstructionCommand(
+    string CivilizationId,
+    long OrderId) : DeploymentCommand(CivilizationId);
+
 public sealed record DeploymentCommandResult(
     bool Success,
     EntityId? EntityId,

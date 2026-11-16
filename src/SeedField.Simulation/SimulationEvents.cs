@@ -148,6 +148,13 @@ public sealed record ConstructionQueued(
     Vec2 Position,
     long CompleteTick) : SimulationEvent(Tick);
 
+public sealed record ConstructionCancelled(
+    long Tick,
+    long OrderId,
+    string CivilizationId,
+    string BlueprintId,
+    long MaterialRefunded) : SimulationEvent(Tick);
+
 public sealed record ConstructionFailed(
     long Tick,
     long OrderId,

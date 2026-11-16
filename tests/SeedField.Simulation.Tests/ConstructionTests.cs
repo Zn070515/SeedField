@@ -35,6 +35,45 @@ public sealed class ConstructionTests
     }
 
     [Fact]
+    public void CancelRefundsMaterialAndPreventsDeployment()
+    {
+        var world = NewWorld();
+        var blueprint = world.Workshop.Publish(Blueprint(buildTicks: 3));
+        var engine = new SimulationEngine(world);
+        engine.ExecuteDeploymentCommand(new DeployCommand("A", blueprint, "r0", new Vec2(100, 100)));
+        var orderId = Assert.Single(world.ConstructionOrders).Id;
+
+        var result = engine.ExecuteDeploymentCommand(new CancelConstructionCommand(
+            "A",
+            orderId));
+
+        Assert.True(result.Success);
+        Assert.Empty(world.ConstructionOrders);
+        Assert.Equal(100, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(20, world.Statistics.MaterialRefundedTotal);
+        Assert.Single(result.Events.OfType<ConstructionCancelled>());
+
+        Step(engine, 3);
+        Assert.Empty(world.EnumerateEntities());
+    }
+
+    [Fact]
+    public void AnotherCivilizationCannotCancelTheOrder()
+    {
+        var world = NewWorld();
+        var blueprint = world.Workshop.Publish(Blueprint(buildTicks: 3));
+        var engine = new SimulationEngine(world);
+        engine.ExecuteDeploymentCommand(new DeployCommand("A", blueprint, "r0", new Vec2(100, 100)));
+        var orderId = Assert.Single(world.ConstructionOrders).Id;
+
+        var result = engine.ExecuteDeploymentCommand(new CancelConstructionCommand("B", orderId));
+
+        Assert.False(result.Success);
+        Assert.Single(world.ConstructionOrders);
+        Assert.Equal(80, world.Regions["r0"].GetMaterial("A"));
+    }
+
+    [Fact]
     public void SavePreservesConstructionOrder()
     {
         var world = NewWorld();

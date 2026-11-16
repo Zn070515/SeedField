@@ -12,4 +12,5 @@ public sealed record ConstructionOrder(
     string RegionId,
     Vec2 Position,
     long StartTick,
-    long CompleteTick);
+    long CompleteTick,
+    long MaterialPaid);
