@@ -22,6 +22,11 @@ internal static class Program
             return RunMultiRegionDemo();
         }
 
+        if (args.Contains("--logistics"))
+        {
+            return RunLogisticsDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -73,6 +78,50 @@ internal static class Program
         Console.WriteLine(
             $"MULTI_REGION delivered id={message.Id} tick={message.DeliveredTick} " +
             $"target={message.TargetRegionId} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunLogisticsDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 1_000, 1_000)
+            .AddRegion("r1", 1_000, 1_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 3)
+            .AddStock("r0", "A", 100)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Drive: new DriveModule(50, EnergyCostPerMove: 1)))
+            .Build();
+
+        var engine = new SimulationEngine(world);
+        var result = engine.Step(new Intent[]
+        {
+            new TransferMaterialIntent(new EntityId(1), "r1", 40),
+        });
+
+        var shipped = result.Events.OfType<MaterialShipped>().Single();
+        Console.WriteLine(
+            $"LOGISTICS shipped amount={shipped.Amount} arriveTick={shipped.ArriveTick} " +
+            $"source={world.Regions["r0"].GetMaterial("A")} target={world.Regions["r1"].GetMaterial("A")}");
+
+        while (world.Tick < shipped.ArriveTick)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
+
+        var source = world.Regions["r0"].GetMaterial("A");
+        var target = world.Regions["r1"].GetMaterial("A");
+        var ok = source == 60 && target == 40 && world.InTransitMaterial.Count == 0;
+        Console.WriteLine(
+            $"LOGISTICS arrived tick={world.Tick} source={source} target={target} ok={ok}");
 
         return ok ? 0 : 1;
     }

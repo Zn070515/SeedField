@@ -20,6 +20,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Tick);
         Append(ref hash, world.NextEntityId);
         Append(ref hash, world.NextMessageId);
+        Append(ref hash, world.NextShipmentId);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -31,6 +32,8 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EntitiesDestroyed);
         Append(ref hash, world.Statistics.MessagesDelivered);
         Append(ref hash, world.Statistics.MessagesExpired);
+        Append(ref hash, world.Statistics.MaterialShippedTotal);
+        Append(ref hash, world.Statistics.MaterialDeliveredTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -84,6 +87,21 @@ public static class WorldStateHasher
                     Append(ref hash, entity.State.StorageCapacity);
                 }
             }
+        }
+
+        var shipments = world.InTransitMaterial.OrderBy(shipment => shipment.Id).ToList();
+        Append(ref hash, shipments.Count);
+        foreach (var shipment in shipments)
+        {
+            Append(ref hash, shipment.Id);
+            Append(ref hash, shipment.FromEntityId.Value);
+            Append(ref hash, shipment.CivilizationId);
+            Append(ref hash, shipment.FromRegionId);
+            Append(ref hash, shipment.ToRegionId);
+            Append(ref hash, shipment.LinkId);
+            Append(ref hash, shipment.Amount);
+            Append(ref hash, shipment.SentTick);
+            Append(ref hash, shipment.ArriveTick);
         }
 
         Append(ref hash, world.Links.Count);

@@ -61,7 +61,27 @@ public static class ObservationBuilder
                 message.DeliveredTick))
             .ToList();
 
-        return new Observation(world.Tick, civilizationId, visible.Values.ToList(), messages);
+        var shipments = world.InTransitMaterial
+            .Where(shipment => string.Equals(
+                shipment.CivilizationId,
+                civilizationId,
+                StringComparison.Ordinal))
+            .OrderBy(shipment => shipment.Id)
+            .Select(shipment => new ObservedShipment(
+                shipment.Id,
+                shipment.FromRegionId,
+                shipment.ToRegionId,
+                shipment.Amount,
+                shipment.SentTick,
+                shipment.ArriveTick))
+            .ToList();
+
+        return new Observation(
+            world.Tick,
+            civilizationId,
+            visible.Values.ToList(),
+            messages,
+            shipments);
     }
 
     private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>

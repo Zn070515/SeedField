@@ -80,7 +80,9 @@ public static class WorldSaveSerializer
                 world.Statistics.DamageDealt,
                 world.Statistics.EntitiesDestroyed,
                 world.Statistics.MessagesDelivered,
-                world.Statistics.MessagesExpired),
+                world.Statistics.MessagesExpired,
+                world.Statistics.MaterialShippedTotal,
+                world.Statistics.MaterialDeliveredTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -89,7 +91,21 @@ public static class WorldSaveSerializer
                     link.RegionB,
                     link.LatencyTicks,
                     link.MessagesPerTick))
-                .ToArray());
+                .ToArray(),
+            world.InTransitMaterial
+                .OrderBy(shipment => shipment.Id)
+                .Select(shipment => new MaterialShipmentSaveData(
+                    shipment.Id,
+                    shipment.FromEntityId.Value,
+                    shipment.CivilizationId,
+                    shipment.FromRegionId,
+                    shipment.ToRegionId,
+                    shipment.LinkId,
+                    shipment.Amount,
+                    shipment.SentTick,
+                    shipment.ArriveTick))
+                .ToArray(),
+            world.NextShipmentId);
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -421,6 +437,54 @@ public static class WorldSaveSerializer
             throw Invalid("INVALID_NEXT_MESSAGE_ID", "NextMessageId must exceed every stored message id.");
         }
 
+        var maxShipmentId = 0L;
+        foreach (var shipmentData in data.MaterialShipments ?? Array.Empty<MaterialShipmentSaveData>())
+        {
+            if (shipmentData.Id <= 0 ||
+                shipmentData.Amount <= 0 ||
+                shipmentData.ArriveTick <= shipmentData.SentTick)
+            {
+                throw Invalid(
+                    "INVALID_SHIPMENT",
+                    $"Shipment '{shipmentData.Id}' has invalid id, amount or timing.");
+            }
+
+            if (!world.Regions.ContainsKey(shipmentData.FromRegionId) ||
+                !world.Regions.ContainsKey(shipmentData.ToRegionId) ||
+                !world.Links.TryGetValue(shipmentData.LinkId, out var shippingLink) ||
+                !shippingLink.Connects(shipmentData.FromRegionId) ||
+                !shippingLink.Connects(shipmentData.ToRegionId))
+            {
+                throw Invalid(
+                    "INVALID_SHIPMENT_ROUTE",
+                    $"Shipment '{shipmentData.Id}' references a missing region or link.");
+            }
+
+            world.InTransitMaterial.Add(new MaterialShipment(
+                shipmentData.Id,
+                new EntityId(shipmentData.FromEntityId),
+                shipmentData.CivilizationId,
+                shipmentData.FromRegionId,
+                shipmentData.ToRegionId,
+                shipmentData.LinkId,
+                shipmentData.Amount,
+                shipmentData.SentTick,
+                shipmentData.ArriveTick));
+            maxShipmentId = Math.Max(maxShipmentId, shipmentData.Id);
+        }
+
+        var nextShipmentId = data.NextShipmentId > 0
+            ? data.NextShipmentId
+            : maxShipmentId + 1;
+        if (nextShipmentId <= maxShipmentId)
+        {
+            throw Invalid(
+                "INVALID_NEXT_SHIPMENT_ID",
+                "NextShipmentId must exceed every stored shipment id.");
+        }
+
+        world.NextShipmentId = nextShipmentId;
+
         ApplyStatistics(world, data.Statistics);
         return world;
     }
@@ -612,6 +676,8 @@ public static class WorldSaveSerializer
         world.Statistics.EntitiesDestroyed = statistics.EntitiesDestroyed;
         world.Statistics.MessagesDelivered = statistics.MessagesDelivered;
         world.Statistics.MessagesExpired = statistics.MessagesExpired;
+        world.Statistics.MaterialShippedTotal = statistics.MaterialShippedTotal;
+        world.Statistics.MaterialDeliveredTotal = statistics.MaterialDeliveredTotal;
     }
 
     private static string ResolveTargetRegionId(

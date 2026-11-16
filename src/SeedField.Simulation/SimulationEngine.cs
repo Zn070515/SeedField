@@ -42,6 +42,7 @@ public sealed class SimulationEngine
         World.Tick = tick + 1;
 
         DeliverDueMessages(World.Tick, events);
+        DeliverDueMaterialShipments(World.Tick, events);
         RegenerateCores(World.Tick, events);
 
         return new TickResult(tick, events, results);
@@ -258,6 +259,9 @@ public sealed class SimulationEngine
                 break;
             case SendMessageIntent send:
                 ProcessSendMessage(entity, send, tick, events, results, bandwidthUsed, linkUsage);
+                break;
+            case TransferMaterialIntent transfer:
+                ProcessTransferMaterial(entity, region, transfer, tick, events, results);
                 break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
@@ -569,6 +573,145 @@ public sealed class SimulationEngine
             route.Count == 0 ? "local" : string.Join(">", route.Select(link => link.Id))));
 
         Accept(intent, $"Message {messageId} queued for tick {envelope.DeliverTick}.", results);
+    }
+
+    private void ProcessTransferMaterial(
+        EntityState entity,
+        RegionState sourceRegion,
+        TransferMaterialIntent intent,
+        long tick,
+        List<SimulationEvent> events,
+        List<IntentResult> results)
+    {
+        if (entity.Drive is null)
+        {
+            Reject(intent, SimulationErrorCode.NoDrive, "Entity has no drive module.", tick, events, results);
+            return;
+        }
+
+        if (intent.Amount <= 0)
+        {
+            Reject(intent, SimulationErrorCode.InvalidAction, "Transfer amount must be positive.", tick, events, results);
+            return;
+        }
+
+        if (string.Equals(intent.TargetRegionId, sourceRegion.Id, StringComparison.Ordinal))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.InvalidAction,
+                "Material transfer target must be a different region.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        if (!World.Regions.ContainsKey(intent.TargetRegionId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"Target region '{intent.TargetRegionId}' does not exist.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        var link = World.Links.Values
+            .Where(candidate =>
+                candidate.Connects(sourceRegion.Id) &&
+                candidate.Connects(intent.TargetRegionId))
+            .OrderBy(candidate => candidate.Id, StringComparer.Ordinal)
+            .FirstOrDefault();
+
+        if (link is null)
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"No direct link from '{sourceRegion.Id}' to '{intent.TargetRegionId}'.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        if (!sourceRegion.TryConsumeMaterial(entity.CivilizationId, intent.Amount))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.InsufficientMaterial,
+                $"Region '{sourceRegion.Id}' has {sourceRegion.GetMaterial(entity.CivilizationId)} M; " +
+                $"transfer needs {intent.Amount}.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        var shipmentId = World.NextShipmentId++;
+        var arriveTick = tick + Math.Max(1, link.LatencyTicks);
+        var shipment = new MaterialShipment(
+            shipmentId,
+            entity.Id,
+            entity.CivilizationId,
+            sourceRegion.Id,
+            intent.TargetRegionId,
+            link.Id,
+            intent.Amount,
+            tick,
+            arriveTick);
+
+        World.InTransitMaterial.Add(shipment);
+        World.Statistics.MaterialShippedTotal += intent.Amount;
+
+        events.Add(new MaterialShipped(
+            tick,
+            shipmentId,
+            entity.Id,
+            sourceRegion.Id,
+            intent.TargetRegionId,
+            intent.Amount,
+            arriveTick));
+
+        Accept(
+            intent,
+            $"Shipment {shipmentId} queued: {intent.Amount} M arrives at tick {arriveTick}.",
+            results);
+    }
+
+    private void DeliverDueMaterialShipments(long tick, List<SimulationEvent> events)
+    {
+        if (World.InTransitMaterial.Count == 0)
+        {
+            return;
+        }
+
+        var due = World.InTransitMaterial
+            .Where(shipment => shipment.ArriveTick <= tick)
+            .OrderBy(shipment => shipment.ArriveTick)
+            .ThenBy(shipment => shipment.Id)
+            .ToList();
+
+        foreach (var shipment in due)
+        {
+            World.InTransitMaterial.Remove(shipment);
+
+            if (!World.Regions.TryGetValue(shipment.ToRegionId, out var destination))
+            {
+                continue;
+            }
+
+            destination.AddMaterial(shipment.CivilizationId, shipment.Amount);
+            World.Statistics.MaterialDeliveredTotal += shipment.Amount;
+            events.Add(new MaterialArrived(
+                tick,
+                shipment.Id,
+                shipment.ToRegionId,
+                shipment.Amount));
+        }
     }
 
     private bool HasCommEndpoint(string regionId, string civilizationId) =>

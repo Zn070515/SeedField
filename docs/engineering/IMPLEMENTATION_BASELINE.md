@@ -64,12 +64,13 @@ tests/SeedField.Runtime.Js.Tests/
 - 蓝图/实例：不可变 `DeviceBlueprint` 版本、`DeploymentService.Deploy/Upgrade`、五分支覆盖判定；Godot `F2` 工坊面板。
 - 核心区最新产品：每个分支登记一个 `BlueprintId + Version`，可从核心区直接恢复。
 - E/C/B 约束：`PowerModule` 本地发电、`StateModule` 每 Tick 意图预算、`CommModule.BandwidthPerTick` 发信上限。
-- 多区域通信：显式 `RegionLink`、确定性 BFS 路由、跨区延迟、链路带宽与目标区域校验。
+- 多区域通信：显式 `RegionLink`、双向 BFS 路由、跨区延迟、链路带宽与目标区域校验。
+- 跨区物流：`TransferMaterialIntent` 从本地库存发货，经直接链路延迟到达目标区域库存；在途物资不可用。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 跨区物流/能源传输、区域加载/卸载、跨文明通信。
+- 跨区能源传输、区域加载/卸载、跨文明通信。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -153,7 +154,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=ef6618... mutated=cd95ff... after=ef6618...`。
+- 实测：`SAVE_SMOKE ok=True before=7c74a5... mutated=e89d04... after=7c74a5...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -163,6 +164,13 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - 总延迟 = Comm 延迟 + 路径链路延迟之和。
 - 链路容量在发送验证阶段检查，成功后才计入本 Tick 用量。
 - Headless 实测：`r0 → r1(2t) → r2(3t)` + Comm 1t → `deliverTick=6`，目标区域与投递 Tick 均正确。
+
+### 5.6 跨区材料物流
+
+- `TransferMaterialIntent`：需要运输单位有 `Drive`、源区域库存足够、两区存在直接链路。
+- 发货立刻扣源库存；`ArriveTick = 发送 Tick + 链路延迟`，在途物资不可用于目标区制造。
+- 到达时写入目标区域该文明库存，产生 `MaterialArrived`；全程进入哈希与存档。
+- Headless 实测：100 M 库存发 40 M，`arriveTick=3`；到达前源 60/目标 0，到达后目标 40。
 
 ## 6. 本轮工程假设（均为可替换原型决策）
 
@@ -174,6 +182,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 6. 核心区复建为脚本化 API，不是正式建造 UI。
 7. 多区域链路延迟/带宽是场景配置；BFS 以跳数为序、链路 ID 破同分；`MessagesPerTick=0` 表示不限。
 8. 跨区消息只允许同文明，且目标区域必须有己方 Comm 端点；跨文明路由尚未开放。
+9. 材料运输只支持直接链路、无运输单位实体位置/油耗建模；链路同时承载消息与物资，尚未拆分能力。
 
 ## 7. 风险与阻塞
 
@@ -182,7 +191,8 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | Godot 画面仍为原型绘制 | 不能作为商店或正式美术验收 | 当前截图只证明事件可视化链路；正式美术、相机/UI 与动画需后续迭代 |
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
-| 跨区物流/能源未建模 | 只能验证通信因果，不能验证物资/电力跨区 | 下一阶段加入显式运输与能源链路 |
+| 跨区物流仅直接链路 | 不能验证多跳运输/中转仓储 | 后续加入多跳物流与中转容量 |
+| 跨区能源未建模 | 只能验证物资与信息跨区 | 后续加入显式供能链路与本地电网 |
 | 区域加载/卸载未实现 | 长期多区域世界的性能与一致性未验证 | 后续加入离屏推进与加载回归 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
 | 跨文明通信未开放 | 无法验证协议、结盟或断联对抗 | 先完成路由权限与情报过滤 |
@@ -190,7 +200,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ## 8. 下一步（按依赖顺序）
 
-1. 跨区物流与能源：显式运输队列、跨区供能/断供、区域加载/卸载一致性。
+1. 跨区能源与多跳物流：显式供能链路、断供、运输中转与区域加载一致性。
 2. 跨文明协议与 PvE：目标区域权限、情报过滤、内置离线对手。
 3. 经济闭环：制造队列/时间与断供/断联诊断。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。

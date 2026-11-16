@@ -24,6 +24,10 @@ public sealed class SimulationStatistics
     public long MessagesDelivered { get; internal set; }
 
     public long MessagesExpired { get; internal set; }
+
+    public long MaterialShippedTotal { get; internal set; }
+
+    public long MaterialDeliveredTotal { get; internal set; }
 }
 
 /// <summary>
@@ -38,6 +42,8 @@ public sealed class WorldState
 
     public long NextMessageId { get; internal set; } = 1;
 
+    public long NextShipmentId { get; internal set; } = 1;
+
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Explicit bidirectional region links.</summary>
@@ -49,6 +55,8 @@ public sealed class WorldState
     public WorkshopService Workshop { get; } = new();
 
     public List<MessageEnvelope> InFlightMessages { get; } = new();
+
+    public List<MaterialShipment> InTransitMaterial { get; } = new();
 
     /// <summary>Delivered messages per civilization, in delivery order.</summary>
     public SortedDictionary<string, List<DeliveredMessage>> Inboxes { get; } = new(StringComparer.Ordinal);

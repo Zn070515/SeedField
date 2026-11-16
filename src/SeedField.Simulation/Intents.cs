@@ -6,6 +6,7 @@ public enum IntentKind
     Attack = 1,
     SendMessage = 2,
     Wait = 3,
+    TransferMaterial = 4,
 }
 
 /// <summary>
@@ -40,6 +41,18 @@ public sealed record SendMessageIntent(
 public sealed record WaitIntent(EntityId EntityId) : Intent(EntityId)
 {
     public override IntentKind Kind => IntentKind.Wait;
+}
+
+/// <summary>
+/// Ships material from the sender's region stock to an adjacent region. The shipment
+/// spends one direct link's latency in transit before it is usable at the destination.
+/// </summary>
+public sealed record TransferMaterialIntent(
+    EntityId EntityId,
+    string TargetRegionId,
+    long Amount) : Intent(EntityId)
+{
+    public override IntentKind Kind => IntentKind.TransferMaterial;
 }
 
 /// <summary>Stable error codes surfaced both to diagnostics and to the UI.</summary>

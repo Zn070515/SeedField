@@ -23,8 +23,17 @@ public sealed record ObservedMessage(
     long SentTick,
     long DeliveredTick);
 
+public sealed record ObservedShipment(
+    long ShipmentId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long SentTick,
+    long ArriveTick);
+
 public sealed record Observation(
     long Tick,
     string CivilizationId,
     IReadOnlyList<ObservedEntity> Entities,
-    IReadOnlyList<ObservedMessage> Messages);
+    IReadOnlyList<ObservedMessage> Messages,
+    IReadOnlyList<ObservedShipment> Shipments);

@@ -55,6 +55,21 @@ public sealed record MessageExpired(
     string CivilizationId,
     string Reason) : SimulationEvent(Tick);
 
+public sealed record MaterialShipped(
+    long Tick,
+    long ShipmentId,
+    EntityId FromEntityId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long ArriveTick) : SimulationEvent(Tick);
+
+public sealed record MaterialArrived(
+    long Tick,
+    long ShipmentId,
+    string ToRegionId,
+    long Amount) : SimulationEvent(Tick);
+
 public sealed record IntentRejected(
     long Tick,
     EntityId EntityId,

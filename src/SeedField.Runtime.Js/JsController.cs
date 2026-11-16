@@ -223,6 +223,23 @@ public sealed class JsController : IDisposable
                 intent = new SendMessageIntent(entityId, toCiv, topic, payload, targetRegionId);
                 return true;
 
+            case "transfer":
+                if (!TryGetString(element, "targetRegionId", out var transferRegion) ||
+                    string.IsNullOrWhiteSpace(transferRegion))
+                {
+                    error = "Transfer intent needs string 'targetRegionId'.";
+                    return false;
+                }
+
+                if (!TryGetInt64(element, "amount", out var amount) || amount <= 0)
+                {
+                    error = "Transfer intent needs positive integer 'amount'.";
+                    return false;
+                }
+
+                intent = new TransferMaterialIntent(entityId, transferRegion, amount);
+                return true;
+
             case "wait":
                 intent = new WaitIntent(entityId);
                 return true;
@@ -321,13 +338,29 @@ public sealed class JsController : IDisposable
                     message.Topic,
                     message.Payload,
                     message.SentTick,
-                    message.DeliveredTick))]);
+                    message.DeliveredTick))],
+                [.. observation.Shipments.Select(shipment => new ShipmentDto(
+                    shipment.ShipmentId,
+                    shipment.FromRegionId,
+                    shipment.ToRegionId,
+                    shipment.Amount,
+                    shipment.SentTick,
+                    shipment.ArriveTick))]);
 
         private sealed record ObservationDto(
             long Tick,
             string CivilizationId,
             List<EntityDto> Entities,
-            List<MessageDto> Messages);
+            List<MessageDto> Messages,
+            List<ShipmentDto> Shipments);
+
+        private sealed record ShipmentDto(
+            long ShipmentId,
+            string FromRegionId,
+            string ToRegionId,
+            long Amount,
+            long SentTick,
+            long ArriveTick);
 
         private sealed record EntityDto(
             long EntityId,

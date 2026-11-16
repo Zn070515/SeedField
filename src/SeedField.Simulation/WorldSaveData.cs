@@ -16,7 +16,9 @@ public sealed record WorldSaveData(
     InboxSaveData[] Inboxes,
     StatisticsSaveData Statistics,
     BlueprintSaveData[]? Blueprints = null,
-    LinkSaveData[]? Links = null);
+    LinkSaveData[]? Links = null,
+    MaterialShipmentSaveData[]? MaterialShipments = null,
+    long NextShipmentId = 0);
 
 public sealed record LinkSaveData(
     string Id,
@@ -24,6 +26,17 @@ public sealed record LinkSaveData(
     string RegionB,
     int LatencyTicks,
     int MessagesPerTick);
+
+public sealed record MaterialShipmentSaveData(
+    long Id,
+    long FromEntityId,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    string LinkId,
+    long Amount,
+    long SentTick,
+    long ArriveTick);
 
 public sealed record RegionSaveData(
     string Id,
@@ -136,7 +149,9 @@ public sealed record StatisticsSaveData(
     long DamageDealt,
     long EntitiesDestroyed,
     long MessagesDelivered,
-    long MessagesExpired = 0);
+    long MessagesExpired = 0,
+    long MaterialShippedTotal = 0,
+    long MaterialDeliveredTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

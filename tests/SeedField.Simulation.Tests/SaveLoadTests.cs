@@ -95,6 +95,30 @@ public sealed class SaveLoadTests
     }
 
     [Fact]
+    public void RegionArrayOrderDoesNotAffectLoadedHash()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("b", 1_000, 1_000)
+            .AddRegion("a", 1_000, 1_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "b",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 10,
+                EnergyCapacity: 10,
+                Material: 0))
+            .Build();
+
+        var data = WorldSaveSerializer.ToData(world);
+        var reversed = data with { Regions = data.Regions.Reverse().ToArray() };
+        var loaded = WorldSaveSerializer.FromData(reversed);
+
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+    }
+
+    [Fact]
     public void SaveRejectsUnsupportedSchemaVersion()
     {
         var json = WorldSaveSerializer.Save(TestWorlds.CombatPair());
