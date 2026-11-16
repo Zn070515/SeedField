@@ -28,5 +28,8 @@
 
 - 消息投递测试按逻辑 Tick 断言，避免把“同一 StepResult”误判为同 Tick 到达。
 - 重建 Godot 引用的仿真程序集，避免继续运行旧 DLL。
+- 校验意图发起文明，阻止控制器操控其他文明实体。
+- 攻击必须对目标有传感器可见性，隐藏目标统一返回 `TargetUnknown`，避免 ID 探测。
+- 增加语义审查记录：`docs/engineering/reviews/2026-11-16-semantic-review.md`。
 
 [Unreleased]: https://github.com/Zn070515/SeedField/commits/main

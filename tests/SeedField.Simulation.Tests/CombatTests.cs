@@ -9,7 +9,7 @@ public sealed class CombatTests
     {
         var world = new WorldBuilder()
             .AddRegion("r0", 20_000, 20_000)
-            .AddEntity(Attacker(new Vec2(100, 100), range: 1_000))
+            .AddEntity(Attacker(new Vec2(100, 100), range: 1_000, sensorRange: 20_000))
             .AddEntity(Target(new Vec2(9_000, 100)))
             .Build();
 
@@ -22,6 +22,35 @@ public sealed class CombatTests
         Assert.Equal(SimulationErrorCode.OutOfRange, Assert.Single(result.IntentResults).ErrorCode);
         Assert.Empty(result.Events.OfType<ShotFired>());
         Assert.Equal(100, world.FindEntity(new EntityId(2))!.Health);
+    }
+
+    [Fact]
+    public void AttackAgainstAnUnsensedTargetIsRejected()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 20_000, 20_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 100,
+                Energy: 1_000,
+                EnergyCapacity: 1_000,
+                Material: 0,
+                Sensor: new SensorModule(100),
+                Weapon: new WeaponModule(10_000, Damage: 10, EnergyCost: 1, CooldownTicks: 0)))
+            .AddEntity(Target(new Vec2(5_000, 100)))
+            .Build();
+
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+
+        Assert.Equal(SimulationErrorCode.TargetUnknown, Assert.Single(result.IntentResults).ErrorCode);
+        Assert.Equal(100, world.FindEntity(new EntityId(2))!.Health);
+        Assert.Empty(result.Events.OfType<ShotFired>());
     }
 
     [Fact]
@@ -97,7 +126,8 @@ public sealed class CombatTests
         Vec2 position,
         int range,
         int damage = 10,
-        int cooldownTicks = 0) =>
+        int cooldownTicks = 0,
+        int? sensorRange = null) =>
         new(
             new EntityId(1),
             "A",
@@ -107,7 +137,7 @@ public sealed class CombatTests
             Energy: 1_000,
             EnergyCapacity: 1_000,
             Material: 0,
-            Sensor: new SensorModule(range),
+            Sensor: new SensorModule(sensorRange ?? range),
             Weapon: new WeaponModule(range, damage, EnergyCost: 5, cooldownTicks));
 
     private static EntityDefinition Target(Vec2 position) =>

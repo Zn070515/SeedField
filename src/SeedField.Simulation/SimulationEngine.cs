@@ -285,6 +285,21 @@ public sealed class SimulationEngine
             return;
         }
 
+        if (intent.IssuerCivilizationId is { } issuer &&
+            !string.Equals(issuer, entity.CivilizationId, StringComparison.Ordinal))
+        {
+            // Deliberately identical to "unknown entity" so a controller cannot probe
+            // for foreign ids by observing different rejection codes.
+            Reject(
+                intent,
+                SimulationErrorCode.UnknownEntity,
+                "Entity is not available to this controller.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
         if (!IsRegionActive(region.Id))
         {
             Reject(
@@ -436,6 +451,13 @@ public sealed class SimulationEngine
         if (target is null || targetRegion is null || targetRegion.Id != region.Id)
         {
             Reject(intent, SimulationErrorCode.TargetUnknown, "Target is not present in this region.", tick, events, results);
+            return;
+        }
+
+        if (!VisibilityRules.IsVisibleTo(World, entity.CivilizationId, target))
+        {
+            // Same code as a missing target: guessing an id must not reveal existence.
+            Reject(intent, SimulationErrorCode.TargetUnknown, "Target is not visible.", tick, events, results);
             return;
         }
 

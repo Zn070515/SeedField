@@ -38,7 +38,7 @@ public static class ObservationBuilder
                         continue;
                     }
 
-                    if (!own.Position.IsWithinRange(candidate.Position, sensorRange))
+                    if (!VisibilityRules.IsSensedBy(own, candidate))
                     {
                         continue;
                     }

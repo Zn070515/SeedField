@@ -88,7 +88,7 @@ public sealed class JsController : IDisposable
         {
             var result = _engine.Invoke("__seedfield_run", observationJson);
             var resultJson = result.AsString();
-            return ParseDecision(resultJson);
+            return ParseDecision(resultJson, CivilizationId);
         }
         catch (TimeoutException exception)
         {
@@ -112,7 +112,7 @@ public sealed class JsController : IDisposable
         }
     }
 
-    private static ControllerDecision ParseDecision(string json)
+    private static ControllerDecision ParseDecision(string json, string civilizationId)
     {
         JsonDocument document;
         try
@@ -139,7 +139,7 @@ public sealed class JsController : IDisposable
 
             foreach (var element in root.EnumerateArray())
             {
-                if (TryParseIntent(element, out var intent, out var error))
+                if (TryParseIntent(element, civilizationId, out var intent, out var error))
                 {
                     intents.Add(intent!);
                 }
@@ -153,7 +153,11 @@ public sealed class JsController : IDisposable
         }
     }
 
-    private static bool TryParseIntent(JsonElement element, out Intent? intent, out string? error)
+    private static bool TryParseIntent(
+        JsonElement element,
+        string civilizationId,
+        out Intent? intent,
+        out string? error)
     {
         intent = null;
         error = null;
@@ -187,7 +191,10 @@ public sealed class JsController : IDisposable
                     return false;
                 }
 
-                intent = new MoveIntent(entityId, target);
+                intent = new MoveIntent(entityId, target)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "attack":
@@ -197,7 +204,10 @@ public sealed class JsController : IDisposable
                     return false;
                 }
 
-                intent = new AttackIntent(entityId, new EntityId(targetId));
+                intent = new AttackIntent(entityId, new EntityId(targetId))
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "send":
@@ -220,7 +230,10 @@ public sealed class JsController : IDisposable
                     ? targetRegion
                     : null;
 
-                intent = new SendMessageIntent(entityId, toCiv, topic, payload, targetRegionId);
+                intent = new SendMessageIntent(entityId, toCiv, topic, payload, targetRegionId)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "transfer":
@@ -237,7 +250,10 @@ public sealed class JsController : IDisposable
                     return false;
                 }
 
-                intent = new TransferMaterialIntent(entityId, transferRegion, amount);
+                intent = new TransferMaterialIntent(entityId, transferRegion, amount)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "sendEnergy":
@@ -250,7 +266,10 @@ public sealed class JsController : IDisposable
                 var energyTarget = TryGetString(element, "targetRegionId", out var energyTargetRegion)
                     ? energyTargetRegion
                     : null;
-                intent = new SendEnergyIntent(entityId, energyAmount, energyTarget);
+                intent = new SendEnergyIntent(entityId, energyAmount, energyTarget)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "drawEnergy":
@@ -260,11 +279,17 @@ public sealed class JsController : IDisposable
                     return false;
                 }
 
-                intent = new DrawEnergyIntent(entityId, drawAmount);
+                intent = new DrawEnergyIntent(entityId, drawAmount)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             case "wait":
-                intent = new WaitIntent(entityId);
+                intent = new WaitIntent(entityId)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
                 return true;
 
             default:

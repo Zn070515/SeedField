@@ -38,7 +38,7 @@
 | 项目 | 说明 |
 |---|---|
 | 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
-| 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
+| 仿真核心 | 固定 Tick、意图归属/可见性校验、观察过滤、E/M、通信、直接交火、核心区保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
 | 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
@@ -46,7 +46,7 @@
 | 跨区能源 | 区域电网库存；实体可存入/抽取；跨区运输带延迟与链路能源容量 |
 | 区域加载 | 引擎级活动区域：非活动区拒绝意图，被动系统继续运行；活动集不写入存档 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 66 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；截图与跨区/物流/能源/区域演示已提交；CI 构建/测试/提交规范 |
+| 验证 | 67 个仿真测试 + 14 个 Jint 测试通过；600 Tick 双跑哈希一致；截图与跨区/物流/能源/区域演示已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -97,6 +97,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`material logistics`](docs/engineering/evidence/2026-11-16-material-logistics.md) | 跨区材料运输、在途与到达证据 |
 | [`cross-region energy`](docs/engineering/evidence/2026-11-16-energy-grid.md) | 区域电网、抽取/存入、跨区运输证据 |
 | [`region activation`](docs/engineering/evidence/2026-11-16-region-activation.md) | 活动区域、意图 gating 与被动系统连续性证据 |
+| [`semantic review`](docs/engineering/reviews/2026-11-16-semantic-review.md) | 实现 vs 设计基线的语义审查与未闭合缺口 |
 
 ## 工程原则
 

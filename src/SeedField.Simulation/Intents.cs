@@ -18,6 +18,13 @@ public enum IntentKind
 public abstract record Intent(EntityId EntityId)
 {
     public abstract IntentKind Kind { get; }
+
+    /// <summary>
+    /// Issuer stamped by the controller runtime. Untrusted controllers always set it;
+    /// the engine refuses intents that target another civilization's entity.
+    /// Trusted host/test callers may leave it null.
+    /// </summary>
+    public string? IssuerCivilizationId { get; init; }
 }
 
 public sealed record MoveIntent(EntityId EntityId, Vec2 Target) : Intent(EntityId)
