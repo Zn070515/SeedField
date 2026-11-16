@@ -159,7 +159,8 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 - `RegionLink` 是显式双向链路，带 `LatencyTicks` 与可选的每 Tick 消息上限。
 - 跨区消息要求：目标区域存在、目标区域有己方 Comm 端点、存在链路路径。
-- 路由为确定性 BFS（按链路 ID 排序）；总延迟 = Comm 延迟 + 路径链路延迟之和。
+- 路由为双向 BFS：每层扩展较小 frontier，同规模时正向优先；命中后反转正向半段并拼接反向半段。
+- 总延迟 = Comm 延迟 + 路径链路延迟之和。
 - 链路容量在发送验证阶段检查，成功后才计入本 Tick 用量。
 - Headless 实测：`r0 → r1(2t) → r2(3t)` + Comm 1t → `deliverTick=6`，目标区域与投递 Tick 均正确。
 

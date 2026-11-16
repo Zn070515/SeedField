@@ -59,7 +59,7 @@ internal static class Program
         var queued = send.Events.OfType<MessageQueued>().Single();
         Console.WriteLine(
             $"MULTI_REGION queued id={queued.MessageId} sentTick={queued.Tick} " +
-            $"deliverTick={queued.DeliverTick} target={queued.TargetRegionId}");
+            $"deliverTick={queued.DeliverTick} target={queued.TargetRegionId} route={queued.Route}");
 
         while (world.Tick < queued.DeliverTick)
         {
@@ -67,7 +67,9 @@ internal static class Program
         }
 
         var message = world.GetInbox("A").Single();
-        var ok = message.TargetRegionId == "r2" && message.DeliveredTick == 6;
+        var ok = message.TargetRegionId == "r2" &&
+                 message.DeliveredTick == 6 &&
+                 queued.Route == "l01>l12";
         Console.WriteLine(
             $"MULTI_REGION delivered id={message.Id} tick={message.DeliveredTick} " +
             $"target={message.TargetRegionId} ok={ok}");

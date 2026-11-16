@@ -565,7 +565,8 @@ public sealed class SimulationEngine
             targetRegionId,
             intent.Topic,
             envelope.DeliverTick,
-            cost));
+            cost,
+            route.Count == 0 ? "local" : string.Join(">", route.Select(link => link.Id))));
 
         Accept(intent, $"Message {messageId} queued for tick {envelope.DeliverTick}.", results);
     }
@@ -576,8 +577,9 @@ public sealed class SimulationEngine
             entity.Comm is not null);
 
     /// <summary>
-    /// Breadth-first route with deterministic link-id ordering. Ties therefore follow
-    /// the lowest link id, not latency; latency is summed over the chosen path.
+    /// Bidirectional BFS. Each level is expanded from the smaller frontier so dense
+    /// graphs do not blow up one side. Neighbour order is deterministic by link id.
+    /// On meeting, the forward half is reversed and the backward half is appended.
     /// </summary>
     private IReadOnlyList<RegionLink>? FindMessagePath(string sourceRegionId, string targetRegionId)
     {
@@ -586,35 +588,108 @@ public sealed class SimulationEngine
             return Array.Empty<RegionLink>();
         }
 
-        var visited = new HashSet<string>(StringComparer.Ordinal) { sourceRegionId };
-        var queue = new Queue<(string RegionId, List<RegionLink> Path)>();
-        queue.Enqueue((sourceRegionId, new List<RegionLink>()));
+        var forwardVisited = new HashSet<string>(StringComparer.Ordinal) { sourceRegionId };
+        var backwardVisited = new HashSet<string>(StringComparer.Ordinal) { targetRegionId };
+        var forwardFrontier = new List<string> { sourceRegionId };
+        var backwardFrontier = new List<string> { targetRegionId };
+        var forwardParents =
+            new Dictionary<string, (string Parent, RegionLink Link)>(StringComparer.Ordinal);
+        var backwardParents =
+            new Dictionary<string, (string Next, RegionLink Link)>(StringComparer.Ordinal);
 
-        while (queue.Count > 0)
+        while (forwardFrontier.Count > 0 && backwardFrontier.Count > 0)
         {
-            var (regionId, path) = queue.Dequeue();
+            var expandForward = forwardFrontier.Count <= backwardFrontier.Count;
+            var meeting = expandForward
+                ? ExpandFrontier(
+                    forwardFrontier,
+                    forwardVisited,
+                    backwardVisited,
+                    forwardParents)
+                : ExpandFrontier(
+                    backwardFrontier,
+                    backwardVisited,
+                    forwardVisited,
+                    backwardParents);
 
+            if (meeting is not null)
+            {
+                return BuildPath(
+                    meeting,
+                    sourceRegionId,
+                    targetRegionId,
+                    forwardParents,
+                    backwardParents);
+            }
+        }
+
+        return null;
+    }
+
+    private string? ExpandFrontier(
+        List<string> frontier,
+        HashSet<string> ownVisited,
+        HashSet<string> otherVisited,
+        Dictionary<string, (string Parent, RegionLink Link)> parents)
+    {
+        var nextFrontier = new List<string>();
+
+        foreach (var regionId in frontier)
+        {
             foreach (var link in World.Links.Values
                          .Where(link => link.Connects(regionId))
                          .OrderBy(link => link.Id, StringComparer.Ordinal))
             {
                 var next = link.Other(regionId);
-                if (!visited.Add(next))
+                if (!ownVisited.Add(next))
                 {
                     continue;
                 }
 
-                var nextPath = new List<RegionLink>(path) { link };
-                if (string.Equals(next, targetRegionId, StringComparison.Ordinal))
+                parents[next] = (regionId, link);
+
+                if (otherVisited.Contains(next))
                 {
-                    return nextPath;
+                    return next;
                 }
 
-                queue.Enqueue((next, nextPath));
+                nextFrontier.Add(next);
             }
         }
 
+        frontier.Clear();
+        frontier.AddRange(nextFrontier);
         return null;
+    }
+
+    private static IReadOnlyList<RegionLink> BuildPath(
+        string meetingRegionId,
+        string sourceRegionId,
+        string targetRegionId,
+        Dictionary<string, (string Parent, RegionLink Link)> forwardParents,
+        Dictionary<string, (string Next, RegionLink Link)> backwardParents)
+    {
+        var path = new List<RegionLink>();
+
+        var current = meetingRegionId;
+        while (!string.Equals(current, sourceRegionId, StringComparison.Ordinal))
+        {
+            var parent = forwardParents[current];
+            path.Add(parent.Link);
+            current = parent.Parent;
+        }
+
+        path.Reverse();
+
+        current = meetingRegionId;
+        while (!string.Equals(current, targetRegionId, StringComparison.Ordinal))
+        {
+            var next = backwardParents[current];
+            path.Add(next.Link);
+            current = next.Next;
+        }
+
+        return path;
     }
 
     private void DeliverDueMessages(long tick, List<SimulationEvent> events)

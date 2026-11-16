@@ -22,6 +22,7 @@ public sealed class MultiRegionTests
         var queued = Assert.Single(result.Events.OfType<MessageQueued>());
         Assert.Equal(4, queued.DeliverTick); // comm 1 + link 3
         Assert.Equal("r1", queued.TargetRegionId);
+        Assert.Equal("l01", queued.Route);
         Assert.Empty(world.GetInbox("A"));
 
         Step(engine, 3);
@@ -95,6 +96,39 @@ public sealed class MultiRegionTests
         var queued = Assert.Single(result.Events.OfType<MessageQueued>());
         Assert.Equal(6, queued.DeliverTick); // comm 1 + 2 + 3
         Assert.Equal("r2", queued.TargetRegionId);
+        Assert.Equal("l01>l12", queued.Route);
+    }
+
+    [Fact]
+    public void ReverseRouteReconstructsLinksInTravelOrder()
+    {
+        var world = NewWorld()
+            .AddRegion("r2", 10_000, 10_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 2)
+            .AddLink("l12", "r1", "r2", latencyTicks: 3)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r2",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 0)))
+            .AddEntity(Receiver(new Vec2(100, 100), "r1"))
+            .AddEntity(Receiver(new Vec2(100, 100), "r0"))
+            .Build();
+
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new SendMessageIntent(new EntityId(1), "A", "contact", "payload", "r0"),
+        });
+
+        var queued = Assert.Single(result.Events.OfType<MessageQueued>());
+        Assert.Equal(6, queued.DeliverTick); // comm 1 + 3 + 2
+        Assert.Equal("r0", queued.TargetRegionId);
+        Assert.Equal("l12>l01", queued.Route);
     }
 
     [Fact]

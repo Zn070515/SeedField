@@ -38,7 +38,8 @@ public sealed record MessageQueued(
     string TargetRegionId,
     string Topic,
     long DeliverTick,
-    long EnergySpent) : SimulationEvent(Tick);
+    long EnergySpent,
+    string Route) : SimulationEvent(Tick);
 
 public sealed record MessageDelivered(
     long Tick,

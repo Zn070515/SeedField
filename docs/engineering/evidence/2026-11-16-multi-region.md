@@ -8,7 +8,8 @@
   2. 目标区域必须有己方 `Comm` 端点；
   3. 必须存在链路路径；
   4. 路径上每条链路的本 Tick 用量不得超过容量。
-- 路由：确定性 BFS，按链路 ID 排序；总延迟 = Comm 延迟 + 路径链路延迟之和。
+- 路由：双向 BFS，每层只扩展较小的 frontier；同规模时正向优先，邻居按链路 ID 排序。
+- 命中后把正向半段反转、再接上反向半段，得到真正的行进顺序；总延迟 = Comm + 路径链路延迟之和。
 - `MessageEnvelope` / `DeliveredMessage` / Observation / 事件 / 存档均携带 `TargetRegionId`。
 - 链路与在途消息进入状态哈希、存档与加载校验。
 
@@ -20,7 +21,7 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 47 passed
+SeedField.Simulation.Tests: 48 passed
 SeedField.Runtime.Js.Tests: 13 passed
 ```
 
@@ -31,7 +32,8 @@ SeedField.Runtime.Js.Tests: 13 passed
 | 直接链路 | Comm 1 + Link 3 → 第 4 Tick 投递，目标区域 r1 |
 | 无链路 | `NoRoute`，不产生在途消息 |
 | 目标区无己方 Comm 端点 | `NoRoute`，防止全图广播 |
-| 两跳链路 | Comm 1 + 2 + 3 → 第 6 Tick 投递，目标 r2 |
+| 两跳链路 | Comm 1 + 2 + 3 → 第 6 Tick 投递，路由 `l01>l12` |
+| 反向两跳 | r2→r0 路由重建为 `l12>l01`，延迟 6 |
 | 链路带宽 | 每 Tick 1 条，第二条 `NoBandwidth` |
 | 存档往返 | 链路与在途消息保留，加载后按原 Tick 投递，哈希一致 |
 
@@ -42,7 +44,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --multi
 ```
 
 ```text
-MULTI_REGION queued id=1 sentTick=0 deliverTick=6 target=r2
+MULTI_REGION queued id=1 sentTick=0 deliverTick=6 target=r2 route=l01>l12
 MULTI_REGION delivered id=1 tick=6 target=r2 ok=True
 ```
 
