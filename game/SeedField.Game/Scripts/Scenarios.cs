@@ -17,6 +17,12 @@ internal static class Scenarios
             .AddRegion("frontier", WidthMm, HeightMm)
             .AddStock("frontier", "A", 500)
             .AddStock("frontier", "B", 500)
+            .AddControlPoint(
+                "relay",
+                "frontier",
+                new Vec2(8_000, 4_000),
+                radiusMm: 1_500,
+                holdTicksRequired: 20)
             .Build();
 
         var workshop = world.Workshop;
@@ -118,11 +124,13 @@ internal static class Scenarios
                     target: { x: target.x, y: target.y }
                 });
             } else if (!target && me.hasDrive) {
-                var destination = obs.civilizationId === "A"
-                    ? { x: 10000, y: 4000 }
-                    : { x: 6000, y: 4000 };
+                var destination = obs.controlPoint
+                    ? { x: obs.controlPoint.x, y: obs.controlPoint.y }
+                    : (obs.civilizationId === "A"
+                        ? { x: 10000, y: 4000 }
+                        : { x: 6000, y: 4000 });
                 var last = lastContact(obs);
-                if (last) {
+                if (last && !obs.controlPoint) {
                     destination = JSON.parse(last.payload);
                 }
                 intents.push({

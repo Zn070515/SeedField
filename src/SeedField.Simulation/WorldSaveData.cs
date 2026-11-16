@@ -20,7 +20,19 @@ public sealed record WorldSaveData(
     MaterialShipmentSaveData[]? MaterialShipments = null,
     long NextShipmentId = 0,
     EnergyShipmentSaveData[]? EnergyShipments = null,
-    long NextEnergyShipmentId = 0);
+    long NextEnergyShipmentId = 0,
+    ControlPointSaveData? ControlPoint = null);
+
+public sealed record ControlPointSaveData(
+    string Id,
+    string RegionId,
+    int X,
+    int Y,
+    int RadiusMm,
+    int HoldTicksRequired,
+    string? HoldingCivilizationId,
+    int HoldTicks,
+    string? OwnerCivilizationId);
 
 public sealed record LinkSaveData(
     string Id,

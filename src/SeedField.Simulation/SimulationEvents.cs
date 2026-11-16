@@ -61,6 +61,12 @@ public sealed record MessageExpired(
     string CivilizationId,
     string Reason) : SimulationEvent(Tick);
 
+public sealed record ControlPointCaptured(
+    long Tick,
+    string ControlPointId,
+    string CivilizationId,
+    int HoldTicks) : SimulationEvent(Tick);
+
 public sealed record MaterialShipped(
     long Tick,
     long ShipmentId,

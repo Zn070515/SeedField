@@ -68,6 +68,9 @@ public sealed class WorldState
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
     public WorkshopService Workshop { get; } = new();
 
+    /// <summary>Optional single capture objective for a scenario.</summary>
+    public ControlPointState? ControlPoint { get; internal set; }
+
     public List<MessageEnvelope> InFlightMessages { get; } = new();
 
     public List<MaterialShipment> InTransitMaterial { get; } = new();

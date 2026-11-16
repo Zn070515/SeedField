@@ -87,6 +87,37 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder AddControlPoint(
+        string id,
+        string regionId,
+        Vec2 position,
+        int radiusMm,
+        int holdTicksRequired)
+    {
+        if (!_world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new InvalidOperationException($"Unknown region '{regionId}'.");
+        }
+
+        if (!region.Contains(position))
+        {
+            throw new ArgumentOutOfRangeException(nameof(position), "Control point is outside the region.");
+        }
+
+        if (_world.ControlPoint is not null)
+        {
+            throw new InvalidOperationException("This prototype supports one control point per world.");
+        }
+
+        _world.ControlPoint = new ControlPointState(
+            id,
+            regionId,
+            position,
+            radiusMm,
+            holdTicksRequired);
+        return this;
+    }
+
     public WorldBuilder AddStock(string regionId, string civilizationId, long material)
     {
         if (!_world.Regions.TryGetValue(regionId, out var region))

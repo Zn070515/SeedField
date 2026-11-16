@@ -95,6 +95,8 @@ public sealed class SimulationEngine
             }
         }
 
+        EvaluateControlPoint(tick, events);
+
         World.Tick = tick + 1;
 
         DeliverDueMessages(World.Tick, events);
@@ -1164,6 +1166,62 @@ public sealed class SimulationEngine
                 shipment.ToRegionId,
                 shipment.Amount));
         }
+    }
+
+    private void EvaluateControlPoint(long tick, List<SimulationEvent> events)
+    {
+        var point = World.ControlPoint;
+        if (point is null || point.IsCaptured)
+        {
+            return;
+        }
+
+        if (!World.Regions.TryGetValue(point.RegionId, out var region))
+        {
+            return;
+        }
+
+        var present = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var entity in region.Entities.Values)
+        {
+            if (entity.Position.IsWithinRange(point.Position, point.RadiusMm))
+            {
+                present.Add(entity.CivilizationId);
+            }
+        }
+
+        if (present.Count != 1)
+        {
+            point.HoldingCivilizationId = null;
+            point.HoldTicks = 0;
+            return;
+        }
+
+        var civilizationId = present.Min!;
+        if (string.Equals(
+                point.HoldingCivilizationId,
+                civilizationId,
+                StringComparison.Ordinal))
+        {
+            point.HoldTicks += 1;
+        }
+        else
+        {
+            point.HoldingCivilizationId = civilizationId;
+            point.HoldTicks = 1;
+        }
+
+        if (point.HoldTicks < point.HoldTicksRequired)
+        {
+            return;
+        }
+
+        point.OwnerCivilizationId = civilizationId;
+        events.Add(new ControlPointCaptured(
+            tick,
+            point.Id,
+            civilizationId,
+            point.HoldTicks));
     }
 
     private bool HasCommEndpoint(string regionId, string civilizationId) =>

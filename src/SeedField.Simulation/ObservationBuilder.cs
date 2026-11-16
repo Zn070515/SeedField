@@ -99,7 +99,8 @@ public static class ObservationBuilder
             visible.Values.ToList(),
             messages,
             shipments,
-            energyShipments);
+            energyShipments,
+            ControlPoint: ToObservedControlPoint(world.ControlPoint));
     }
 
     /// <summary>
@@ -183,6 +184,11 @@ public static class ObservationBuilder
                 shipment.Route))
             .ToList();
 
+        var controlPoint = world.ControlPoint is { } point &&
+                           string.Equals(point.RegionId, viewer.RegionId, StringComparison.Ordinal)
+            ? ToObservedControlPoint(point)
+            : null;
+
         return new Observation(
             world.Tick,
             viewer.CivilizationId,
@@ -190,8 +196,22 @@ public static class ObservationBuilder
             messages,
             shipments,
             energyShipments,
-            viewer.Id.Value);
+            viewer.Id.Value,
+            controlPoint);
     }
+
+    private static ObservedControlPoint? ToObservedControlPoint(ControlPointState? point) =>
+        point is null
+            ? null
+            : new ObservedControlPoint(
+                point.Id,
+                point.RegionId,
+                point.Position,
+                point.RadiusMm,
+                point.HoldTicksRequired,
+                point.HoldingCivilizationId,
+                point.HoldTicks,
+                point.OwnerCivilizationId);
 
     private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>
         new(

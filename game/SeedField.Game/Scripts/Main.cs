@@ -56,6 +56,7 @@ public partial class Main : Node2D
     private bool _captureRequested;
     private bool _captureEditor;
     private bool _captureWorkshop;
+    private bool _captureVictory;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -77,13 +78,19 @@ public partial class Main : Node2D
 
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
-        _paused = arguments.Contains("--capture") || _captureEditor || _captureWorkshop;
+        _captureVictory = arguments.Contains("--capture-victory");
+        _paused = arguments.Contains("--capture") ||
+                  _captureEditor ||
+                  _captureWorkshop ||
+                  _captureVictory;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
             : _captureWorkshop
                 ? "res://screenshots/m0-workshop.png"
-                : "res://screenshots/m0-combat.png";
+                : _captureVictory
+                    ? "res://screenshots/m0-victory.png"
+                    : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -111,6 +118,17 @@ public partial class Main : Node2D
                 $"deployed power v1 · upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
                 false);
             _status = "workshop · paused";
+        }
+        else if (_captureVictory)
+        {
+            for (var i = 0; i < 2_000 && _world.ControlPoint?.IsCaptured != true; i++)
+            {
+                StepOnce();
+            }
+
+            _status = _world.ControlPoint is { IsCaptured: true } point
+                ? $"victory {point.OwnerCivilizationId} · tick {_world.Tick}"
+                : $"no capture · tick {_world.Tick}";
         }
         else
         {
@@ -662,6 +680,7 @@ public partial class Main : Node2D
 
         DrawGrid();
         DrawStagingZones();
+        DrawControlPoint();
         DrawRanges();
         DrawTracers();
         DrawMessages();
@@ -729,6 +748,44 @@ public partial class Main : Node2D
             -1,
             12,
             new Color(Orange, 0.75f));
+    }
+
+    private void DrawControlPoint()
+    {
+        var point = _world.ControlPoint;
+        if (point is null)
+        {
+            return;
+        }
+
+        var center = Map(point.Position);
+        var radius = point.RadiusMm * MapScale;
+        var color = point.OwnerCivilizationId switch
+        {
+            "A" => Cyan,
+            "B" => Orange,
+            _ => Amber,
+        };
+
+        DrawCircle(center, radius, new Color(color, 0.05f));
+        DrawArc(center, radius, 0, Mathf.Tau, 80, new Color(color, 0.6f), 2f, true);
+        DrawCircle(center, 5f, new Color(color, 0.8f));
+
+        var label = point.IsCaptured
+            ? $"RELAY · {point.OwnerCivilizationId} CAPTURED"
+            : point.HoldingCivilizationId is null
+                ? "RELAY · CONTESTED"
+                : $"RELAY · {point.HoldingCivilizationId} " +
+                  $"{point.HoldTicks}/{point.HoldTicksRequired}";
+
+        DrawString(
+            HudFont,
+            center + new Vector2(-72, -radius - 10),
+            label,
+            HorizontalAlignment.Left,
+            -1,
+            12,
+            color);
     }
 
     private void DrawRanges()
@@ -998,7 +1055,8 @@ public partial class Main : Node2D
             or MessageDelivered
             or MessageQueued
             or CoreRegenerated
-            or EntityBootstrapped;
+            or EntityBootstrapped
+            or ControlPointCaptured;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1024,6 +1082,8 @@ public partial class Main : Node2D
                 $"t{core.Tick,4}  core {core.CivilizationId} +{core.EnergyAdded}E +{core.MaterialAdded}M",
             EntityBootstrapped bootstrapped =>
                 $"t{bootstrapped.Tick,4}  {bootstrapped.BlueprintName} bootstrapped from core",
+            ControlPointCaptured captured =>
+                $"t{captured.Tick,4}  relay captured by {captured.CivilizationId}",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

@@ -47,8 +47,9 @@
 | 区域加载 | 引擎级活动区域：非活动区拒绝意图，被动系统继续运行；活动集不写入存档 |
 | 设备级知识 | 每实体独立观察/控制器；只感知本设备传感器与目标区域消息；不再文明级融合 |
 | 工程收口 | 统一部署/升级命令、存档 schema v2 + v1 迁移、摧毁库存损失审计 |
+| PvE 目标 | 可配置控制点：独占驻留计时、争夺重置、占领即胜负；HUD 与胜利截图 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 79 个仿真测试 + 17 个 Jint 测试通过；600 Tick 双跑哈希一致；截图与跨区/物流/能源/区域演示已提交；CI 构建/测试/提交规范 |
+| 验证 | 84 个仿真测试 + 17 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -78,6 +79,7 @@ godot --path game/SeedField.Game                      # 实时；F1 程序编辑
 godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
+godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
 ```
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
@@ -102,6 +104,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`semantic review`](docs/engineering/reviews/2026-11-16-semantic-review.md) | 实现 vs 设计基线的语义审查与未闭合缺口 |
 | [`core protection`](docs/engineering/evidence/2026-11-16-core-protection.md) | 外文明部署/行动拒绝与存档校验证据 |
 | [`review closeout`](docs/engineering/evidence/2026-11-16-semantic-review-closeout.md) | 设备级知识、部署命令、存档 v2、资源损失收口证据 |
+| [`control point`](docs/engineering/evidence/2026-11-16-control-point.md) | 控制点占领、争夺重置与胜利截图证据 |
 
 ## 工程原则
 

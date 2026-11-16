@@ -97,6 +97,20 @@ public static class WorldStateHasher
             }
         }
 
+        Append(ref hash, world.ControlPoint is not null);
+        if (world.ControlPoint is { } controlPoint)
+        {
+            Append(ref hash, controlPoint.Id);
+            Append(ref hash, controlPoint.RegionId);
+            Append(ref hash, controlPoint.Position.X);
+            Append(ref hash, controlPoint.Position.Y);
+            Append(ref hash, controlPoint.RadiusMm);
+            Append(ref hash, controlPoint.HoldTicksRequired);
+            Append(ref hash, controlPoint.HoldingCivilizationId ?? string.Empty);
+            Append(ref hash, controlPoint.HoldTicks);
+            Append(ref hash, controlPoint.OwnerCivilizationId ?? string.Empty);
+        }
+
         var shipments = world.InTransitMaterial.OrderBy(shipment => shipment.Id).ToList();
         Append(ref hash, shipments.Count);
         foreach (var shipment in shipments)

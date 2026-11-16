@@ -47,6 +47,16 @@ public sealed record ObservedEnergyShipment(
     long ArriveTick,
     string Route);
 
+public sealed record ObservedControlPoint(
+    string Id,
+    string RegionId,
+    Vec2 Position,
+    int RadiusMm,
+    int HoldTicksRequired,
+    string? HoldingCivilizationId,
+    int HoldTicks,
+    string? OwnerCivilizationId);
+
 public sealed record Observation(
     long Tick,
     string CivilizationId,
@@ -54,4 +64,5 @@ public sealed record Observation(
     IReadOnlyList<ObservedMessage> Messages,
     IReadOnlyList<ObservedShipment> Shipments,
     IReadOnlyList<ObservedEnergyShipment> EnergyShipments,
-    long? ViewerEntityId = null);
+    long? ViewerEntityId = null,
+    ObservedControlPoint? ControlPoint = null);

@@ -409,7 +409,19 @@ public sealed class JsController : IDisposable
                     shipment.SentTick,
                     shipment.ArriveTick,
                     shipment.Route))],
-                observation.ViewerEntityId);
+                observation.ViewerEntityId,
+                observation.ControlPoint is null
+                    ? null
+                    : new ControlPointDto(
+                        observation.ControlPoint.Id,
+                        observation.ControlPoint.RegionId,
+                        observation.ControlPoint.Position.X,
+                        observation.ControlPoint.Position.Y,
+                        observation.ControlPoint.RadiusMm,
+                        observation.ControlPoint.HoldTicksRequired,
+                        observation.ControlPoint.HoldingCivilizationId,
+                        observation.ControlPoint.HoldTicks,
+                        observation.ControlPoint.OwnerCivilizationId));
 
         private sealed record ObservationDto(
             long Tick,
@@ -418,7 +430,19 @@ public sealed class JsController : IDisposable
             List<MessageDto> Messages,
             List<ShipmentDto> Shipments,
             List<EnergyShipmentDto> EnergyShipments,
-            long? ViewerEntityId);
+            long? ViewerEntityId,
+            ControlPointDto? ControlPoint);
+
+        private sealed record ControlPointDto(
+            string Id,
+            string RegionId,
+            int X,
+            int Y,
+            int RadiusMm,
+            int HoldTicksRequired,
+            string? HoldingCivilizationId,
+            int HoldTicks,
+            string? OwnerCivilizationId);
 
         private sealed record ShipmentDto(
             long ShipmentId,

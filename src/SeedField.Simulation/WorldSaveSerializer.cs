@@ -131,7 +131,19 @@ public static class WorldSaveSerializer
                     shipment.SentTick,
                     shipment.ArriveTick))
                 .ToArray(),
-            world.NextEnergyShipmentId);
+            world.NextEnergyShipmentId,
+            world.ControlPoint is null
+                ? null
+                : new ControlPointSaveData(
+                    world.ControlPoint.Id,
+                    world.ControlPoint.RegionId,
+                    world.ControlPoint.Position.X,
+                    world.ControlPoint.Position.Y,
+                    world.ControlPoint.RadiusMm,
+                    world.ControlPoint.HoldTicksRequired,
+                    world.ControlPoint.HoldingCivilizationId,
+                    world.ControlPoint.HoldTicks,
+                    world.ControlPoint.OwnerCivilizationId));
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -580,6 +592,33 @@ public static class WorldSaveSerializer
         }
 
         world.NextEnergyShipmentId = nextEnergyShipmentId;
+
+        if (data.ControlPoint is { } pointData)
+        {
+            if (!world.Regions.TryGetValue(pointData.RegionId, out var pointRegion) ||
+                !pointRegion.Contains(new Vec2(pointData.X, pointData.Y)) ||
+                pointData.RadiusMm <= 0 ||
+                pointData.HoldTicksRequired <= 0 ||
+                pointData.HoldTicks < 0 ||
+                (pointData.HoldingCivilizationId is not null && pointData.HoldTicks < 1) ||
+                (pointData.OwnerCivilizationId is not null &&
+                 pointData.HoldTicks < pointData.HoldTicksRequired))
+            {
+                throw Invalid("INVALID_CONTROL_POINT", "Control point state is invalid.");
+            }
+
+            world.ControlPoint = new ControlPointState(
+                pointData.Id,
+                pointData.RegionId,
+                new Vec2(pointData.X, pointData.Y),
+                pointData.RadiusMm,
+                pointData.HoldTicksRequired)
+            {
+                HoldingCivilizationId = pointData.HoldingCivilizationId,
+                HoldTicks = pointData.HoldTicks,
+                OwnerCivilizationId = pointData.OwnerCivilizationId,
+            };
+        }
 
         ApplyStatistics(world, data.Statistics);
         return world;
