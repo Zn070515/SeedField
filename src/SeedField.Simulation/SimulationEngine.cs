@@ -23,6 +23,10 @@ public sealed class SimulationEngine
         var tick = World.Tick;
         var events = new List<SimulationEvent>();
         var results = new List<IntentResult>();
+        var computeUsed = new Dictionary<EntityId, int>();
+        var bandwidthUsed = new Dictionary<EntityId, int>();
+
+        GeneratePower();
 
         if (intents is { Count: > 0 })
         {
@@ -30,7 +34,7 @@ public sealed class SimulationEngine
             // canonical order regardless of how controllers were concatenated.
             foreach (var intent in intents.OrderBy(intent => intent.EntityId.Value))
             {
-                ProcessIntent(intent, tick, events, results);
+                ProcessIntent(intent, tick, events, results, computeUsed, bandwidthUsed);
             }
         }
 
@@ -119,11 +123,96 @@ public sealed class SimulationEngine
             bootstrapEvent);
     }
 
+    /// <summary>
+    /// Restores the latest confirmed product for one branch directly from the core.
+    /// Costs are supplied by the caller because the real recovery quotas are still an
+    /// open design value.
+    /// </summary>
+    public BootstrapResult TryRestoreLatestProduct(
+        string civilizationId,
+        DeviceBranch branch,
+        Vec2 position,
+        long energyCost,
+        long materialCost)
+    {
+        if (energyCost < 0 || materialCost < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(energyCost), "Recovery costs must be non-negative.");
+        }
+
+        var tick = World.Tick;
+
+        if (!World.Cores.TryGetValue(civilizationId, out var core))
+        {
+            return BootstrapFailure(SimulationErrorCode.CoreNotAvailable, "No seed core for civilization.");
+        }
+
+        if (!core.LatestProducts.TryGetValue(branch, out var product))
+        {
+            return BootstrapFailure(
+                SimulationErrorCode.DeploymentRejected,
+                $"No confirmed product is registered for {branch}.");
+        }
+
+        var blueprint = World.Workshop.GetVersion(product.BlueprintId, product.Version);
+        if (blueprint is null)
+        {
+            return BootstrapFailure(
+                SimulationErrorCode.DeploymentRejected,
+                $"Registered product {product.BlueprintId} v{product.Version} is missing from the workshop.");
+        }
+
+        if (!World.Regions.TryGetValue(core.RegionId, out var region) || !region.IsCoreRegion)
+        {
+            return BootstrapFailure(SimulationErrorCode.CoreNotAvailable, "Core region is unavailable.");
+        }
+
+        if (!region.Contains(position))
+        {
+            return BootstrapFailure(SimulationErrorCode.OutOfBounds, "Restore position is outside the core region.");
+        }
+
+        if (core.EnergyReserve < energyCost)
+        {
+            return BootstrapFailure(SimulationErrorCode.NoEnergy, "Core energy reserve is insufficient.");
+        }
+
+        if (core.MaterialReserve < materialCost)
+        {
+            return BootstrapFailure(
+                SimulationErrorCode.InsufficientMaterial,
+                "Core material reserve is insufficient.");
+        }
+
+        core.EnergyReserve -= energyCost;
+        core.MaterialReserve -= materialCost;
+        World.Statistics.EnergySpentTotal += energyCost;
+        World.Statistics.MaterialSpentTotal += materialCost;
+
+        var entity = DeploymentService.Deploy(World, blueprint, civilizationId, core.RegionId, position);
+        var bootstrapEvent = new EntityBootstrapped(
+            tick,
+            entity.Id,
+            civilizationId,
+            blueprint.Name,
+            energyCost,
+            materialCost);
+
+        return new BootstrapResult(
+            true,
+            entity.Id,
+            SimulationErrorCode.None,
+            $"Restored {blueprint.Name} v{blueprint.Version} from the seed core.",
+            bootstrapEvent);
+    }
+
     private void ProcessIntent(
         Intent intent,
         long tick,
         List<SimulationEvent> events,
-        List<IntentResult> results)
+        List<IntentResult> results,
+        Dictionary<EntityId, int> computeUsed,
+        Dictionary<EntityId, int> bandwidthUsed)
     {
         if (intent is null)
         {
@@ -137,6 +226,26 @@ public sealed class SimulationEngine
             return;
         }
 
+        var computeCost = IntentComputeCost(intent);
+        if (computeCost > 0 && entity.State is { } state)
+        {
+            var used = computeUsed.GetValueOrDefault(entity.Id);
+            var budget = Math.Max(0, state.ComputePerTick);
+            if (used + computeCost > budget)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.ComputeBudgetExceeded,
+                    $"Compute budget {budget} per tick is exhausted.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+
+            computeUsed[entity.Id] = used + computeCost;
+        }
+
         switch (intent)
         {
             case MoveIntent move:
@@ -146,7 +255,7 @@ public sealed class SimulationEngine
                 ProcessAttack(entity, region, attack, tick, events, results);
                 break;
             case SendMessageIntent send:
-                ProcessSendMessage(entity, send, tick, events, results);
+                ProcessSendMessage(entity, send, tick, events, results, bandwidthUsed);
                 break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
@@ -154,6 +263,29 @@ public sealed class SimulationEngine
             default:
                 Reject(intent, SimulationErrorCode.InvalidAction, "Unknown intent type.", tick, events, results);
                 break;
+        }
+    }
+
+    private static int IntentComputeCost(Intent intent) => intent is WaitIntent ? 0 : 1;
+
+    private void GeneratePower()
+    {
+        foreach (var entity in World.EnumerateEntities())
+        {
+            if (entity.Power is null)
+            {
+                continue;
+            }
+
+            var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
+            var added = Math.Min(Math.Max(0, entity.Power.EnergyPerTick), room);
+            if (added <= 0)
+            {
+                continue;
+            }
+
+            entity.Energy += added;
+            World.Statistics.EnergyGeneratedTotal += added;
         }
     }
 
@@ -281,7 +413,8 @@ public sealed class SimulationEngine
         SendMessageIntent intent,
         long tick,
         List<SimulationEvent> events,
-        List<IntentResult> results)
+        List<IntentResult> results,
+        Dictionary<EntityId, int> bandwidthUsed)
     {
         if (entity.Comm is null)
         {
@@ -312,6 +445,24 @@ public sealed class SimulationEngine
         {
             Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to send.", tick, events, results);
             return;
+        }
+
+        if (entity.Comm.BandwidthPerTick > 0)
+        {
+            var used = bandwidthUsed.GetValueOrDefault(entity.Id);
+            if (used >= entity.Comm.BandwidthPerTick)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.NoBandwidth,
+                    $"Bandwidth {entity.Comm.BandwidthPerTick} messages per tick is exhausted.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+
+            bandwidthUsed[entity.Id] = used + 1;
         }
 
         entity.Energy -= cost;

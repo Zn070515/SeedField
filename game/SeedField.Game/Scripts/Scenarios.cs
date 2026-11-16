@@ -11,48 +11,60 @@ internal static class Scenarios
     public const int WidthMm = 16_000;
     public const int HeightMm = 8_000;
 
-    public static WorldState BuildWorld() =>
-        new WorldBuilder()
+    public static WorldState BuildWorld()
+    {
+        var world = new WorldBuilder()
             .AddRegion("frontier", WidthMm, HeightMm)
-            .AddEntity(new EntityDefinition(
-                new EntityId(1),
-                "A",
-                "frontier",
-                new Vec2(2_000, 4_000),
-                MaxHealth: 120,
-                Energy: 5_000,
-                EnergyCapacity: 5_000,
-                Material: 0,
-                Sensor: new SensorModule(5_000),
-                Drive: new DriveModule(120, EnergyCostPerMove: 1),
-                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
-            .AddEntity(new EntityDefinition(
-                new EntityId(2),
-                "A",
-                "frontier",
-                new Vec2(3_000, 4_000),
-                MaxHealth: 150,
-                Energy: 5_000,
-                EnergyCapacity: 5_000,
-                Material: 0,
-                Sensor: new SensorModule(4_500),
-                Weapon: new WeaponModule(3_500, Damage: 8, EnergyCost: 2, CooldownTicks: 2),
-                Drive: new DriveModule(90, EnergyCostPerMove: 1),
-                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
-            .AddEntity(new EntityDefinition(
-                new EntityId(3),
-                "B",
-                "frontier",
-                new Vec2(13_000, 4_000),
-                MaxHealth: 150,
-                Energy: 5_000,
-                EnergyCapacity: 5_000,
-                Material: 0,
-                Sensor: new SensorModule(4_500),
-                Weapon: new WeaponModule(3_500, Damage: 8, EnergyCost: 2, CooldownTicks: 2),
-                Drive: new DriveModule(90, EnergyCostPerMove: 1),
-                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
             .Build();
+
+        var workshop = world.Workshop;
+        workshop.Publish(new DeviceBlueprint(
+            "power", 0, "Power Cell", 60, 5_000,
+            Power: new PowerModule(EnergyPerTick: 4, StorageCapacity: 5_000)));
+        workshop.Publish(new DeviceBlueprint(
+            "sensing", 0, "Sensor Suite", 60, 0,
+            Sensor: new SensorModule(5_000)));
+        workshop.Publish(new DeviceBlueprint(
+            "comm", 0, "Comm Relay", 60, 0,
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1)));
+        workshop.Publish(new DeviceBlueprint(
+            "state", 0, "State Core", 60, 0,
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64)));
+
+        var strike = workshop.Publish(new DeviceBlueprint(
+            "strike", 0, "Strike Frame", 150, 5_000,
+            Sensor: new SensorModule(4_500),
+            Weapon: new WeaponModule(3_500, Damage: 8, EnergyCost: 2, CooldownTicks: 2),
+            Drive: new DriveModule(90, EnergyCostPerMove: 1),
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000),
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: "program.strike"));
+
+        var scoutV1 = workshop.Publish(new DeviceBlueprint(
+            "scout", 0, "Scout Mk1", 120, 5_000,
+            Sensor: new SensorModule(5_000),
+            Drive: new DriveModule(120, EnergyCostPerMove: 1),
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000),
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: "program.scout.v1"));
+
+        workshop.Publish(new DeviceBlueprint(
+            "scout", 0, "Scout Mk2", 140, 5_000,
+            Sensor: new SensorModule(6_000),
+            Drive: new DriveModule(130, EnergyCostPerMove: 1),
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 3, StorageCapacity: 5_000),
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: "program.scout.v2"));
+
+        DeploymentService.Deploy(world, scoutV1, "A", "frontier", new Vec2(2_000, 4_000));
+        DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(3_000, 4_000));
+        DeploymentService.Deploy(world, strike, "B", "frontier", new Vec2(13_000, 4_000));
+
+        return world;
+    }
 
     public const string ScriptA = """
         function decide(obs) {

@@ -34,9 +34,12 @@ public sealed record SeedCoreConfig(
     }
 }
 
+public sealed record SeedCoreProduct(string BlueprintId, int Version);
+
 /// <summary>
 /// The permanent, untouchable seed core of one civilization. It regenerates a small
-/// capped reserve and can bootstrap a minimum entity without any external industry.
+/// capped reserve, records the latest confirmed product of each branch, and can
+/// bootstrap without any external industry.
 /// </summary>
 public sealed class SeedCoreState
 {
@@ -57,6 +60,35 @@ public sealed class SeedCoreState
     public long EnergyReserve { get; internal set; }
 
     public long MaterialReserve { get; internal set; }
+
+    /// <summary>Latest confirmed design version per branch.</summary>
+    public SortedDictionary<DeviceBranch, SeedCoreProduct> LatestProducts { get; } = new();
+
+    public void RecordLatestProduct(DeviceBranch branch, DeviceBlueprint blueprint)
+    {
+        ArgumentNullException.ThrowIfNull(blueprint);
+
+        if (branch == DeviceBranch.None || (branch & DeviceBranch.All) != branch)
+        {
+            throw new ArgumentOutOfRangeException(nameof(branch), "A single concrete branch is required.");
+        }
+
+        if ((blueprint.Branches & branch) != branch)
+        {
+            throw new BlueprintValidationException(
+                "BRANCH_NOT_COVERED",
+                $"Blueprint '{blueprint.BlueprintId}' does not provide {branch}.");
+        }
+
+        if (blueprint.Version <= 0)
+        {
+            throw new BlueprintValidationException(
+                "UNPUBLISHED_BLUEPRINT",
+                "Only a published blueprint can be recorded as a core product.");
+        }
+
+        LatestProducts[branch] = new SeedCoreProduct(blueprint.BlueprintId, blueprint.Version);
+    }
 }
 
 /// <summary>

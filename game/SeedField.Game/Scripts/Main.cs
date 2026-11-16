@@ -19,6 +19,8 @@ public partial class Main : Node2D
     private const int ViewHeight = 720;
     private const float MapScale = 0.055f;
 
+    private const string SavePath = "user://seedfield-save.json";
+
     private static readonly Vector2 MapOrigin = new(200f, 140f);
 
     private static readonly Color Background = new("0b1220");
@@ -37,11 +39,14 @@ public partial class Main : Node2D
     private WorldState _world = null!;
     private SimulationEngine _engine = null!;
     private ControllerSlot _slotA = null!;
-    private JsController _controllerB = null!;
+    private ControllerSlot _slotB = null!;
     private ProgramEditor _editor = null!;
     private CanvasLayer _editorLayer = null!;
     private ColorRect _editorDimmer = null!;
+    private WorkshopPanel _workshop = null!;
+    private CanvasLayer _workshopLayer = null!;
     private string _deployedSourceA = string.Empty;
+    private int _workshopSpawnIndex;
     private string _capturePath = "res://screenshots/m0-combat.png";
     private readonly List<TimedEvent> _history = new();
 
@@ -49,6 +54,7 @@ public partial class Main : Node2D
     private bool _paused;
     private bool _captureRequested;
     private bool _captureEditor;
+    private bool _captureWorkshop;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -60,13 +66,23 @@ public partial class Main : Node2D
 
         ResetScenario();
         BuildProgramEditor();
+        BuildWorkshopPanel();
+
+        if (arguments.Contains("--save-smoke"))
+        {
+            RunSaveSmoke();
+            return;
+        }
 
         _captureEditor = arguments.Contains("--capture-editor");
-        _paused = arguments.Contains("--capture") || _captureEditor;
+        _captureWorkshop = arguments.Contains("--capture-workshop");
+        _paused = arguments.Contains("--capture") || _captureEditor || _captureWorkshop;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
-            : "res://screenshots/m0-combat.png";
+            : _captureWorkshop
+                ? "res://screenshots/m0-workshop.png"
+                : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -83,6 +99,18 @@ public partial class Main : Node2D
             _editor.SetStatus($"deployed v{_slotA.Version} · stepped to tick {_world.Tick}", false);
             _status = "program editor · paused";
         }
+        else if (_captureWorkshop)
+        {
+            OpenWorkshop();
+            DeployFromWorkshop("power");
+            UpgradeFromWorkshop(new EntityId(1));
+            _workshop.SelectBlueprint("power");
+            _workshop.SelectInstance(new EntityId(1));
+            _workshop.SetStatus(
+                $"deployed power v1 · upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
+                false);
+            _status = "workshop · paused";
+        }
         else
         {
             _status = _paused ? "combat frame · capture" : "running";
@@ -94,7 +122,7 @@ public partial class Main : Node2D
     public override void _ExitTree()
     {
         _slotA?.Dispose();
-        _controllerB?.Dispose();
+        _slotB?.Dispose();
     }
 
     public override void _Process(double delta)
@@ -128,6 +156,27 @@ public partial class Main : Node2D
             return;
         }
 
+        if (key.Keycode == Key.F5)
+        {
+            SaveGame();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (key.Keycode == Key.F9)
+        {
+            LoadGame();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (key.Keycode == Key.F2)
+        {
+            ToggleWorkshop();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode == Key.F1)
         {
             ToggleProgramEditor();
@@ -144,7 +193,11 @@ public partial class Main : Node2D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is not InputEventKey key || !key.Pressed || key.Echo || _editorLayer.Visible)
+        if (@event is not InputEventKey key ||
+            !key.Pressed ||
+            key.Echo ||
+            _editorLayer.Visible ||
+            _workshopLayer.Visible)
         {
             return;
         }
@@ -185,6 +238,130 @@ public partial class Main : Node2D
         _editor.Source = _deployedSourceA;
     }
 
+    private void BuildWorkshopPanel()
+    {
+        _workshopLayer = new CanvasLayer { Layer = 19, Visible = false };
+        AddChild(_workshopLayer);
+
+        var dimmer = new ColorRect { Color = new Color(0, 0, 0, 0.55f) };
+        dimmer.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _workshopLayer.AddChild(dimmer);
+
+        _workshop = new WorkshopPanel();
+        _workshop.DeployRequested += DeployFromWorkshop;
+        _workshop.UpgradeRequested += UpgradeFromWorkshop;
+        _workshop.CloseRequested += CloseWorkshop;
+        _workshopLayer.AddChild(_workshop);
+        _workshop.Refresh(_world);
+    }
+
+    private void ToggleWorkshop()
+    {
+        if (_workshopLayer.Visible)
+        {
+            CloseWorkshop();
+        }
+        else
+        {
+            OpenWorkshop();
+        }
+    }
+
+    private void OpenWorkshop()
+    {
+        if (_editorLayer.Visible)
+        {
+            CloseProgramEditor();
+        }
+
+        _workshopLayer.Visible = true;
+        _workshop.Refresh(_world);
+        _paused = true;
+        _status = "workshop · paused";
+        QueueRedraw();
+    }
+
+    private void CloseWorkshop()
+    {
+        _workshopLayer.Visible = false;
+        _paused = _captureRequested;
+        _status = _paused ? "capture" : "running";
+        QueueRedraw();
+    }
+
+    private void DeployFromWorkshop(string blueprintId)
+    {
+        var versions = _world.Workshop.GetVersions(blueprintId);
+        if (versions.Count == 0)
+        {
+            _workshop.SetStatus($"design '{blueprintId}' has no published version", true);
+            return;
+        }
+
+        var latest = versions[^1];
+        try
+        {
+            var entity = DeploymentService.Deploy(
+                _world,
+                latest,
+                "A",
+                "frontier",
+                NextWorkshopSpawn());
+            _workshop.SetStatus(
+                $"deployed {blueprintId} v{latest.Version} as entity {entity.Id}",
+                false);
+        }
+        catch (Exception exception)
+        {
+            _workshop.SetStatus($"deploy failed: {exception.Message}", true);
+        }
+
+        _workshop.Refresh(_world);
+        QueueRedraw();
+    }
+
+    private void UpgradeFromWorkshop(EntityId entityId)
+    {
+        var entity = _world.FindEntity(entityId);
+        if (entity is null || string.IsNullOrEmpty(entity.BlueprintId))
+        {
+            _workshop.SetStatus($"entity {entityId} has no blueprint reference", true);
+            return;
+        }
+
+        var versions = _world.Workshop.GetVersions(entity.BlueprintId);
+        if (versions.Count == 0)
+        {
+            _workshop.SetStatus($"blueprint '{entity.BlueprintId}' is missing", true);
+            return;
+        }
+
+        var latest = versions[^1];
+        if (latest.Version == entity.BlueprintVersion)
+        {
+            _workshop.SetStatus($"entity {entityId} is already at v{latest.Version}", false);
+        }
+        else
+        {
+            DeploymentService.Upgrade(entity, latest);
+            _workshop.SetStatus(
+                $"upgraded entity {entityId} {entity.BlueprintId} " +
+                $"v{latest.Version} (max HP {latest.MaxHealth})",
+                false);
+        }
+
+        _workshop.Refresh(_world);
+        QueueRedraw();
+    }
+
+    private Vec2 NextWorkshopSpawn()
+    {
+        var index = _workshopSpawnIndex++;
+        return new Vec2(
+            1_200 + (index % 4 * 300),
+            2_200 + (index / 4 * 300));
+    }
+
     private void ToggleProgramEditor()
     {
         if (_editorLayer.Visible)
@@ -199,6 +376,11 @@ public partial class Main : Node2D
 
     private void OpenProgramEditor()
     {
+        if (_workshopLayer.Visible)
+        {
+            CloseWorkshop();
+        }
+
         _editorLayer.Visible = true;
         _paused = true;
         _status = "program editor · paused";
@@ -230,10 +412,123 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
+    private void RunSaveSmoke()
+    {
+        var before = WorldStateHasher.Compute(_world);
+        var tickBefore = _world.Tick;
+
+        SaveGame();
+
+        for (var i = 0; i < 10; i++)
+        {
+            StepOnce();
+        }
+
+        var mutated = WorldStateHasher.Compute(_world);
+        LoadGame();
+        var after = WorldStateHasher.Compute(_world);
+        var ok = before == after && mutated != after && _world.Tick == tickBefore;
+
+        GD.Print(
+            $"SAVE_SMOKE ok={ok} before={before:x16} mutated={mutated:x16} after={after:x16} " +
+            $"tick={_world.Tick} A=v{_slotA.Version} B=v{_slotB.Version}");
+
+        GetTree().Quit();
+    }
+
+    private void SaveGame()
+    {
+        try
+        {
+            var json = GameSaveSerializer.Save(_world, new[] { _slotA, _slotB });
+            System.IO.File.WriteAllText(SaveAbsolutePath, json);
+            var message = $"saved tick {_world.Tick} · A v{_slotA.Version}";
+            _status = message;
+            if (_editorLayer.Visible)
+            {
+                _editor.SetStatus(message, false);
+            }
+        }
+        catch (Exception exception)
+        {
+            _status = $"save failed: {exception.Message}";
+            if (_editorLayer.Visible)
+            {
+                _editor.SetStatus(_status, true);
+            }
+        }
+
+        QueueRedraw();
+    }
+
+    private void LoadGame()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(SaveAbsolutePath))
+            {
+                _status = "no save file";
+            }
+            else
+            {
+                var loaded = GameSaveSerializer.Load(System.IO.File.ReadAllText(SaveAbsolutePath));
+                var slotA = loaded.Controllers.FirstOrDefault(controller =>
+                    controller.CivilizationId == "A");
+                var slotB = loaded.Controllers.FirstOrDefault(controller =>
+                    controller.CivilizationId == "B");
+
+                if (slotA is null || slotB is null)
+                {
+                    foreach (var controller in loaded.Controllers)
+                    {
+                        controller.Dispose();
+                    }
+
+                    throw new SaveFormatException(
+                        "MISSING_CONTROLLER",
+                        "Save must contain controllers for civilizations A and B.");
+                }
+
+                foreach (var extra in loaded.Controllers.Where(controller =>
+                             controller != slotA && controller != slotB))
+                {
+                    extra.Dispose();
+                }
+
+                _slotA?.Dispose();
+                _slotB?.Dispose();
+                _slotA = slotA;
+                _slotB = slotB;
+                _world = loaded.World;
+                _engine = new SimulationEngine(_world);
+                _deployedSourceA = _slotA.DeployedScript;
+                _history.Clear();
+                _faultCount = 0;
+                _tickAccumulator = 0;
+                _paused = true;
+                _editor.Source = _deployedSourceA;
+                _workshop?.Refresh(_world);
+
+                _status = $"loaded tick {_world.Tick} · A v{_slotA.Version}";
+            }
+        }
+        catch (Exception exception)
+        {
+            _status = $"load failed: {exception.Message}";
+        }
+
+        if (_editorLayer.Visible)
+        {
+            _editor.SetStatus(_status, _status.StartsWith("load failed", StringComparison.Ordinal));
+        }
+
+        QueueRedraw();
+    }
+
     private void ResetScenario()
     {
         _slotA?.Dispose();
-        _controllerB?.Dispose();
+        _slotB?.Dispose();
 
         if (string.IsNullOrWhiteSpace(_deployedSourceA))
         {
@@ -243,11 +538,12 @@ public partial class Main : Node2D
         _world = Scenarios.BuildWorld();
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
-        _controllerB = new JsController("B", Scenarios.ScriptB);
+        _slotB = new ControllerSlot("B", Scenarios.ScriptB);
 
         _history.Clear();
         _faultCount = 0;
         _tickAccumulator = 0;
+        _workshopSpawnIndex = 0;
 
         PreRunToCombat();
     }
@@ -273,7 +569,7 @@ public partial class Main : Node2D
         intents.AddRange(decisionA.Intents);
         _faultCount += decisionA.Faults.Count;
 
-        var decisionB = _controllerB.Decide(_engine.BuildObservation("B"));
+        var decisionB = _slotB.Decide(_engine.BuildObservation("B"));
         intents.AddRange(decisionB.Intents);
         _faultCount += decisionB.Faults.Count;
 
@@ -557,6 +853,16 @@ public partial class Main : Node2D
             _paused ? Amber : Green);
         DrawString(HudFont, new Vector2(1_120, 60), _status, HorizontalAlignment.Left, 150, 11, Muted);
 
+        var ready = _world.Workshop.IsMinimumUsable;
+        DrawString(
+            HudFont,
+            new Vector2(1_120, 82),
+            ready ? "BRANCHES 5/5 · PvE READY" : "BRANCHES INCOMPLETE",
+            HorizontalAlignment.Left,
+            -1,
+            10,
+            ready ? Green : Amber);
+
         DrawLegend();
         DrawEventLog();
         DrawControls();
@@ -621,7 +927,7 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 716),
-            "SPACE pause · N single tick · R reset · F1 program editor · F12 screenshot · simulation is authoritative",
+            "SPACE pause · N step · R reset · F1 program · F2 workshop · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,
             11,
@@ -675,6 +981,8 @@ public partial class Main : Node2D
 
     private static Vector2 Map(Vec2 position) =>
         MapOrigin + new Vector2(position.X * MapScale, position.Y * MapScale);
+
+    private static string SaveAbsolutePath => ProjectSettings.GlobalizePath(SavePath);
 
     private static Font HudFont => ThemeDB.FallbackFont;
 

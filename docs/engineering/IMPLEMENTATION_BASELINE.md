@@ -60,6 +60,10 @@ tests/SeedField.Runtime.Js.Tests/
 - Jint 沙箱：语句数、内存、超时限制；禁止 `eval`/`Function` 字符串编译；不暴露 CLR 宿主对象；观察与意图仅以 JSON 文本交换。
 - Godot 4.7.2 Mono 可视切片：渲染实体、射程环、射击轨迹、消息脉冲与事件日志；两个单位由真实 Jint 脚本驱动，Godot 不承担任何战斗结算。
 - 控制器热部署：`ControllerSlot` 原子替换控制器并递增版本；加载失败保留旧版本；Godot 内 `F1` 编辑器 + `Ctrl+Enter` 部署。
+- 版本化存档：`WorldSaveSerializer` 保存世界；`GameSaveSerializer` 追加控制器脚本/版本；加载后状态哈希一致。
+- 蓝图/实例：不可变 `DeviceBlueprint` 版本、`DeploymentService.Deploy/Upgrade`、五分支覆盖判定；Godot `F2` 工坊面板。
+- 核心区最新产品：每个分支登记一个 `BlueprintId + Version`，可从核心区直接恢复。
+- E/C/B 约束：`PowerModule` 本地发电、`StateModule` 每 Tick 意图预算、`CommModule.BandwidthPerTick` 发信上限。
 
 ### 尚未实现
 
@@ -136,6 +140,21 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `--capture-editor` 实测：编辑射程阈值 `3500 → 4200`，部署为 v2，推进到 Tick 53，截图 `screenshots/m0-program-editor.png`。
 - `ControllerSlotTests` 覆盖成功替换、失败回退、脚本保留三类行为。
 
+### 5.3 工坊、五分支与资源约束
+
+- 场景现在由蓝图部署生成实例：A 侧 Scout Mk1、Strike Frame，B 侧 Strike Frame。
+- 工坊面板列出每个设计的最新版本、五分支覆盖与 A 侧实例；部署产生新实例，升级必须显式执行。
+- 实测 `--capture-workshop`：部署 `power v1`，将 Scout 从 v1 升级到 v2，状态栏显示实际结果；截图 `screenshots/m0-workshop.png`。
+- 引擎新增：`PowerModule` 逐 Tick 发电、`StateModule` 限制每 Tick 意图数、`CommModule.BandwidthPerTick` 限制发信数。
+- 测试覆盖：蓝图发布不改旧实例、显式升级、五分支覆盖、核心区最新产品恢复、发电上限、算力预算、带宽上限。
+
+### 5.4 存档与控制器版本
+
+- `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
+- `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
+- Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
+- 实测：`SAVE_SMOKE ok=True before=cf8469... mutated=6bb3e5... after=cf8469...`。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -153,12 +172,15 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 单区域/单一路由 | 无法验证跨区因果 | 下一阶段建立多区域与队列测试 |
-| 无存档 | 无法验证迁移与长期运行 | 在 M2 前引入版本化存档 |
+| 工坊部署未扣 M | 蓝图部署可免费扩军 | M2 接入本地物资库存与制造时间 |
+| 存储 S 未强制 | 收件箱与状态容量仍无上限 | 后续用 `StorageCapacity` 限制消息/历史保留 |
+| 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
 ## 8. 下一步（按依赖顺序）
 
-1. 迭代可视切片：正式相机/缩放、核心区与通信网络表现、诊断面板；补装导出模板后再做 Windows 包。
-2. 程序版本持久化：把 `ControllerSlot` 的部署脚本与版本写入存档，重启后仍可恢复。
+1. 多区域：区域链接、跨区消息队列、离屏推进一致性测试。
+2. 经济闭环：工坊部署扣 M、制造时间、存储 S 容量与断供/断联诊断。
+3. 迭代可视切片：正式相机/缩放、核心区与通信网络表现、诊断面板；补装导出模板后再做 Windows 包。
 2. 引入 `DeterministicRandom` 与种子状态，进入哈希；为命中/损伤变体提供可复现实验。
 3. 建立版本化 `WorldSave` 最小 schema 与迁移测试。
 4. 多区域：区域索引、跨区消息队列、离屏区推进一致性测试。

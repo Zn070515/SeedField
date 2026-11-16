@@ -9,6 +9,8 @@ public sealed class SimulationStatistics
 
     public long EnergyRegeneratedTotal { get; internal set; }
 
+    public long EnergyGeneratedTotal { get; internal set; }
+
     public long MaterialSpentTotal { get; internal set; }
 
     public long MaterialRegeneratedTotal { get; internal set; }
@@ -37,6 +39,9 @@ public sealed class WorldState
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
     public SortedDictionary<string, SeedCoreState> Cores { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Immutable workshop versions available to deployments in this world.</summary>
+    public WorkshopService Workshop { get; } = new();
 
     public List<MessageEnvelope> InFlightMessages { get; } = new();
 

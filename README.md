@@ -35,8 +35,9 @@
 | 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
 | 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
-| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器（net10.0）** |
-| 验证 | 19 个仿真测试 + 10 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗与编辑器截图已提交 |
+| 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例、显式升级、核心区最新产品登记 |
+| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
+| 验证 | 39 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊截图已提交 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -48,7 +49,7 @@
 | 仿真核心 | [`src/SeedField.Simulation`](src/SeedField.Simulation) | 唯一权威 `WorldState`、Tick、验证、事件、哈希 |
 | 脚本运行时 | [`src/SeedField.Runtime.Js`](src/SeedField.Runtime.Js) | Jint 4.18.0；JSON 进/JSON 出，不暴露 CLR |
 | Headless | [`src/SeedField.Headless`](src/SeedField.Headless) | 双文明纵切片 Runner |
-| 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片与程序编辑器；只渲染 `SimulationEvent` |
+| 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片、程序编辑器与工坊；只渲染 `SimulationEvent` |
 
 ## 快速开始
 
@@ -57,9 +58,10 @@ dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
 
-godot --path game/SeedField.Game                  # 实时可视化，F1 打开程序编辑器
-godot --path game/SeedField.Game -- --capture     # 战斗截图
+godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
+godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
+godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
 ```
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
@@ -74,6 +76,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |
 | [`visual slice`](docs/engineering/evidence/2026-11-16-godot-visual-slice.md) | Godot 画面、截图与 net10.0 运行证据 |
 | [`program deployment`](docs/engineering/evidence/2026-11-16-program-deployment.md) | 游戏内 JS 编辑、热部署与失败回退证据 |
+| [`workshop & economy`](docs/engineering/evidence/2026-11-16-workshop-and-economy.md) | 蓝图/实例/升级、五分支、存档与 E/C/B 约束证据 |
 
 ## 工程原则
 
@@ -88,4 +91,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制，没有正式美术、相机/完整 UI 与导出模板；多区域、存档、离线文明包、TypeScript `.d.ts` 与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；工坊部署尚未扣 M、存储 S 容量尚未强制；多区域、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

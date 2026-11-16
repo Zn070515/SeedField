@@ -56,6 +56,8 @@ public enum SimulationErrorCode
     OutOfBounds,
     WeaponCoolingDown,
     NoRoute,
+    NoBandwidth,
+    ComputeBudgetExceeded,
     CoreNotAvailable,
     DeploymentRejected,
     InvalidAction,

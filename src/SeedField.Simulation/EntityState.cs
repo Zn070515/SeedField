@@ -16,7 +16,12 @@ public sealed record EntityDefinition(
     SensorModule? Sensor = null,
     WeaponModule? Weapon = null,
     DriveModule? Drive = null,
-    CommModule? Comm = null);
+    CommModule? Comm = null,
+    string? BlueprintId = null,
+    int BlueprintVersion = 0,
+    string? ControllerProgramId = null,
+    PowerModule? Power = null,
+    StateModule? State = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -39,6 +44,11 @@ public sealed class EntityState
         Weapon = definition.Weapon;
         Drive = definition.Drive;
         Comm = definition.Comm;
+        BlueprintId = definition.BlueprintId;
+        BlueprintVersion = definition.BlueprintVersion;
+        ControllerProgramId = definition.ControllerProgramId;
+        Power = definition.Power;
+        State = definition.State;
     }
 
     public EntityId Id { get; }
@@ -49,23 +59,38 @@ public sealed class EntityState
 
     public Vec2 Position { get; internal set; }
 
-    public int MaxHealth { get; }
+    public int MaxHealth { get; internal set; }
 
     public int Health { get; internal set; }
 
     public long Energy { get; internal set; }
 
-    public long EnergyCapacity { get; }
+    public long EnergyCapacity { get; internal set; }
 
     public long Material { get; internal set; }
 
-    public SensorModule? Sensor { get; }
+    public SensorModule? Sensor { get; internal set; }
 
-    public WeaponModule? Weapon { get; }
+    public WeaponModule? Weapon { get; internal set; }
 
-    public DriveModule? Drive { get; }
+    public DriveModule? Drive { get; internal set; }
 
-    public CommModule? Comm { get; }
+    public CommModule? Comm { get; internal set; }
+
+    /// <summary>Design identity this instance was deployed from.</summary>
+    public string? BlueprintId { get; }
+
+    /// <summary>Explicitly deployed design version. Upgrades change this field only.</summary>
+    public int BlueprintVersion { get; internal set; }
+
+    /// <summary>Program reference recorded by the design; controller runtime is separate.</summary>
+    public string? ControllerProgramId { get; internal set; }
+
+    /// <summary>Optional local generation. Adds energy each tick up to capacity.</summary>
+    public PowerModule? Power { get; internal set; }
+
+    /// <summary>Optional compute/storage capability. Limits intents per tick.</summary>
+    public StateModule? State { get; internal set; }
 
     /// <summary>First tick on which the weapon may fire again.</summary>
     public long NextWeaponReadyTick { get; internal set; }

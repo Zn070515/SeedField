@@ -24,16 +24,21 @@ public sealed class ControllerSlot : IDisposable
     public ControllerSlot(
         string civilizationId,
         string initialScript,
-        JsControllerOptions? options = null)
+        JsControllerOptions? options = null,
+        int version = 1)
     {
         ArgumentException.ThrowIfNullOrEmpty(civilizationId);
         ArgumentNullException.ThrowIfNull(initialScript);
+        if (version <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(version), "Controller version starts at 1.");
+        }
 
         CivilizationId = civilizationId;
         _options = options;
         _controller = new JsController(civilizationId, initialScript, options);
         DeployedScript = initialScript;
-        Version = 1;
+        Version = version;
     }
 
     public string CivilizationId { get; }

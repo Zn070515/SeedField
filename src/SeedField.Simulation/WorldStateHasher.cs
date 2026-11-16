@@ -23,6 +23,7 @@ public static class WorldStateHasher
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
+        Append(ref hash, world.Statistics.EnergyGeneratedTotal);
         Append(ref hash, world.Statistics.MaterialSpentTotal);
         Append(ref hash, world.Statistics.MaterialRegeneratedTotal);
         Append(ref hash, world.Statistics.ShotsFired);
@@ -52,11 +53,61 @@ public static class WorldStateHasher
                 Append(ref hash, entity.EnergyCapacity);
                 Append(ref hash, entity.Material);
                 Append(ref hash, entity.NextWeaponReadyTick);
+                Append(ref hash, entity.BlueprintId ?? string.Empty);
+                Append(ref hash, entity.BlueprintVersion);
+                Append(ref hash, entity.ControllerProgramId ?? string.Empty);
 
                 AppendModule(ref hash, entity.Sensor);
                 AppendModule(ref hash, entity.Weapon);
                 AppendModule(ref hash, entity.Drive);
                 AppendModule(ref hash, entity.Comm);
+
+                Append(ref hash, entity.Power is not null);
+                if (entity.Power is not null)
+                {
+                    Append(ref hash, entity.Power.EnergyPerTick);
+                    Append(ref hash, entity.Power.StorageCapacity);
+                }
+
+                Append(ref hash, entity.State is not null);
+                if (entity.State is not null)
+                {
+                    Append(ref hash, entity.State.ComputePerTick);
+                    Append(ref hash, entity.State.StorageCapacity);
+                }
+            }
+        }
+
+        var blueprints = world.Workshop.GetAllVersions()
+            .OrderBy(blueprint => blueprint.BlueprintId, StringComparer.Ordinal)
+            .ThenBy(blueprint => blueprint.Version)
+            .ToList();
+        Append(ref hash, blueprints.Count);
+        foreach (var blueprint in blueprints)
+        {
+            Append(ref hash, blueprint.BlueprintId);
+            Append(ref hash, blueprint.Version);
+            Append(ref hash, blueprint.Name);
+            Append(ref hash, blueprint.MaxHealth);
+            Append(ref hash, blueprint.EnergyCapacity);
+            Append(ref hash, blueprint.ControllerProgramId ?? string.Empty);
+            AppendModule(ref hash, blueprint.Sensor);
+            AppendModule(ref hash, blueprint.Weapon);
+            AppendModule(ref hash, blueprint.Drive);
+            AppendModule(ref hash, blueprint.Comm);
+
+            Append(ref hash, blueprint.Power is not null);
+            if (blueprint.Power is not null)
+            {
+                Append(ref hash, blueprint.Power.EnergyPerTick);
+                Append(ref hash, blueprint.Power.StorageCapacity);
+            }
+
+            Append(ref hash, blueprint.State is not null);
+            if (blueprint.State is not null)
+            {
+                Append(ref hash, blueprint.State.ComputePerTick);
+                Append(ref hash, blueprint.State.StorageCapacity);
             }
         }
 
@@ -71,6 +122,14 @@ public static class WorldStateHasher
             Append(ref hash, core.Config.MaterialPerTick);
             Append(ref hash, core.Config.MaxEnergyReserve);
             Append(ref hash, core.Config.MaxMaterialReserve);
+
+            Append(ref hash, core.LatestProducts.Count);
+            foreach (var product in core.LatestProducts)
+            {
+                Append(ref hash, (int)product.Key);
+                Append(ref hash, product.Value.BlueprintId);
+                Append(ref hash, product.Value.Version);
+            }
         }
 
         var inFlight = world.InFlightMessages.OrderBy(message => message.Id).ToList();
@@ -148,6 +207,7 @@ public static class WorldStateHasher
         {
             Append(ref hash, module.LatencyTicks);
             Append(ref hash, module.EnergyCostPerMessage);
+            Append(ref hash, module.BandwidthPerTick);
         }
     }
 

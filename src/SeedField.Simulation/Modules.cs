@@ -19,4 +19,11 @@ public sealed record DriveModule(int SpeedMmPerTick, long EnergyCostPerMove);
 /// Minimal communications module. Messages are queued with a latency of at least one
 /// tick and are only readable by the receiving civilization once delivered.
 /// </summary>
-public sealed record CommModule(int LatencyTicks, long EnergyCostPerMessage);
+/// <summary>
+/// Minimal communications module. Bandwidth 0 means unlimited in this prototype;
+/// a positive value caps messages sent by the entity per tick.
+/// </summary>
+public sealed record CommModule(
+    int LatencyTicks,
+    long EnergyCostPerMessage,
+    int BandwidthPerTick = 0);

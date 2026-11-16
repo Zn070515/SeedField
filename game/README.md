@@ -1,14 +1,15 @@
 # Godot 客户端
 
-`game/SeedField.Game` 是 M0 可视切片：**Godot 4.7.2 Mono + .NET 10**，引用 `SeedField.Simulation` 与 `SeedField.Runtime.Js`。C# 仿真仍是唯一权威，Godot 只渲染 `SimulationEvent`；A 方 JavaScript 可在游戏内编辑并热部署。
+`game/SeedField.Game` 是 M0/M1 可视切片：**Godot 4.7.2 Mono + .NET 10**，引用 `SeedField.Simulation` 与 `SeedField.Runtime.Js`。C# 仿真仍是唯一权威，Godot 只渲染 `SimulationEvent`；A 方 JavaScript 可编辑热部署，工坊可部署蓝图并显式升级实例。
 
 ## 运行
 
 ```powershell
 dotnet build game/SeedField.Game/SeedField.Game.csproj
-godot --path game/SeedField.Game                       # 实时运行
-godot --path game/SeedField.Game -- --capture          # 战斗截图
-godot --path game/SeedField.Game -- --capture-editor   # 编辑器截图
+godot --path game/SeedField.Game                        # 实时运行
+godot --path game/SeedField.Game -- --capture            # 战斗截图
+godot --path game/SeedField.Game -- --capture-editor     # 编辑器截图
+godot --path game/SeedField.Game -- --capture-workshop   # 工坊截图
 ```
 
 截图输出：`screenshots/m0-combat.png`、`screenshots/m0-program-editor.png`。
@@ -18,14 +19,15 @@ godot --path game/SeedField.Game -- --capture-editor   # 编辑器截图
 | 路径 | 内容 |
 |---|---|
 | `Scenes/Main.tscn` | 单场景入口 |
-| `Scripts/Main.cs` | 场景生命周期、仿真步进、事件 HUD、截图 |
+| `Scripts/Main.cs` | 场景生命周期、仿真步进、事件 HUD、保存/读取、截图 |
 | `Scripts/ProgramEditor.cs` | A 方 JavaScript 编辑器与部署按钮 |
-| `Scripts/Scenarios.cs` | M0 世界与两个 JS 控制器脚本 |
+| `Scripts/WorkshopPanel.cs` | 五分支覆盖、蓝图部署与实例升级 |
+| `Scripts/Scenarios.cs` | M0/M1 世界、蓝图与两个 JS 控制器脚本 |
 | `screenshots/` | 真实运行截图 |
 
 ## 操作
 
-`SPACE` 暂停 / 继续 · `N` 单 Tick · `R` 重置 · `F1` 程序编辑器 · `Ctrl+Enter` 部署 · `F12` 截图。
+`SPACE` 暂停 / 继续 · `N` 单 Tick · `R` 重置 · `F1` 程序编辑器 · `F2` 工坊 · `Ctrl+Enter` 部署 · `F5` 保存 · `F9` 读取 · `F12` 截图。
 
 ## 程序部署
 
@@ -33,6 +35,20 @@ godot --path game/SeedField.Game -- --capture-editor   # 编辑器截图
 - 部署会新建 Jint 控制器并原子替换当前版本，版本号 +1。
 - 编译/加载失败时保留旧控制器与旧版本，错误显示在编辑器状态栏。
 - Godot 只提交脚本文本；控制器仍在 `SeedField.Runtime.Js` 中执行。
+
+## 工坊与蓝图
+
+- `F2` 打开工坊；编辑/浏览时暂停。
+- 每个蓝图版本不可变；发布 v2 不会改变已部署实例。
+- 部署生成新实例并记录 `BlueprintId + Version`；升级必须显式执行。
+- 五分支覆盖由蓝图注册表计算；`5/5` 时 HUD 显示 `PvE READY`。
+- 部署的材料成本与存储 S 容量尚未强制，属于已知 M1 缺口。
+
+## 存档
+
+- `F5` 保存到 `user://seedfield-save.json`，包含世界、蓝图注册表、在途消息、核心区最新产品与 A/B 控制器版本。
+- `F9` 读取；失败保留当前世界并显示错误。
+- `--save-smoke` 自动执行保存→变更→读取并打印哈希一致性。
 
 ## 约束
 
