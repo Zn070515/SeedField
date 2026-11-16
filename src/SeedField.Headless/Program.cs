@@ -32,6 +32,11 @@ internal static class Program
             return RunEnergyDemo();
         }
 
+        if (args.Contains("--region-load"))
+        {
+            return RunRegionLoadDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -175,6 +180,49 @@ internal static class Program
         Console.WriteLine(
             $"ENERGY drew targetLocal={targetLocal} targetGrid={targetGrid} " +
             $"sourceLocal={sourceLocal} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunRegionLoadDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Drive: new DriveModule(1_000, EnergyCostPerMove: 1)))
+            .Build();
+
+        var engine = new SimulationEngine(world);
+        engine.DeactivateRegion("r0");
+
+        var rejected = engine.Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+        });
+        var inactiveCode = rejected.IntentResults[0].ErrorCode;
+
+        engine.ActivateRegion("r0");
+        var accepted = engine.Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+        });
+
+        var position = world.FindEntity(new EntityId(1))!.Position;
+        var ok = inactiveCode == SimulationErrorCode.RegionInactive &&
+                 accepted.IntentResults[0].Accepted &&
+                 position == new Vec2(500, 500);
+
+        Console.WriteLine(
+            $"REGION_LOAD inactive={inactiveCode} activeAccepted={accepted.IntentResults[0].Accepted} " +
+            $"position={position} ok={ok}");
 
         return ok ? 0 : 1;
     }

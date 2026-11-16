@@ -8,12 +8,54 @@ namespace SeedField.Simulation;
 /// </summary>
 public sealed class SimulationEngine
 {
+    private readonly HashSet<string> _inactiveRegions = new(StringComparer.Ordinal);
+
     public SimulationEngine(WorldState world)
     {
         World = world ?? throw new ArgumentNullException(nameof(world));
     }
 
     public WorldState World { get; }
+
+    /// <summary>
+    /// Active-region gating is a session concern, not world state. Inactive regions
+    /// still run passive systems (power generation, deliveries, core regeneration);
+    /// only controller intents are rejected there.
+    /// </summary>
+    public bool IsRegionActive(string regionId) => !_inactiveRegions.Contains(regionId);
+
+    public void DeactivateRegion(string regionId)
+    {
+        if (!World.Regions.ContainsKey(regionId))
+        {
+            throw new ArgumentException($"Unknown region '{regionId}'.", nameof(regionId));
+        }
+
+        _inactiveRegions.Add(regionId);
+    }
+
+    public void ActivateRegion(string regionId) => _inactiveRegions.Remove(regionId);
+
+    public void SetActiveRegions(IEnumerable<string> activeRegionIds)
+    {
+        var active = new HashSet<string>(activeRegionIds, StringComparer.Ordinal);
+        foreach (var regionId in active)
+        {
+            if (!World.Regions.ContainsKey(regionId))
+            {
+                throw new ArgumentException($"Unknown region '{regionId}'.", nameof(activeRegionIds));
+            }
+        }
+
+        _inactiveRegions.Clear();
+        foreach (var regionId in World.Regions.Keys)
+        {
+            if (!active.Contains(regionId))
+            {
+                _inactiveRegions.Add(regionId);
+            }
+        }
+    }
 
     public Observation BuildObservation(string civilizationId) =>
         ObservationBuilder.Build(World, civilizationId);
@@ -240,6 +282,18 @@ public sealed class SimulationEngine
         if (entity is null || region is null)
         {
             Reject(intent, SimulationErrorCode.UnknownEntity, "Entity does not exist.", tick, events, results);
+            return;
+        }
+
+        if (!IsRegionActive(region.Id))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.RegionInactive,
+                $"Region '{region.Id}' is not active; controller intents are rejected.",
+                tick,
+                events,
+                results);
             return;
         }
 

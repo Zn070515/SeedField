@@ -94,6 +94,7 @@ public enum SimulationErrorCode
     WeaponCoolingDown,
     NoRoute,
     NoBandwidth,
+    RegionInactive,
     ComputeBudgetExceeded,
     CoreNotAvailable,
     DeploymentRejected,
