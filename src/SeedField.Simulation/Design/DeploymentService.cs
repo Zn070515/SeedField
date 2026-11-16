@@ -13,6 +13,18 @@ public static class DeploymentService
         string regionId,
         Vec2 position)
     {
+        Validate(world, blueprint, civilizationId, regionId, position);
+        ConsumeMaterial(world, blueprint, civilizationId, regionId);
+        return CreateInstance(world, blueprint, civilizationId, regionId, position);
+    }
+
+    public static void Validate(
+        WorldState world,
+        DeviceBlueprint blueprint,
+        string civilizationId,
+        string regionId,
+        Vec2 position)
+    {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(blueprint);
         ArgumentException.ThrowIfNullOrEmpty(civilizationId);
@@ -42,6 +54,21 @@ public static class DeploymentService
                 "CORE_PROTECTED",
                 $"Region '{regionId}' is a protected core region for another civilization.");
         }
+    }
+
+    public static void ConsumeMaterial(
+        WorldState world,
+        DeviceBlueprint blueprint,
+        string civilizationId,
+        string regionId)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(blueprint);
+
+        if (!world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new BlueprintValidationException("UNKNOWN_REGION", $"Region '{regionId}' does not exist.");
+        }
 
         if (blueprint.MaterialCost > 0 &&
             !region.TryConsumeMaterial(civilizationId, blueprint.MaterialCost))
@@ -53,6 +80,22 @@ public static class DeploymentService
         }
 
         world.Statistics.MaterialSpentTotal += blueprint.MaterialCost;
+    }
+
+    public static EntityState CreateInstance(
+        WorldState world,
+        DeviceBlueprint blueprint,
+        string civilizationId,
+        string regionId,
+        Vec2 position)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(blueprint);
+
+        if (!world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new BlueprintValidationException("UNKNOWN_REGION", $"Region '{regionId}' does not exist.");
+        }
 
         var definition = new EntityDefinition(
             new EntityId(world.NextEntityId++),

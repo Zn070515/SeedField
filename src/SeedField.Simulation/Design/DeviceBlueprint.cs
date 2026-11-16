@@ -23,7 +23,8 @@ public sealed record DeviceBlueprint(
     PowerModule? Power = null,
     StateModule? State = null,
     string? ControllerProgramId = null,
-    long MaterialCost = 0)
+    long MaterialCost = 0,
+    int BuildTicks = 0)
 {
     public DeviceBranch Branches
     {
@@ -168,6 +169,13 @@ public sealed class WorkshopService
             throw new BlueprintValidationException(
                 "INVALID_MATERIAL",
                 "Material cost must be non-negative.");
+        }
+
+        if (blueprint.BuildTicks < 0)
+        {
+            throw new BlueprintValidationException(
+                "INVALID_BUILD_TIME",
+                "Build ticks must be non-negative.");
         }
 
         if (blueprint.Branches == DeviceBranch.None)

@@ -138,6 +138,23 @@ public sealed record EntityDeployed(
     string RegionId,
     Vec2 Position) : SimulationEvent(Tick);
 
+public sealed record ConstructionQueued(
+    long Tick,
+    long OrderId,
+    string CivilizationId,
+    string BlueprintId,
+    int BlueprintVersion,
+    string RegionId,
+    Vec2 Position,
+    long CompleteTick) : SimulationEvent(Tick);
+
+public sealed record ConstructionFailed(
+    long Tick,
+    long OrderId,
+    string CivilizationId,
+    string BlueprintId,
+    string Reason) : SimulationEvent(Tick);
+
 public sealed record EntityUpgraded(
     long Tick,
     EntityId EntityId,

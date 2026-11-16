@@ -366,7 +366,9 @@ public partial class Main : Node2D
 
         _workshop.SetStatus(
             result.Success
-                ? $"deployed {blueprintId} v{latest.Version} as entity {result.EntityId}"
+                ? result.EntityId is { } deployedId
+                    ? $"deployed {blueprintId} v{latest.Version} as entity {deployedId}"
+                    : $"queued {blueprintId} v{latest.Version}: {result.Message}"
                 : $"deploy failed [{result.ErrorCode}]: {result.Message}",
             !result.Success);
 
@@ -598,7 +600,7 @@ public partial class Main : Node2D
         _world = Scenarios.BuildWorld();
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
-        _slotB = new ControllerSlot("B", Scenarios.ScriptB);
+        _slotB = new ControllerSlot("B", BuiltInOpponents.Skirmisher.ProgramSource);
         RebuildDeviceControllers();
 
         _history.Clear();
@@ -1055,7 +1057,9 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 716),
-            "SPACE pause · N step · R reset · F1 program · F2 workshop · F5 save · F9 load · F12 screenshot",
+            $"OPPONENT {BuiltInOpponents.Skirmisher.Manifest.PackageId} " +
+            $"v{BuiltInOpponents.Skirmisher.Manifest.Version} · " +
+            "SPACE pause · N step · F1 program · F2 workshop · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,
             11,

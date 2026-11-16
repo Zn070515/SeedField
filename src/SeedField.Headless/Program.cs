@@ -37,6 +37,11 @@ internal static class Program
             return RunRegionLoadDemo();
         }
 
+        if (args.Contains("--construction"))
+        {
+            return RunConstructionDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -223,6 +228,50 @@ internal static class Program
         Console.WriteLine(
             $"REGION_LOAD inactive={inactiveCode} activeAccepted={accepted.IntentResults[0].Accepted} " +
             $"position={position} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunConstructionDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 100)
+            .Build();
+        var blueprint = world.Workshop.Publish(new DeviceBlueprint(
+            "fabricator",
+            0,
+            "Fabricator",
+            20,
+            10,
+            Power: new PowerModule(1, 10),
+            MaterialCost: 20,
+            BuildTicks: 3));
+        var engine = new SimulationEngine(world);
+
+        var result = engine.ExecuteDeploymentCommand(new DeployCommand(
+            "A",
+            blueprint,
+            "r0",
+            new Vec2(100, 100)));
+
+        Console.WriteLine(
+            $"CONSTRUCTION queued={result.Success} entity={result.EntityId} " +
+            $"orders={world.ConstructionOrders.Count} material={world.Regions["r0"].GetMaterial("A")}");
+
+        while (world.ConstructionOrders.Count > 0)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
+
+        var entity = world.EnumerateEntities().SingleOrDefault();
+        var ok = result.Success &&
+                 result.EntityId is null &&
+                 entity is not null &&
+                 world.Regions["r0"].GetMaterial("A") == 80;
+        Console.WriteLine(
+            $"CONSTRUCTION completed tick={world.Tick} entity={entity?.Id} " +
+            $"material={world.Regions["r0"].GetMaterial("A")} ok={ok}");
 
         return ok ? 0 : 1;
     }

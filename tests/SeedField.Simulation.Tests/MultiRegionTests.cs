@@ -34,6 +34,38 @@ public sealed class MultiRegionTests
     }
 
     [Fact]
+    public void CrossCivilizationRemoteMessageRequiresTargetEndpointAndLink()
+    {
+        var world = NewWorld()
+            .AddLink("l01", "r0", "r1", latencyTicks: 2)
+            .AddEntity(Sender(new Vec2(100, 100)))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "B",
+                "r1",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 0)))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var result = engine.Step(new Intent[]
+        {
+            new SendMessageIntent(new EntityId(1), "B", "diplomacy", "hello", "r1"),
+        });
+
+        Assert.True(Assert.Single(result.IntentResults).Accepted);
+        Assert.Equal(3, Assert.Single(world.InFlightMessages).DeliverTick);
+        Step(engine, 2);
+        var message = Assert.Single(world.GetInbox("B"));
+        Assert.Equal("r1", message.TargetRegionId);
+        Assert.Empty(world.GetInbox("A"));
+    }
+
+    [Fact]
     public void CrossRegionMessageWithoutLinkIsRejected()
     {
         var world = NewWorld()

@@ -102,6 +102,7 @@ public sealed class SimulationEngine
         DeliverDueMessages(World.Tick, events);
         DeliverDueMaterialShipments(World.Tick, events);
         DeliverDueEnergyShipments(World.Tick, events);
+        DeliverDueConstructions(World.Tick, events);
         RegenerateCores(World.Tick, events);
 
         return new TickResult(tick, events, results);
@@ -199,6 +200,52 @@ public sealed class SimulationEngine
             {
                 case DeployCommand deploy:
                 {
+                    DeploymentService.Validate(
+                        World,
+                        deploy.Blueprint,
+                        deploy.CivilizationId,
+                        deploy.RegionId,
+                        deploy.Position);
+
+                    if (deploy.Blueprint.BuildTicks > 0)
+                    {
+                        DeploymentService.ConsumeMaterial(
+                            World,
+                            deploy.Blueprint,
+                            deploy.CivilizationId,
+                            deploy.RegionId);
+
+                        var orderId = World.NextConstructionOrderId++;
+                        var completeTick = tick + deploy.Blueprint.BuildTicks;
+                        World.ConstructionOrders.Add(new ConstructionOrder(
+                            orderId,
+                            deploy.CivilizationId,
+                            deploy.Blueprint.BlueprintId,
+                            deploy.Blueprint.Version,
+                            deploy.RegionId,
+                            deploy.Position,
+                            tick,
+                            completeTick));
+                        World.Statistics.ConstructionsStartedTotal += 1;
+
+                        var queued = new ConstructionQueued(
+                            tick,
+                            orderId,
+                            deploy.CivilizationId,
+                            deploy.Blueprint.BlueprintId,
+                            deploy.Blueprint.Version,
+                            deploy.RegionId,
+                            deploy.Position,
+                            completeTick);
+
+                        return new DeploymentCommandResult(
+                            true,
+                            null,
+                            SimulationErrorCode.None,
+                            $"Queued {deploy.Blueprint.BlueprintId} v{deploy.Blueprint.Version} for tick {completeTick}.",
+                            new SimulationEvent[] { queued });
+                    }
+
                     var entity = DeploymentService.Deploy(
                         World,
                         deploy.Blueprint,
@@ -241,6 +288,45 @@ public sealed class SimulationEngine
                 Array.Empty<SimulationEvent>());
         }
     }
+
+    /// <summary>
+    /// Unified host entry for core recovery. Dialogue/UI must use this command path
+    /// rather than calling the low-level bootstrap methods directly.
+    /// </summary>
+    public RecoveryCommandResult ExecuteRecoveryCommand(RecoveryCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return command switch
+        {
+            BootstrapCoreCommand bootstrap => FromBootstrap(
+                TryBootstrapFromCore(
+                    bootstrap.CivilizationId,
+                    bootstrap.Blueprint,
+                    bootstrap.Position)),
+            RestoreCoreProductCommand restore => FromBootstrap(
+                TryRestoreLatestProduct(
+                    restore.CivilizationId,
+                    restore.Branch,
+                    restore.Position,
+                    restore.EnergyCost,
+                    restore.MaterialCost)),
+            _ => new RecoveryCommandResult(
+                false,
+                null,
+                SimulationErrorCode.DeploymentRejected,
+                "Unknown recovery command.",
+                null),
+        };
+    }
+
+    private static RecoveryCommandResult FromBootstrap(BootstrapResult result) =>
+        new(
+            result.Success,
+            result.EntityId,
+            result.ErrorCode,
+            result.Message,
+            result.Event);
 
     /// <summary>
     /// Restores the latest confirmed product for one branch directly from the core.
@@ -657,12 +743,12 @@ public sealed class SimulationEngine
             return;
         }
 
-        if (!string.Equals(intent.ToCivilizationId, entity.CivilizationId, StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(intent.ToCivilizationId))
         {
             Reject(
                 intent,
-                SimulationErrorCode.NoRoute,
-                "This slice only routes messages inside the sender's civilization.",
+                SimulationErrorCode.InvalidAction,
+                "Message recipient civilization is required.",
                 tick,
                 events,
                 results);
@@ -691,10 +777,28 @@ public sealed class SimulationEngine
             return;
         }
 
+        var sameCivilization = string.Equals(
+            intent.ToCivilizationId,
+            entity.CivilizationId,
+            StringComparison.Ordinal);
+
+        if (!sameCivilization &&
+            !HasCommEndpoint(targetRegionId, intent.ToCivilizationId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"Target civilization has no comm endpoint in region '{targetRegionId}'.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
         IReadOnlyList<RegionLink> route = Array.Empty<RegionLink>();
         if (!string.Equals(targetRegionId, entity.RegionId, StringComparison.Ordinal))
         {
-            if (!HasCommEndpoint(targetRegionId, entity.CivilizationId))
+            if (sameCivilization && !HasCommEndpoint(targetRegionId, entity.CivilizationId))
             {
                 Reject(
                     intent,
@@ -1251,6 +1355,72 @@ public sealed class SimulationEngine
             match.WinnerCivilizationId = pair.Key;
             events.Add(new MatchEnded(tick, pair.Key, null, pair.Value));
             break;
+        }
+    }
+
+    private void DeliverDueConstructions(long tick, List<SimulationEvent> events)
+    {
+        if (World.ConstructionOrders.Count == 0)
+        {
+            return;
+        }
+
+        var due = World.ConstructionOrders
+            .Where(order => order.CompleteTick <= tick)
+            .OrderBy(order => order.CompleteTick)
+            .ThenBy(order => order.Id)
+            .ToList();
+
+        foreach (var order in due)
+        {
+            World.ConstructionOrders.Remove(order);
+            var blueprint = World.Workshop.GetVersion(
+                order.BlueprintId,
+                order.BlueprintVersion);
+            if (blueprint is null)
+            {
+                events.Add(new ConstructionFailed(
+                    tick,
+                    order.Id,
+                    order.CivilizationId,
+                    order.BlueprintId,
+                    "Blueprint version is missing."));
+                continue;
+            }
+
+            try
+            {
+                DeploymentService.Validate(
+                    World,
+                    blueprint,
+                    order.CivilizationId,
+                    order.RegionId,
+                    order.Position);
+                var entity = DeploymentService.CreateInstance(
+                    World,
+                    blueprint,
+                    order.CivilizationId,
+                    order.RegionId,
+                    order.Position);
+                World.Statistics.ConstructionsCompletedTotal += 1;
+                events.Add(new EntityDeployed(
+                    tick,
+                    entity.Id,
+                    order.CivilizationId,
+                    blueprint.BlueprintId,
+                    blueprint.Version,
+                    entity.RegionId,
+                    entity.Position));
+            }
+            catch (BlueprintValidationException exception)
+            {
+                events.Add(new ConstructionFailed(
+                    tick,
+                    order.Id,
+                    order.CivilizationId,
+                    order.BlueprintId,
+                    exception.Message));
+            }
         }
     }
 

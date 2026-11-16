@@ -20,8 +20,8 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 86 passed
-SeedField.Runtime.Js.Tests: 17 passed
+SeedField.Simulation.Tests: 93 passed
+SeedField.Runtime.Js.Tests: 22 passed
 ```
 
 新增覆盖：

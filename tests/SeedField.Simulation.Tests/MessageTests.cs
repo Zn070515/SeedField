@@ -87,19 +87,76 @@ public sealed class MessageTests
     }
 
     [Fact]
-    public void SendingToAnotherCivilizationIsRejectedUntilCrossCivilizationRoutingExists()
+    public void CrossCivilizationMessageRequiresATargetCommEndpoint()
     {
-        var world = TestWorlds.CombatPair();
-        var engine = new SimulationEngine(world);
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "B",
+                "r0",
+                new Vec2(500, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
+            .Build();
 
-        var result = engine.Step(new Intent[]
+        var result = new SimulationEngine(world).Step(new Intent[]
         {
             new SendMessageIntent(new EntityId(1), "B", "hello", "world"),
         });
 
-        var rejection = Assert.Single(result.IntentResults);
-        Assert.False(rejection.Accepted);
-        Assert.Equal(SimulationErrorCode.NoRoute, rejection.ErrorCode);
+        Assert.True(Assert.Single(result.IntentResults).Accepted);
+        var delivered = Assert.Single(world.GetInbox("B"));
+        Assert.Equal("hello", delivered.Topic);
+        Assert.Empty(world.GetInbox("A"));
+    }
+
+    [Fact]
+    public void CrossCivilizationMessageWithoutTargetCommIsRejected()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 1)))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "B",
+                "r0",
+                new Vec2(500, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0))
+            .Build();
+
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new SendMessageIntent(new EntityId(1), "B", "hello", "world"),
+        });
+
+        Assert.Equal(SimulationErrorCode.NoRoute, Assert.Single(result.IntentResults).ErrorCode);
         Assert.Empty(world.InFlightMessages);
+        Assert.Empty(world.GetInbox("B"));
     }
 }

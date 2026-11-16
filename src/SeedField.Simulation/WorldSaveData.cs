@@ -23,7 +23,20 @@ public sealed record WorldSaveData(
     long NextEnergyShipmentId = 0,
     ControlPointSaveData? ControlPoint = null,
     ControlPointSaveData[]? ControlPoints = null,
-    MatchSaveData? Match = null);
+    MatchSaveData? Match = null,
+    ConstructionOrderSaveData[]? ConstructionOrders = null,
+    long NextConstructionOrderId = 0);
+
+public sealed record ConstructionOrderSaveData(
+    long Id,
+    string CivilizationId,
+    string BlueprintId,
+    int BlueprintVersion,
+    string RegionId,
+    int X,
+    int Y,
+    long StartTick,
+    long CompleteTick);
 
 public sealed record MatchSaveData(
     int CapturedPointsToWin,
@@ -131,7 +144,8 @@ public sealed record BlueprintSaveData(
     PowerSaveData? Power,
     StateSaveData? State,
     string? ControllerProgramId,
-    long MaterialCost = 0);
+    long MaterialCost = 0,
+    int BuildTicks = 0);
 
 public sealed record SeedCoreProductSaveData(
     DeviceBranch Branch,
@@ -190,7 +204,9 @@ public sealed record StatisticsSaveData(
     long EnergyStoredTotal = 0,
     long EnergyDrawnTotal = 0,
     long EnergyLostTotal = 0,
-    long MaterialLostTotal = 0);
+    long MaterialLostTotal = 0,
+    long ConstructionsStartedTotal = 0,
+    long ConstructionsCompletedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

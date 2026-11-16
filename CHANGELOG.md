@@ -21,6 +21,7 @@
 - 统一部署/升级命令：`DeployCommand` / `UpgradeCommand` 与领域事件。
 - 存档 schema v2，支持 v1 迁移；摧毁实体库存损失进入统计。
 - 多控制点 PvE 目标：独占驻留占领、争夺重置、占领数量阈值胜负、HUD 与存档 v3。
+- 跨文明通信（目标区 Comm 端点）、内置受信任对手包、核心区恢复命令、建造队列。
 - `.github` CI、依赖审查、Dependabot、Issue/PR 模板与提交规范。
 
 ### Changed

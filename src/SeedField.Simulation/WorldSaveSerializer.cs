@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 3;
+    public const int CurrentSchemaVersion = 4;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -92,7 +92,9 @@ public static class WorldSaveSerializer
                 world.Statistics.EnergyStoredTotal,
                 world.Statistics.EnergyDrawnTotal,
                 world.Statistics.EnergyLostTotal,
-                world.Statistics.MaterialLostTotal),
+                world.Statistics.MaterialLostTotal,
+                world.Statistics.ConstructionsStartedTotal,
+                world.Statistics.ConstructionsCompletedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -140,7 +142,21 @@ public static class WorldSaveSerializer
                 ? null
                 : new MatchSaveData(
                     world.Match.Rules.CapturedPointsToWin,
-                    world.Match.WinnerCivilizationId));
+                    world.Match.WinnerCivilizationId),
+            world.ConstructionOrders
+                .OrderBy(order => order.Id)
+                .Select(order => new ConstructionOrderSaveData(
+                    order.Id,
+                    order.CivilizationId,
+                    order.BlueprintId,
+                    order.BlueprintVersion,
+                    order.RegionId,
+                    order.Position.X,
+                    order.Position.Y,
+                    order.StartTick,
+                    order.CompleteTick))
+                .ToArray(),
+            world.NextConstructionOrderId);
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -637,6 +653,44 @@ public static class WorldSaveSerializer
             };
         }
 
+        var maxConstructionOrderId = 0L;
+        foreach (var orderData in data.ConstructionOrders ?? Array.Empty<ConstructionOrderSaveData>())
+        {
+            if (orderData.Id <= 0 ||
+                orderData.CompleteTick <= orderData.StartTick ||
+                !world.Regions.TryGetValue(orderData.RegionId, out var orderRegion) ||
+                !orderRegion.Contains(new Vec2(orderData.X, orderData.Y)) ||
+                world.Workshop.GetVersion(orderData.BlueprintId, orderData.BlueprintVersion) is null)
+            {
+                throw Invalid(
+                    "INVALID_CONSTRUCTION_ORDER",
+                    $"Construction order '{orderData.Id}' is invalid.");
+            }
+
+            world.ConstructionOrders.Add(new ConstructionOrder(
+                orderData.Id,
+                orderData.CivilizationId,
+                orderData.BlueprintId,
+                orderData.BlueprintVersion,
+                orderData.RegionId,
+                new Vec2(orderData.X, orderData.Y),
+                orderData.StartTick,
+                orderData.CompleteTick));
+            maxConstructionOrderId = Math.Max(maxConstructionOrderId, orderData.Id);
+        }
+
+        var nextConstructionOrderId = data.NextConstructionOrderId > 0
+            ? data.NextConstructionOrderId
+            : maxConstructionOrderId + 1;
+        if (nextConstructionOrderId <= maxConstructionOrderId)
+        {
+            throw Invalid(
+                "INVALID_NEXT_CONSTRUCTION_ORDER_ID",
+                "NextConstructionOrderId must exceed every stored order id.");
+        }
+
+        world.NextConstructionOrderId = nextConstructionOrderId;
+
         ApplyStatistics(world, data.Statistics);
         return world;
     }
@@ -678,7 +732,8 @@ public static class WorldSaveSerializer
                     blueprint.State.ComputePerTick,
                     blueprint.State.StorageCapacity),
             blueprint.ControllerProgramId,
-            blueprint.MaterialCost);
+            blueprint.MaterialCost,
+            blueprint.BuildTicks);
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -717,7 +772,8 @@ public static class WorldSaveSerializer
                     blueprint.State.ComputePerTick,
                     blueprint.State.StorageCapacity),
             blueprint.ControllerProgramId,
-            blueprint.MaterialCost);
+            blueprint.MaterialCost,
+            blueprint.BuildTicks);
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -839,6 +895,8 @@ public static class WorldSaveSerializer
         world.Statistics.EnergyDrawnTotal = statistics.EnergyDrawnTotal;
         world.Statistics.EnergyLostTotal = statistics.EnergyLostTotal;
         world.Statistics.MaterialLostTotal = statistics.MaterialLostTotal;
+        world.Statistics.ConstructionsStartedTotal = statistics.ConstructionsStartedTotal;
+        world.Statistics.ConstructionsCompletedTotal = statistics.ConstructionsCompletedTotal;
     }
 
     /// <summary>
@@ -860,6 +918,8 @@ public static class WorldSaveSerializer
                             (data.ControlPoint is null
                                 ? Array.Empty<ControlPointSaveData>()
                                 : new[] { data.ControlPoint }),
+            ConstructionOrders = data.ConstructionOrders ??
+                                 Array.Empty<ConstructionOrderSaveData>(),
         };
 
     private static ControlPointSaveData ToControlPointSave(ControlPointState point) =>

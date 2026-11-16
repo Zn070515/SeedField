@@ -40,6 +40,10 @@ public sealed class SimulationStatistics
     public long EnergyLostTotal { get; internal set; }
 
     public long MaterialLostTotal { get; internal set; }
+
+    public long ConstructionsStartedTotal { get; internal set; }
+
+    public long ConstructionsCompletedTotal { get; internal set; }
 }
 
 /// <summary>
@@ -57,6 +61,8 @@ public sealed class WorldState
     public long NextShipmentId { get; internal set; } = 1;
 
     public long NextEnergyShipmentId { get; internal set; } = 1;
+
+    public long NextConstructionOrderId { get; internal set; } = 1;
 
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
@@ -80,6 +86,8 @@ public sealed class WorldState
     public List<MaterialShipment> InTransitMaterial { get; } = new();
 
     public List<EnergyShipment> InTransitEnergy { get; } = new();
+
+    public List<ConstructionOrder> ConstructionOrders { get; } = new();
 
     /// <summary>Delivered messages per civilization, in delivery order.</summary>
     public SortedDictionary<string, List<DeliveredMessage>> Inboxes { get; } = new(StringComparer.Ordinal);

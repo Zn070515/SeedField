@@ -43,8 +43,8 @@
 
 ### R4 — High（本轮已部分修复）：核心区保护只存在于 API，不存在于世界规则
 
-> 已修复：外文明部署进核心区、外文明实体在核心区行动、存档中的外文明核心实体均被拒绝。  
-> 仍开放：恢复成本由调用方传入、恢复命令未统一、精确配额/围困破局。
+> 已修复：外文明部署/核心区行动/存档校验拒绝；`BootstrapCoreCommand`/`RestoreCoreProductCommand` 统一恢复入口。  
+> 仍开放：恢复成本仍由场景传入、精确配额与围困破局。
 
 - 文档：`CORE_ZONE_RECOVERY_AND_FAILURE.md`（CONFIRMED R-01/R-02）；`DECISION_REGISTER` R-01/R-02。
 - 现状：`SeedCoreState` 只有储量与最新产品引用；核心区是普通 `RegionState`，没有“敌对意图不可进入/不可摧毁”的仿真规则；`TryBootstrapFromCore`/`TryRestoreLatestProduct` 是公开 C# API，成本由调用方随意传入。

@@ -75,6 +75,10 @@ tests/SeedField.Runtime.Js.Tests/
 - 存档 schema v2：接受 v1 并迁移；世界与游戏存档均有迁移测试。
 - 摧毁库存审计：`EntityInventoryLost` 与 `EnergyLostTotal`/`MaterialLostTotal` 进入事件、统计、存档与哈希。
 - 控制点目标：多控制点、独占驻留计时、争夺/离开重置、占领数量阈值胜负；Godot HUD 与 `--capture-victory`。
+- 跨文明通信：目标文明必须在目标区域有 Comm 端点；消息进入目标文明收件箱。
+- 内置离线对手：受信任包清单校验（schema/路径/大小/入口），Skirmisher/Turtle；第三方导入仍关闭。
+- 建造队列：`BuildTicks` 蓝图先扣 M，到期由引擎生成实体；订单进入存档/哈希。
+- 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
@@ -163,7 +167,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=f09576... mutated=d2903e... after=f09576...`。
+- 实测：`SAVE_SMOKE ok=True before=5283dd... mutated=3f6a87... after=5283dd...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -240,7 +244,9 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 活动区域无性能收益 | 非活动区仍跑被动系统，未真正离屏简化 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
-| 跨文明通信未开放 | 无法验证协议、结盟或断联对抗 | 先完成路由权限与情报过滤 |
+| 跨文明协议仅基础收发 | 没有结盟/条约/身份认证 | 后续加入协议层与情报权限 |
+| 建造失败不退款 | 到期目标失效会损失已付 M | 后续定义取消/退款/残骸规则 |
+| 第三方对手包未导入 | 只有内置受信任包 | 先完成进程隔离与 IPC 校验 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
 ## 8. 下一步（按依赖顺序）

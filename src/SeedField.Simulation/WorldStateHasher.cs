@@ -22,6 +22,7 @@ public static class WorldStateHasher
         Append(ref hash, world.NextMessageId);
         Append(ref hash, world.NextShipmentId);
         Append(ref hash, world.NextEnergyShipmentId);
+        Append(ref hash, world.NextConstructionOrderId);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -41,6 +42,8 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EnergyDrawnTotal);
         Append(ref hash, world.Statistics.EnergyLostTotal);
         Append(ref hash, world.Statistics.MaterialLostTotal);
+        Append(ref hash, world.Statistics.ConstructionsStartedTotal);
+        Append(ref hash, world.Statistics.ConstructionsCompletedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -133,6 +136,23 @@ public static class WorldStateHasher
             Append(ref hash, shipment.ArriveTick);
         }
 
+        var constructionOrders = world.ConstructionOrders
+            .OrderBy(order => order.Id)
+            .ToList();
+        Append(ref hash, constructionOrders.Count);
+        foreach (var order in constructionOrders)
+        {
+            Append(ref hash, order.Id);
+            Append(ref hash, order.CivilizationId);
+            Append(ref hash, order.BlueprintId);
+            Append(ref hash, order.BlueprintVersion);
+            Append(ref hash, order.RegionId);
+            Append(ref hash, order.Position.X);
+            Append(ref hash, order.Position.Y);
+            Append(ref hash, order.StartTick);
+            Append(ref hash, order.CompleteTick);
+        }
+
         var energyShipments = world.InTransitEnergy
             .OrderBy(shipment => shipment.Id)
             .ToList();
@@ -176,6 +196,7 @@ public static class WorldStateHasher
             Append(ref hash, blueprint.EnergyCapacity);
             Append(ref hash, blueprint.ControllerProgramId ?? string.Empty);
             Append(ref hash, blueprint.MaterialCost);
+            Append(ref hash, blueprint.BuildTicks);
             AppendModule(ref hash, blueprint.Sensor);
             AppendModule(ref hash, blueprint.Weapon);
             AppendModule(ref hash, blueprint.Drive);
