@@ -27,6 +27,18 @@ public sealed record MaterialShipment(
     long SentTick,
     long ArriveTick);
 
+/// <summary>Energy committed to a region link and not yet in the destination grid.</summary>
+public sealed record EnergyShipment(
+    long Id,
+    EntityId FromEntityId,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    string Route,
+    long Amount,
+    long SentTick,
+    long ArriveTick);
+
 /// <summary>A message that has reached the recipient civilization's inbox.</summary>
 public sealed record DeliveredMessage(
     long Id,

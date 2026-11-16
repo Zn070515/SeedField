@@ -43,8 +43,9 @@
 | 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
 | 跨区物流 | 多跳链路运输 M，途中不可用，按路径总延迟到达；链路物资容量可限制 |
+| 跨区能源 | 区域电网库存；实体可存入/抽取；跨区运输带延迟与链路能源容量 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 56 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；截图与跨区/物流演示已提交；CI 构建/测试/提交规范 |
+| 验证 | 62 个仿真测试 + 13 个 Jint 测试通过；600 Tick 双跑哈希一致；截图与跨区/物流/能源演示已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -67,6 +68,7 @@ dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --multi-region
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --logistics
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energy
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -91,6 +93,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`workshop & economy`](docs/engineering/evidence/2026-11-16-workshop-and-economy.md) | 蓝图/实例/升级、五分支、存档与 E/C/B 约束证据 |
 | [`multi-region`](docs/engineering/evidence/2026-11-16-multi-region.md) | 区域链路、BFS 路由、跨区延迟与链路带宽证据 |
 | [`material logistics`](docs/engineering/evidence/2026-11-16-material-logistics.md) | 跨区材料运输、在途与到达证据 |
+| [`cross-region energy`](docs/engineering/evidence/2026-11-16-energy-grid.md) | 区域电网、抽取/存入、跨区运输证据 |
 
 ## 工程原则
 
@@ -105,4 +108,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；跨区能源、区域加载/卸载、PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域加载/卸载、PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

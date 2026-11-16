@@ -66,11 +66,12 @@ tests/SeedField.Runtime.Js.Tests/
 - E/C/B 约束：`PowerModule` 本地发电、`StateModule` 每 Tick 意图预算、`CommModule.BandwidthPerTick` 发信上限。
 - 多区域通信：显式 `RegionLink`、双向 BFS 路由、跨区延迟、链路带宽与目标区域校验。
 - 跨区物流：`TransferMaterialIntent` 从本地库存发货，经多跳链路路径的总延迟到达目标区域库存；链路物资容量可限制，在途物资不可用。
+- 跨区能源：区域电网库存；`SendEnergyIntent` 存入本地/远端电网，`DrawEnergyIntent` 抽取到实体本地存储；远端运输有延迟与链路能源容量。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 跨区能源传输、区域加载/卸载、跨文明通信。
+- 区域加载/卸载、跨文明通信。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -154,7 +155,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=7c74a5... mutated=e89d04... after=7c74a5...`。
+- 实测：`SAVE_SMOKE ok=True before=198729... mutated=9ca77f... after=198729...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -172,6 +173,14 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `RegionLink.MaterialPerTick` 可限制每 Tick 过境批次；容量在扣库存前统一校验。
 - 到达时写入目标区域该文明库存，产生 `MaterialArrived`；Route、在途状态全程进入哈希与存档。
 - Headless 实测：`r0→r1(2t)→r2(3t)`，100 M 库存发 40 M，`arriveTick=5 route=l01>l12`；到达后目标 40。
+
+### 5.7 跨区能源
+
+- 区域库存新增 Energy 池；实体需要 `PowerModule` 才能存取。
+- `SendEnergyIntent`：目标省略/同区 → 立即存入本地电网；远端 → 经链路路径运输，`ArriveTick = Tick + 路径延迟和`。
+- `DrawEnergyIntent`：从本区电网抽取到实体本地存储，受本地容量上限约束。
+- `RegionLink.EnergyPerTick` 可限制每 Tick 过境批次。
+- Headless 实测：40 E 从 r0 发往 r1，`arriveTick=3 route=l01`；到达后抽取 25 E，目标实体 25、目标电网 15、源实体 60。
 
 ## 6. 本轮工程假设（均为可替换原型决策）
 
@@ -193,7 +202,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 多跳物流无中转仓储 | 货物整段在途，不能在中途装卸/换线 | 后续加入中转节点与容量 |
-| 跨区能源未建模 | 只能验证物资与信息跨区 | 后续加入显式供能链路与本地电网 |
+| 能源网络是显式配送 | 没有自动电网潮流/断供传播 | 后续加入电网连通与断供诊断 |
 | 区域加载/卸载未实现 | 长期多区域世界的性能与一致性未验证 | 后续加入离屏推进与加载回归 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
 | 跨文明通信未开放 | 无法验证协议、结盟或断联对抗 | 先完成路由权限与情报过滤 |
@@ -201,7 +210,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ## 8. 下一步（按依赖顺序）
 
-1. 跨区能源与多跳物流：显式供能链路、断供、运输中转与区域加载一致性。
+1. 电网连通/断供、多跳运输中转与区域加载一致性。
 2. 跨文明协议与 PvE：目标区域权限、情报过滤、内置离线对手。
 3. 经济闭环：制造队列/时间与断供/断联诊断。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。

@@ -27,6 +27,11 @@ internal static class Program
             return RunLogisticsDemo();
         }
 
+        if (args.Contains("--energy"))
+        {
+            return RunEnergyDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -131,6 +136,60 @@ internal static class Program
 
         return ok ? 0 : 1;
     }
+
+    private static int RunEnergyDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 1_000, 1_000)
+            .AddRegion("r1", 1_000, 1_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 3)
+            .AddEntity(EnergyNode(1, "r0", energy: 100))
+            .AddEntity(EnergyNode(2, "r1", energy: 0))
+            .Build();
+
+        var engine = new SimulationEngine(world);
+        var shipped = engine.Step(new Intent[]
+        {
+            new SendEnergyIntent(new EntityId(1), 40, "r1"),
+        }).Events.OfType<EnergyShipped>().Single();
+
+        Console.WriteLine(
+            $"ENERGY shipped amount={shipped.Amount} arriveTick={shipped.ArriveTick} " +
+            $"route={shipped.Route} sourceLocal={world.FindEntity(new EntityId(1))!.Energy} " +
+            $"targetGrid={world.Regions["r1"].GetEnergy("A")}");
+
+        while (world.Tick < shipped.ArriveTick)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
+
+        engine.Step(new Intent[]
+        {
+            new DrawEnergyIntent(new EntityId(2), 25),
+        });
+
+        var sourceLocal = world.FindEntity(new EntityId(1))!.Energy;
+        var targetLocal = world.FindEntity(new EntityId(2))!.Energy;
+        var targetGrid = world.Regions["r1"].GetEnergy("A");
+        var ok = sourceLocal == 60 && targetLocal == 25 && targetGrid == 15;
+        Console.WriteLine(
+            $"ENERGY drew targetLocal={targetLocal} targetGrid={targetGrid} " +
+            $"sourceLocal={sourceLocal} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static EntityDefinition EnergyNode(long id, string regionId, long energy) =>
+        new(
+            new EntityId(id),
+            "A",
+            regionId,
+            new Vec2(100, 100),
+            MaxHealth: 10,
+            Energy: energy,
+            EnergyCapacity: 100,
+            Material: 0,
+            Power: new PowerModule(EnergyPerTick: 0, StorageCapacity: 100));
 
     private static EntityDefinition CommsEndpoint(long id, string regionId) =>
         new(

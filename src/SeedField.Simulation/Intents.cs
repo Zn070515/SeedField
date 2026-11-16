@@ -7,6 +7,8 @@ public enum IntentKind
     SendMessage = 2,
     Wait = 3,
     TransferMaterial = 4,
+    SendEnergy = 5,
+    DrawEnergy = 6,
 }
 
 /// <summary>
@@ -55,6 +57,26 @@ public sealed record TransferMaterialIntent(
     public override IntentKind Kind => IntentKind.TransferMaterial;
 }
 
+/// <summary>
+/// Moves energy from the entity's local storage into a regional grid. Omitting the
+/// target stores into the entity's own region immediately; a remote target uses links.
+/// </summary>
+public sealed record SendEnergyIntent(
+    EntityId EntityId,
+    long Amount,
+    string? TargetRegionId = null) : Intent(EntityId)
+{
+    public override IntentKind Kind => IntentKind.SendEnergy;
+}
+
+/// <summary>Draws energy from the entity's own regional grid into local storage.</summary>
+public sealed record DrawEnergyIntent(
+    EntityId EntityId,
+    long Amount) : Intent(EntityId)
+{
+    public override IntentKind Kind => IntentKind.DrawEnergy;
+}
+
 /// <summary>Stable error codes surfaced both to diagnostics and to the UI.</summary>
 public enum SimulationErrorCode
 {
@@ -64,6 +86,7 @@ public enum SimulationErrorCode
     NoDrive,
     NoWeapon,
     NoComm,
+    NoPower,
     NoEnergy,
     InsufficientMaterial,
     OutOfRange,

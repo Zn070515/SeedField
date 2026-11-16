@@ -21,6 +21,7 @@ public static class WorldStateHasher
         Append(ref hash, world.NextEntityId);
         Append(ref hash, world.NextMessageId);
         Append(ref hash, world.NextShipmentId);
+        Append(ref hash, world.NextEnergyShipmentId);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -34,6 +35,10 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.MessagesExpired);
         Append(ref hash, world.Statistics.MaterialShippedTotal);
         Append(ref hash, world.Statistics.MaterialDeliveredTotal);
+        Append(ref hash, world.Statistics.EnergyShippedTotal);
+        Append(ref hash, world.Statistics.EnergyDeliveredTotal);
+        Append(ref hash, world.Statistics.EnergyStoredTotal);
+        Append(ref hash, world.Statistics.EnergyDrawnTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -47,6 +52,7 @@ public static class WorldStateHasher
             {
                 Append(ref hash, stock.Key);
                 Append(ref hash, stock.Value.Material);
+                Append(ref hash, stock.Value.Energy);
             }
 
             Append(ref hash, region.Entities.Count);
@@ -104,6 +110,23 @@ public static class WorldStateHasher
             Append(ref hash, shipment.ArriveTick);
         }
 
+        var energyShipments = world.InTransitEnergy
+            .OrderBy(shipment => shipment.Id)
+            .ToList();
+        Append(ref hash, energyShipments.Count);
+        foreach (var shipment in energyShipments)
+        {
+            Append(ref hash, shipment.Id);
+            Append(ref hash, shipment.FromEntityId.Value);
+            Append(ref hash, shipment.CivilizationId);
+            Append(ref hash, shipment.FromRegionId);
+            Append(ref hash, shipment.ToRegionId);
+            Append(ref hash, shipment.Route);
+            Append(ref hash, shipment.Amount);
+            Append(ref hash, shipment.SentTick);
+            Append(ref hash, shipment.ArriveTick);
+        }
+
         Append(ref hash, world.Links.Count);
         foreach (var link in world.Links.Values)
         {
@@ -113,6 +136,7 @@ public static class WorldStateHasher
             Append(ref hash, link.LatencyTicks);
             Append(ref hash, link.MessagesPerTick);
             Append(ref hash, link.MaterialPerTick);
+            Append(ref hash, link.EnergyPerTick);
         }
 
         var blueprints = world.Workshop.GetAllVersions()

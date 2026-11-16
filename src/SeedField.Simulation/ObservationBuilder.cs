@@ -77,12 +77,29 @@ public static class ObservationBuilder
                 shipment.Route))
             .ToList();
 
+        var energyShipments = world.InTransitEnergy
+            .Where(shipment => string.Equals(
+                shipment.CivilizationId,
+                civilizationId,
+                StringComparison.Ordinal))
+            .OrderBy(shipment => shipment.Id)
+            .Select(shipment => new ObservedEnergyShipment(
+                shipment.Id,
+                shipment.FromRegionId,
+                shipment.ToRegionId,
+                shipment.Amount,
+                shipment.SentTick,
+                shipment.ArriveTick,
+                shipment.Route))
+            .ToList();
+
         return new Observation(
             world.Tick,
             civilizationId,
             visible.Values.ToList(),
             messages,
-            shipments);
+            shipments,
+            energyShipments);
     }
 
     private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>

@@ -65,6 +65,34 @@ public sealed record MaterialShipped(
     long ArriveTick,
     string Route) : SimulationEvent(Tick);
 
+public sealed record EnergyStored(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount) : SimulationEvent(Tick);
+
+public sealed record EnergyShipped(
+    long Tick,
+    long ShipmentId,
+    EntityId FromEntityId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long ArriveTick,
+    string Route) : SimulationEvent(Tick);
+
+public sealed record EnergyArrived(
+    long Tick,
+    long ShipmentId,
+    string ToRegionId,
+    long Amount) : SimulationEvent(Tick);
+
+public sealed record EnergyDrawn(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount) : SimulationEvent(Tick);
+
 public sealed record MaterialArrived(
     long Tick,
     long ShipmentId,

@@ -18,7 +18,9 @@ public sealed record WorldSaveData(
     BlueprintSaveData[]? Blueprints = null,
     LinkSaveData[]? Links = null,
     MaterialShipmentSaveData[]? MaterialShipments = null,
-    long NextShipmentId = 0);
+    long NextShipmentId = 0,
+    EnergyShipmentSaveData[]? EnergyShipments = null,
+    long NextEnergyShipmentId = 0);
 
 public sealed record LinkSaveData(
     string Id,
@@ -26,7 +28,19 @@ public sealed record LinkSaveData(
     string RegionB,
     int LatencyTicks,
     int MessagesPerTick,
-    int MaterialPerTick = 0);
+    int MaterialPerTick = 0,
+    int EnergyPerTick = 0);
+
+public sealed record EnergyShipmentSaveData(
+    long Id,
+    long FromEntityId,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    string Route,
+    long Amount,
+    long SentTick,
+    long ArriveTick);
 
 public sealed record MaterialShipmentSaveData(
     long Id,
@@ -47,7 +61,7 @@ public sealed record RegionSaveData(
     EntitySaveData[] Entities,
     StockSaveData[]? Stocks = null);
 
-public sealed record StockSaveData(string CivilizationId, long Material);
+public sealed record StockSaveData(string CivilizationId, long Material, long Energy = 0);
 
 public sealed record EntitySaveData(
     long Id,
@@ -152,7 +166,11 @@ public sealed record StatisticsSaveData(
     long MessagesDelivered,
     long MessagesExpired = 0,
     long MaterialShippedTotal = 0,
-    long MaterialDeliveredTotal = 0);
+    long MaterialDeliveredTotal = 0,
+    long EnergyShippedTotal = 0,
+    long EnergyDeliveredTotal = 0,
+    long EnergyStoredTotal = 0,
+    long EnergyDrawnTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

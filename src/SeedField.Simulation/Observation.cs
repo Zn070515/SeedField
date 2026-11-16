@@ -32,9 +32,19 @@ public sealed record ObservedShipment(
     long ArriveTick,
     string Route);
 
+public sealed record ObservedEnergyShipment(
+    long ShipmentId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long SentTick,
+    long ArriveTick,
+    string Route);
+
 public sealed record Observation(
     long Tick,
     string CivilizationId,
     IReadOnlyList<ObservedEntity> Entities,
     IReadOnlyList<ObservedMessage> Messages,
-    IReadOnlyList<ObservedShipment> Shipments);
+    IReadOnlyList<ObservedShipment> Shipments,
+    IReadOnlyList<ObservedEnergyShipment> EnergyShipments);

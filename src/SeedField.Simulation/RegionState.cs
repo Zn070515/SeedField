@@ -48,6 +48,9 @@ public sealed class RegionState
     public long GetMaterial(string civilizationId) =>
         Stocks.TryGetValue(civilizationId, out var stock) ? stock.Material : 0;
 
+    public long GetEnergy(string civilizationId) =>
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.Energy : 0;
+
     public void AddMaterial(string civilizationId, long amount)
     {
         if (amount < 0)
@@ -55,13 +58,44 @@ public sealed class RegionState
             throw new ArgumentOutOfRangeException(nameof(amount));
         }
 
+        GetOrCreateStock(civilizationId).Material += amount;
+    }
+
+    public void AddEnergy(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        GetOrCreateStock(civilizationId).Energy += amount;
+    }
+
+    public bool TryConsumeEnergy(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (!Stocks.TryGetValue(civilizationId, out var stock) || stock.Energy < amount)
+        {
+            return false;
+        }
+
+        stock.Energy -= amount;
+        return true;
+    }
+
+    private RegionStock GetOrCreateStock(string civilizationId)
+    {
         if (!Stocks.TryGetValue(civilizationId, out var stock))
         {
             stock = new RegionStock();
             Stocks.Add(civilizationId, stock);
         }
 
-        stock.Material += amount;
+        return stock;
     }
 
     public bool TryConsumeMaterial(string civilizationId, long amount)
@@ -84,4 +118,6 @@ public sealed class RegionState
 public sealed class RegionStock
 {
     public long Material { get; internal set; }
+
+    public long Energy { get; internal set; }
 }

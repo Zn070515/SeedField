@@ -240,6 +240,29 @@ public sealed class JsController : IDisposable
                 intent = new TransferMaterialIntent(entityId, transferRegion, amount);
                 return true;
 
+            case "sendEnergy":
+                if (!TryGetInt64(element, "amount", out var energyAmount) || energyAmount <= 0)
+                {
+                    error = "sendEnergy intent needs positive integer 'amount'.";
+                    return false;
+                }
+
+                var energyTarget = TryGetString(element, "targetRegionId", out var energyTargetRegion)
+                    ? energyTargetRegion
+                    : null;
+                intent = new SendEnergyIntent(entityId, energyAmount, energyTarget);
+                return true;
+
+            case "drawEnergy":
+                if (!TryGetInt64(element, "amount", out var drawAmount) || drawAmount <= 0)
+                {
+                    error = "drawEnergy intent needs positive integer 'amount'.";
+                    return false;
+                }
+
+                intent = new DrawEnergyIntent(entityId, drawAmount);
+                return true;
+
             case "wait":
                 intent = new WaitIntent(entityId);
                 return true;
@@ -346,6 +369,14 @@ public sealed class JsController : IDisposable
                     shipment.Amount,
                     shipment.SentTick,
                     shipment.ArriveTick,
+                    shipment.Route))],
+                [.. observation.EnergyShipments.Select(shipment => new EnergyShipmentDto(
+                    shipment.ShipmentId,
+                    shipment.FromRegionId,
+                    shipment.ToRegionId,
+                    shipment.Amount,
+                    shipment.SentTick,
+                    shipment.ArriveTick,
                     shipment.Route))]);
 
         private sealed record ObservationDto(
@@ -353,9 +384,19 @@ public sealed class JsController : IDisposable
             string CivilizationId,
             List<EntityDto> Entities,
             List<MessageDto> Messages,
-            List<ShipmentDto> Shipments);
+            List<ShipmentDto> Shipments,
+            List<EnergyShipmentDto> EnergyShipments);
 
         private sealed record ShipmentDto(
+            long ShipmentId,
+            string FromRegionId,
+            string ToRegionId,
+            long Amount,
+            long SentTick,
+            long ArriveTick,
+            string Route);
+
+        private sealed record EnergyShipmentDto(
             long ShipmentId,
             string FromRegionId,
             string ToRegionId,

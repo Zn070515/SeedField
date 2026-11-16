@@ -82,7 +82,11 @@ public static class WorldSaveSerializer
                 world.Statistics.MessagesDelivered,
                 world.Statistics.MessagesExpired,
                 world.Statistics.MaterialShippedTotal,
-                world.Statistics.MaterialDeliveredTotal),
+                world.Statistics.MaterialDeliveredTotal,
+                world.Statistics.EnergyShippedTotal,
+                world.Statistics.EnergyDeliveredTotal,
+                world.Statistics.EnergyStoredTotal,
+                world.Statistics.EnergyDrawnTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -91,7 +95,8 @@ public static class WorldSaveSerializer
                     link.RegionB,
                     link.LatencyTicks,
                     link.MessagesPerTick,
-                    link.MaterialPerTick))
+                    link.MaterialPerTick,
+                    link.EnergyPerTick))
                 .ToArray(),
             world.InTransitMaterial
                 .OrderBy(shipment => shipment.Id)
@@ -106,7 +111,21 @@ public static class WorldSaveSerializer
                     shipment.SentTick,
                     shipment.ArriveTick))
                 .ToArray(),
-            world.NextShipmentId);
+            world.NextShipmentId,
+            world.InTransitEnergy
+                .OrderBy(shipment => shipment.Id)
+                .Select(shipment => new EnergyShipmentSaveData(
+                    shipment.Id,
+                    shipment.FromEntityId.Value,
+                    shipment.CivilizationId,
+                    shipment.FromRegionId,
+                    shipment.ToRegionId,
+                    shipment.Route,
+                    shipment.Amount,
+                    shipment.SentTick,
+                    shipment.ArriveTick))
+                .ToArray(),
+            world.NextEnergyShipmentId);
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -226,11 +245,11 @@ public static class WorldSaveSerializer
 
             foreach (var stockData in regionData.Stocks ?? Array.Empty<StockSaveData>())
             {
-                if (stockData.Material < 0)
+                if (stockData.Material < 0 || stockData.Energy < 0)
                 {
                     throw Invalid(
                         "INVALID_STOCK",
-                        $"Region '{region.Id}' has a negative material stock.");
+                        $"Region '{region.Id}' has a negative stock.");
                 }
 
                 if (region.Stocks.ContainsKey(stockData.CivilizationId))
@@ -241,6 +260,7 @@ public static class WorldSaveSerializer
                 }
 
                 region.AddMaterial(stockData.CivilizationId, stockData.Material);
+                region.AddEnergy(stockData.CivilizationId, stockData.Energy);
             }
         }
 
@@ -279,7 +299,8 @@ public static class WorldSaveSerializer
                     linkData.RegionB,
                     linkData.LatencyTicks,
                     linkData.MessagesPerTick,
-                    linkData.MaterialPerTick));
+                    linkData.MaterialPerTick,
+                    linkData.EnergyPerTick));
         }
 
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())
@@ -485,6 +506,50 @@ public static class WorldSaveSerializer
 
         world.NextShipmentId = nextShipmentId;
 
+        var maxEnergyShipmentId = 0L;
+        foreach (var shipmentData in data.EnergyShipments ?? Array.Empty<EnergyShipmentSaveData>())
+        {
+            if (shipmentData.Id <= 0 ||
+                shipmentData.Amount <= 0 ||
+                shipmentData.ArriveTick <= shipmentData.SentTick ||
+                !world.Regions.ContainsKey(shipmentData.FromRegionId) ||
+                !world.Regions.ContainsKey(shipmentData.ToRegionId) ||
+                !IsValidRoute(
+                    world,
+                    shipmentData.FromRegionId,
+                    shipmentData.ToRegionId,
+                    shipmentData.Route))
+            {
+                throw Invalid(
+                    "INVALID_ENERGY_SHIPMENT",
+                    $"Energy shipment '{shipmentData.Id}' is invalid.");
+            }
+
+            world.InTransitEnergy.Add(new EnergyShipment(
+                shipmentData.Id,
+                new EntityId(shipmentData.FromEntityId),
+                shipmentData.CivilizationId,
+                shipmentData.FromRegionId,
+                shipmentData.ToRegionId,
+                shipmentData.Route,
+                shipmentData.Amount,
+                shipmentData.SentTick,
+                shipmentData.ArriveTick));
+            maxEnergyShipmentId = Math.Max(maxEnergyShipmentId, shipmentData.Id);
+        }
+
+        var nextEnergyShipmentId = data.NextEnergyShipmentId > 0
+            ? data.NextEnergyShipmentId
+            : maxEnergyShipmentId + 1;
+        if (nextEnergyShipmentId <= maxEnergyShipmentId)
+        {
+            throw Invalid(
+                "INVALID_NEXT_ENERGY_SHIPMENT_ID",
+                "NextEnergyShipmentId must exceed every stored energy shipment id.");
+        }
+
+        world.NextEnergyShipmentId = nextEnergyShipmentId;
+
         ApplyStatistics(world, data.Statistics);
         return world;
     }
@@ -575,7 +640,10 @@ public static class WorldSaveSerializer
             region.IsCoreRegion,
             region.Entities.Values.Select(ToEntity).ToArray(),
             region.Stocks
-                .Select(stock => new StockSaveData(stock.Key, stock.Value.Material))
+                .Select(stock => new StockSaveData(
+                    stock.Key,
+                    stock.Value.Material,
+                    stock.Value.Energy))
                 .ToArray());
 
     private static EntitySaveData ToEntity(EntityState entity) =>
@@ -678,17 +746,28 @@ public static class WorldSaveSerializer
         world.Statistics.MessagesExpired = statistics.MessagesExpired;
         world.Statistics.MaterialShippedTotal = statistics.MaterialShippedTotal;
         world.Statistics.MaterialDeliveredTotal = statistics.MaterialDeliveredTotal;
+        world.Statistics.EnergyShippedTotal = statistics.EnergyShippedTotal;
+        world.Statistics.EnergyDeliveredTotal = statistics.EnergyDeliveredTotal;
+        world.Statistics.EnergyStoredTotal = statistics.EnergyStoredTotal;
+        world.Statistics.EnergyDrawnTotal = statistics.EnergyDrawnTotal;
     }
 
-    private static bool IsValidShipmentRoute(WorldState world, MaterialShipmentSaveData shipment)
+    private static bool IsValidShipmentRoute(WorldState world, MaterialShipmentSaveData shipment) =>
+        IsValidRoute(world, shipment.FromRegionId, shipment.ToRegionId, shipment.Route);
+
+    private static bool IsValidRoute(
+        WorldState world,
+        string fromRegionId,
+        string toRegionId,
+        string route)
     {
-        if (string.IsNullOrWhiteSpace(shipment.Route))
+        if (string.IsNullOrWhiteSpace(route))
         {
             return false;
         }
 
-        var currentRegion = shipment.FromRegionId;
-        foreach (var linkId in shipment.Route.Split('>', StringSplitOptions.RemoveEmptyEntries))
+        var currentRegion = fromRegionId;
+        foreach (var linkId in route.Split('>', StringSplitOptions.RemoveEmptyEntries))
         {
             if (!world.Links.TryGetValue(linkId, out var link) || !link.Connects(currentRegion))
             {
@@ -698,7 +777,7 @@ public static class WorldSaveSerializer
             currentRegion = link.Other(currentRegion);
         }
 
-        return string.Equals(currentRegion, shipment.ToRegionId, StringComparison.Ordinal);
+        return string.Equals(currentRegion, toRegionId, StringComparison.Ordinal);
     }
 
     private static string ResolveTargetRegionId(

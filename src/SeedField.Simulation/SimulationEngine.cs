@@ -27,6 +27,7 @@ public sealed class SimulationEngine
         var bandwidthUsed = new Dictionary<EntityId, int>();
         var linkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
         var materialLinkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
+        var energyLinkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
 
         GeneratePower();
 
@@ -44,7 +45,8 @@ public sealed class SimulationEngine
                     computeUsed,
                     bandwidthUsed,
                     linkUsage,
-                    materialLinkUsage);
+                    materialLinkUsage,
+                    energyLinkUsage);
             }
         }
 
@@ -52,6 +54,7 @@ public sealed class SimulationEngine
 
         DeliverDueMessages(World.Tick, events);
         DeliverDueMaterialShipments(World.Tick, events);
+        DeliverDueEnergyShipments(World.Tick, events);
         RegenerateCores(World.Tick, events);
 
         return new TickResult(tick, events, results);
@@ -225,7 +228,8 @@ public sealed class SimulationEngine
         Dictionary<EntityId, int> computeUsed,
         Dictionary<EntityId, int> bandwidthUsed,
         Dictionary<string, int> linkUsage,
-        Dictionary<string, int> materialLinkUsage)
+        Dictionary<string, int> materialLinkUsage,
+        Dictionary<string, int> energyLinkUsage)
     {
         if (intent is null)
         {
@@ -272,6 +276,12 @@ public sealed class SimulationEngine
                 break;
             case TransferMaterialIntent transfer:
                 ProcessTransferMaterial(entity, region, transfer, tick, events, results, materialLinkUsage);
+                break;
+            case SendEnergyIntent sendEnergy:
+                ProcessSendEnergy(entity, region, sendEnergy, tick, events, results, energyLinkUsage);
+                break;
+            case DrawEnergyIntent drawEnergy:
+                ProcessDrawEnergy(entity, region, drawEnergy, tick, events, results);
                 break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
@@ -738,6 +748,211 @@ public sealed class SimulationEngine
             destination.AddMaterial(shipment.CivilizationId, shipment.Amount);
             World.Statistics.MaterialDeliveredTotal += shipment.Amount;
             events.Add(new MaterialArrived(
+                tick,
+                shipment.Id,
+                shipment.ToRegionId,
+                shipment.Amount));
+        }
+    }
+
+    private void ProcessSendEnergy(
+        EntityState entity,
+        RegionState sourceRegion,
+        SendEnergyIntent intent,
+        long tick,
+        List<SimulationEvent> events,
+        List<IntentResult> results,
+        Dictionary<string, int> energyLinkUsage)
+    {
+        if (entity.Power is null)
+        {
+            Reject(intent, SimulationErrorCode.NoPower, "Entity has no power module.", tick, events, results);
+            return;
+        }
+
+        if (intent.Amount <= 0)
+        {
+            Reject(intent, SimulationErrorCode.InvalidAction, "Energy amount must be positive.", tick, events, results);
+            return;
+        }
+
+        var targetRegionId = string.IsNullOrWhiteSpace(intent.TargetRegionId)
+            ? sourceRegion.Id
+            : intent.TargetRegionId;
+
+        if (!World.Regions.ContainsKey(targetRegionId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"Target region '{targetRegionId}' does not exist.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        if (entity.Energy < intent.Amount)
+        {
+            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy.", tick, events, results);
+            return;
+        }
+
+        if (string.Equals(targetRegionId, sourceRegion.Id, StringComparison.Ordinal))
+        {
+            entity.Energy -= intent.Amount;
+            sourceRegion.AddEnergy(entity.CivilizationId, intent.Amount);
+            World.Statistics.EnergyStoredTotal += intent.Amount;
+            events.Add(new EnergyStored(tick, entity.Id, sourceRegion.Id, intent.Amount));
+            Accept(intent, $"Stored {intent.Amount} E in the local grid.", results);
+            return;
+        }
+
+        var path = FindMessagePath(sourceRegion.Id, targetRegionId);
+        if (path is null)
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoRoute,
+                $"No link path from '{sourceRegion.Id}' to '{targetRegionId}'.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        foreach (var link in path)
+        {
+            if (link.EnergyPerTick > 0 &&
+                energyLinkUsage.GetValueOrDefault(link.Id) >= link.EnergyPerTick)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.NoBandwidth,
+                    $"Link '{link.Id}' energy capacity is exhausted for this tick.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+        }
+
+        var route = string.Join(">", path.Select(link => link.Id));
+        var shipmentId = World.NextEnergyShipmentId++;
+        var arriveTick = tick + Math.Max(1, path.Sum(link => link.LatencyTicks));
+
+        entity.Energy -= intent.Amount;
+        foreach (var link in path)
+        {
+            if (link.EnergyPerTick > 0)
+            {
+                energyLinkUsage[link.Id] = energyLinkUsage.GetValueOrDefault(link.Id) + 1;
+            }
+        }
+
+        World.InTransitEnergy.Add(new EnergyShipment(
+            shipmentId,
+            entity.Id,
+            entity.CivilizationId,
+            sourceRegion.Id,
+            targetRegionId,
+            route,
+            intent.Amount,
+            tick,
+            arriveTick));
+
+        World.Statistics.EnergyShippedTotal += intent.Amount;
+        events.Add(new EnergyShipped(
+            tick,
+            shipmentId,
+            entity.Id,
+            sourceRegion.Id,
+            targetRegionId,
+            intent.Amount,
+            arriveTick,
+            route));
+
+        Accept(
+            intent,
+            $"Energy shipment {shipmentId} queued: {intent.Amount} E arrives at tick {arriveTick}.",
+            results);
+    }
+
+    private void ProcessDrawEnergy(
+        EntityState entity,
+        RegionState region,
+        DrawEnergyIntent intent,
+        long tick,
+        List<SimulationEvent> events,
+        List<IntentResult> results)
+    {
+        if (entity.Power is null)
+        {
+            Reject(intent, SimulationErrorCode.NoPower, "Entity has no power module.", tick, events, results);
+            return;
+        }
+
+        if (intent.Amount <= 0)
+        {
+            Reject(intent, SimulationErrorCode.InvalidAction, "Energy amount must be positive.", tick, events, results);
+            return;
+        }
+
+        if (entity.EnergyCapacity - entity.Energy < intent.Amount)
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.InvalidAction,
+                "Local storage does not have enough headroom.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        if (!region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.NoEnergy,
+                $"Region '{region.Id}' grid has insufficient energy.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        entity.Energy += intent.Amount;
+        World.Statistics.EnergyDrawnTotal += intent.Amount;
+        events.Add(new EnergyDrawn(tick, entity.Id, region.Id, intent.Amount));
+        Accept(intent, $"Drew {intent.Amount} E from the local grid.", results);
+    }
+
+    private void DeliverDueEnergyShipments(long tick, List<SimulationEvent> events)
+    {
+        if (World.InTransitEnergy.Count == 0)
+        {
+            return;
+        }
+
+        var due = World.InTransitEnergy
+            .Where(shipment => shipment.ArriveTick <= tick)
+            .OrderBy(shipment => shipment.ArriveTick)
+            .ThenBy(shipment => shipment.Id)
+            .ToList();
+
+        foreach (var shipment in due)
+        {
+            World.InTransitEnergy.Remove(shipment);
+
+            if (!World.Regions.TryGetValue(shipment.ToRegionId, out var destination))
+            {
+                continue;
+            }
+
+            destination.AddEnergy(shipment.CivilizationId, shipment.Amount);
+            World.Statistics.EnergyDeliveredTotal += shipment.Amount;
+            events.Add(new EnergyArrived(
                 tick,
                 shipment.Id,
                 shipment.ToRegionId,
