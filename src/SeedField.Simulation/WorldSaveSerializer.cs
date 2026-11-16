@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -158,7 +158,14 @@ public static class WorldSaveSerializer
                     order.CompleteTick,
                     order.MaterialPaid))
                 .ToArray(),
-            world.NextConstructionOrderId);
+            world.NextConstructionOrderId,
+            world.MessagePolicies.Values
+                .Select(policy => new MessagePolicySaveData(
+                    policy.CivilizationId,
+                    policy.AllowAllInbound,
+                    policy.BlockedCivilizations.ToArray(),
+                    policy.BlockedTopics.ToArray()))
+                .ToArray());
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -695,6 +702,30 @@ public static class WorldSaveSerializer
 
         world.NextConstructionOrderId = nextConstructionOrderId;
 
+        foreach (var policyData in data.MessagePolicies ?? Array.Empty<MessagePolicySaveData>())
+        {
+            if (string.IsNullOrWhiteSpace(policyData.CivilizationId) ||
+                world.MessagePolicies.ContainsKey(policyData.CivilizationId))
+            {
+                throw Invalid("INVALID_MESSAGE_POLICY", "Message policy ids must be unique and non-empty.");
+            }
+
+            var policy = new MessagePolicyState(
+                policyData.CivilizationId,
+                policyData.AllowAllInbound);
+            foreach (var blocked in policyData.BlockedCivilizations)
+            {
+                policy.BlockedCivilizations.Add(blocked);
+            }
+
+            foreach (var blocked in policyData.BlockedTopics)
+            {
+                policy.BlockedTopics.Add(blocked);
+            }
+
+            world.MessagePolicies.Add(policyData.CivilizationId, policy);
+        }
+
         ApplyStatistics(world, data.Statistics);
         return world;
     }
@@ -925,6 +956,8 @@ public static class WorldSaveSerializer
                                 : new[] { data.ControlPoint }),
             ConstructionOrders = data.ConstructionOrders ??
                                  Array.Empty<ConstructionOrderSaveData>(),
+            MessagePolicies = data.MessagePolicies ??
+                              Array.Empty<MessagePolicySaveData>(),
         };
 
     private static ControlPointSaveData ToControlPointSave(ControlPointState point) =>

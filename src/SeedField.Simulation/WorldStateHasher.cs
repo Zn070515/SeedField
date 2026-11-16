@@ -219,6 +219,24 @@ public static class WorldStateHasher
             }
         }
 
+        Append(ref hash, world.MessagePolicies.Count);
+        foreach (var policy in world.MessagePolicies.Values)
+        {
+            Append(ref hash, policy.CivilizationId);
+            Append(ref hash, policy.AllowAllInbound);
+            Append(ref hash, policy.BlockedCivilizations.Count);
+            foreach (var blocked in policy.BlockedCivilizations)
+            {
+                Append(ref hash, blocked);
+            }
+
+            Append(ref hash, policy.BlockedTopics.Count);
+            foreach (var blocked in policy.BlockedTopics)
+            {
+                Append(ref hash, blocked);
+            }
+        }
+
         Append(ref hash, world.Cores.Count);
         foreach (var core in world.Cores.Values)
         {

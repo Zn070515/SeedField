@@ -25,7 +25,14 @@ public sealed record WorldSaveData(
     ControlPointSaveData[]? ControlPoints = null,
     MatchSaveData? Match = null,
     ConstructionOrderSaveData[]? ConstructionOrders = null,
-    long NextConstructionOrderId = 0);
+    long NextConstructionOrderId = 0,
+    MessagePolicySaveData[]? MessagePolicies = null);
+
+public sealed record MessagePolicySaveData(
+    string CivilizationId,
+    bool AllowAllInbound,
+    string[] BlockedCivilizations,
+    string[] BlockedTopics);
 
 public sealed record ConstructionOrderSaveData(
     long Id,

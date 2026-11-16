@@ -23,13 +23,13 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 95 passed
+SeedField.Simulation.Tests: 100 passed
 SeedField.Runtime.Js.Tests: 23 passed
 ```
 
 ```text
-Skirmisher SAVE_SMOKE before=5c8feee79428c134 ... after=5c8feee79428c134 tick=39
-Turtle      SAVE_SMOKE before=2952e9f479054c78 ... after=2952e9f479054c78 tick=51
+Skirmisher SAVE_SMOKE before=0c2b298af8180d74 ... after=0c2b298af8180d74 tick=39
+Turtle      SAVE_SMOKE before=1964d51d9dcf7938 ... after=1964d51d9dcf7938 tick=51
 ```
 
 截图：`game/SeedField.Game/screenshots/m0-workshop.png`（队列 `power v1 · ready t41 · M20`）。

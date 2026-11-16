@@ -74,6 +74,34 @@ public sealed class ConstructionTests
     }
 
     [Fact]
+    public void FailedConstructionRefundsMaterial()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 80)
+            .Build();
+        world.ConstructionOrders.Add(new ConstructionOrder(
+            1,
+            "A",
+            "missing-blueprint",
+            1,
+            "r0",
+            new Vec2(100, 100),
+            0,
+            1,
+            20));
+        var engine = new SimulationEngine(world);
+
+        var result = engine.Step(Array.Empty<Intent>());
+
+        var failed = Assert.Single(result.Events.OfType<ConstructionFailed>());
+        Assert.Equal(20, failed.MaterialRefunded);
+        Assert.Equal(100, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(20, world.Statistics.MaterialRefundedTotal);
+        Assert.Empty(world.ConstructionOrders);
+    }
+
+    [Fact]
     public void SavePreservesConstructionOrder()
     {
         var world = NewWorld();

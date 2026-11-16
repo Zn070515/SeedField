@@ -160,7 +160,8 @@ public sealed record ConstructionFailed(
     long OrderId,
     string CivilizationId,
     string BlueprintId,
-    string Reason) : SimulationEvent(Tick);
+    string Reason,
+    long MaterialRefunded) : SimulationEvent(Tick);
 
 public sealed record EntityUpgraded(
     long Tick,

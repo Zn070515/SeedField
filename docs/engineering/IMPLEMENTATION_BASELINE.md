@@ -67,7 +67,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 多区域通信：显式 `RegionLink`、双向 BFS 路由、跨区延迟、链路带宽与目标区域校验。
 - 跨区物流：`TransferMaterialIntent` 从本地库存发货，经多跳链路路径的总延迟到达目标区域库存；链路物资容量可限制，在途物资不可用。
 - 跨区能源：区域电网库存；`SendEnergyIntent` 存入本地/远端电网，`DrawEnergyIntent` 抽取到实体本地存储；远端运输有延迟与链路能源容量。
-- 区域活动：引擎级 active/inactive gating；非活动区拒绝意图，被动发电/投递/核心再生继续运行。
+- 区域活动：引擎级 active/inactive gating；非活动区拒绝意图并跳过发电，激活/保存前补算；消息/物流/核心再生继续。
 - 意图归属与可见性：Jint 控制器写入 `IssuerCivilizationId`；跨文明实体控制与未感知目标攻击被拒绝，且不通过错误码泄漏隐藏 ID。
 - 核心区保护：外文明无法部署进核心区、无法在核心区行动；存档加载拒绝核心区内的外文明实体。
 - 设备级知识：`BuildForEntity` + `DeviceControllerSlot`；每实体独立观察/控制器，消息/运输按设备区域过滤。
@@ -75,10 +75,12 @@ tests/SeedField.Runtime.Js.Tests/
 - 存档 schema v2：接受 v1 并迁移；世界与游戏存档均有迁移测试。
 - 摧毁库存审计：`EntityInventoryLost` 与 `EnergyLostTotal`/`MaterialLostTotal` 进入事件、统计、存档与哈希。
 - 控制点目标：多控制点、独占驻留计时、争夺/离开重置、占领数量阈值胜负；Godot HUD 与 `--capture-victory`。
-- 跨文明通信：目标文明必须在目标区域有 Comm 端点；消息进入目标文明收件箱。
+- 跨文明通信：目标文明必须在目标区域有 Comm 端点，且目标消息策略允许；消息进入目标文明收件箱。
 - 内置离线对手：受信任包清单校验（schema/路径/大小/入口），Skirmisher/Turtle；Godot `--opponent-turtle` 可选；选择写入游戏存档并随读档恢复；第三方导入仍关闭。
 - 建造队列：`BuildTicks` 蓝图先扣 M，到期由引擎生成实体；订单进入存档/哈希。
 - 建造取消：`CancelConstructionCommand` 退款并产生 `ConstructionCancelled`；退款统计进入存档/哈希；工坊队列 UI 可选中取消。
+- 建造失败：蓝图缺失/到期校验失败退还 `MaterialPaid`，事件携带退款额。
+- 消息策略：每文明可拒绝发送者/话题或关闭入站；`MessageDenied`；策略进入存档 schema v5。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
@@ -168,7 +170,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=5c8fee... mutated=c1bf1e... after=5c8fee...`（Skirmisher）；Turtle `2952e9...`。
+- 实测：`SAVE_SMOKE ok=True before=0c2b29... mutated=9b3aab... after=0c2b29...`（Skirmisher）；Turtle `1964d5...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -242,7 +244,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 能源网络是显式配送 | 没有自动电网潮流/断供传播 | 后续加入电网连通与断供诊断 |
 | 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
 | 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
-| 活动区域无性能收益 | 非活动区仍跑被动系统，未真正离屏简化 | 后续加入分区 Tick 预算与增量加载 |
+| 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
 | 跨文明协议仅基础收发 | 没有结盟/条约/身份认证 | 后续加入协议层与情报权限 |

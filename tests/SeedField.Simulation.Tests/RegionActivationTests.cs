@@ -39,7 +39,7 @@ public sealed class RegionActivationTests
     }
 
     [Fact]
-    public void InactiveRegionStillRunsPassiveSystems()
+    public void InactivePowerIsDeferredAndCaughtUpOnActivation()
     {
         var activeWorld = NewWorld();
         var inactiveWorld = NewWorld();
@@ -52,6 +52,14 @@ public sealed class RegionActivationTests
             activeEngine.Step(Array.Empty<Intent>());
             inactiveEngine.Step(Array.Empty<Intent>());
         }
+
+        Assert.Equal(100, activeWorld.FindEntity(new EntityId(1))!.Energy);
+        Assert.Equal(50, inactiveWorld.FindEntity(new EntityId(1))!.Energy);
+        Assert.NotEqual(
+            WorldStateHasher.Compute(activeWorld),
+            WorldStateHasher.Compute(inactiveWorld));
+
+        inactiveEngine.ActivateRegion("r0");
 
         Assert.Equal(100, inactiveWorld.FindEntity(new EntityId(1))!.Energy);
         Assert.Equal(

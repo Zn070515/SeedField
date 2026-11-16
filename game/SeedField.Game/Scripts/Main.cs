@@ -524,6 +524,7 @@ public partial class Main : Node2D
     {
         try
         {
+            _engine.CatchUpInactiveRegions();
             var json = GameSaveSerializer.Save(
                 _world,
                 new[] { _slotA, _slotB },

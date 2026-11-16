@@ -20,7 +20,7 @@ dotnet test SeedField.slnx
 ```
 
 ```text
-SeedField.Simulation.Tests: 95 passed
+SeedField.Simulation.Tests: 100 passed
 SeedField.Runtime.Js.Tests: 23 passed
 ```
 
@@ -42,7 +42,7 @@ godot --path game/SeedField.Game -- --capture-editor
 
 ```text
 SEEDFIELD_PRERUN tick=39 shots=3 entities=3
-SAVE_SMOKE ok=True before=5c8feee79428c134 mutated=c1bf1ef2c9b77030 after=5c8feee79428c134 tick=39 A=v1 B=v1
+SAVE_SMOKE ok=True before=0c2b298af8180d74 mutated=9b3aabf1f80e62f0 after=0c2b298af8180d74 tick=39 A=v1 B=v1
 ```
 
 - 每个实体独立 Jint 控制器，只接受自己的设备观察。

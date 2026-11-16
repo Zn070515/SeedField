@@ -87,6 +87,32 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder AddMessagePolicy(
+        string civilizationId,
+        bool allowAllInbound,
+        IEnumerable<string>? blockedCivilizations = null,
+        IEnumerable<string>? blockedTopics = null)
+    {
+        if (_world.MessagePolicies.ContainsKey(civilizationId))
+        {
+            throw new InvalidOperationException($"Message policy for '{civilizationId}' already exists.");
+        }
+
+        var policy = new MessagePolicyState(civilizationId, allowAllInbound);
+        foreach (var blocked in blockedCivilizations ?? Array.Empty<string>())
+        {
+            policy.BlockedCivilizations.Add(blocked);
+        }
+
+        foreach (var blocked in blockedTopics ?? Array.Empty<string>())
+        {
+            policy.BlockedTopics.Add(blocked);
+        }
+
+        _world.MessagePolicies.Add(civilizationId, policy);
+        return this;
+    }
+
     public WorldBuilder AddControlPoint(
         string id,
         string regionId,

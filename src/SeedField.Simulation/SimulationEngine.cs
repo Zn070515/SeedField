@@ -9,6 +9,7 @@ namespace SeedField.Simulation;
 public sealed class SimulationEngine
 {
     private readonly HashSet<string> _inactiveRegions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, long> _inactiveSince = new(StringComparer.Ordinal);
 
     public SimulationEngine(WorldState world)
     {
@@ -31,10 +32,33 @@ public sealed class SimulationEngine
             throw new ArgumentException($"Unknown region '{regionId}'.", nameof(regionId));
         }
 
-        _inactiveRegions.Add(regionId);
+        if (_inactiveRegions.Add(regionId))
+        {
+            _inactiveSince[regionId] = World.Tick;
+        }
     }
 
-    public void ActivateRegion(string regionId) => _inactiveRegions.Remove(regionId);
+    public void ActivateRegion(string regionId)
+    {
+        if (!_inactiveRegions.Remove(regionId))
+        {
+            return;
+        }
+
+        if (_inactiveSince.TryGetValue(regionId, out var since))
+        {
+            CatchUpPower(regionId, Math.Max(0, World.Tick - since));
+            _inactiveSince.Remove(regionId);
+        }
+    }
+
+    public void CatchUpInactiveRegions()
+    {
+        foreach (var regionId in _inactiveRegions.ToList())
+        {
+            ActivateRegion(regionId);
+        }
+    }
 
     public void SetActiveRegions(IEnumerable<string> activeRegionIds)
     {
@@ -47,13 +71,51 @@ public sealed class SimulationEngine
             }
         }
 
-        _inactiveRegions.Clear();
+        foreach (var regionId in _inactiveRegions.ToList())
+        {
+            if (active.Contains(regionId))
+            {
+                ActivateRegion(regionId);
+            }
+        }
+
         foreach (var regionId in World.Regions.Keys)
         {
-            if (!active.Contains(regionId))
+            if (!active.Contains(regionId) && !_inactiveRegions.Contains(regionId))
             {
-                _inactiveRegions.Add(regionId);
+                DeactivateRegion(regionId);
             }
+        }
+    }
+
+    private void CatchUpPower(string regionId, long ticks)
+    {
+        if (ticks <= 0 || !World.Regions.TryGetValue(regionId, out var region))
+        {
+            return;
+        }
+
+        // Bound catch-up work for extremely long offscreen periods; the cap is a
+        // prototype safety value, not a final production rule.
+        ticks = Math.Min(ticks, 1_000_000);
+
+        foreach (var entity in region.Entities.Values)
+        {
+            if (entity.Power is null)
+            {
+                continue;
+            }
+
+            var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
+            var perTick = Math.Max(0L, entity.Power.EnergyPerTick);
+            var added = Math.Min(perTick * ticks, room);
+            if (added <= 0)
+            {
+                continue;
+            }
+
+            entity.Energy += added;
+            World.Statistics.EnergyGeneratedTotal += added;
         }
     }
 
@@ -623,22 +685,30 @@ public sealed class SimulationEngine
 
     private void GeneratePower()
     {
-        foreach (var entity in World.EnumerateEntities())
+        foreach (var region in World.Regions.Values)
         {
-            if (entity.Power is null)
+            if (!IsRegionActive(region.Id))
             {
                 continue;
             }
 
-            var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
-            var added = Math.Min(Math.Max(0, entity.Power.EnergyPerTick), room);
-            if (added <= 0)
+            foreach (var entity in region.Entities.Values)
             {
-                continue;
-            }
+                if (entity.Power is null)
+                {
+                    continue;
+                }
 
-            entity.Energy += added;
-            World.Statistics.EnergyGeneratedTotal += added;
+                var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
+                var added = Math.Min(Math.Max(0, entity.Power.EnergyPerTick), room);
+                if (added <= 0)
+                {
+                    continue;
+                }
+
+                entity.Energy += added;
+                World.Statistics.EnergyGeneratedTotal += added;
+            }
         }
     }
 
@@ -836,6 +906,23 @@ public sealed class SimulationEngine
                 intent,
                 SimulationErrorCode.NoRoute,
                 $"Target civilization has no comm endpoint in region '{targetRegionId}'.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        if (!sameCivilization &&
+            !MessagePolicyRules.IsAllowed(
+                World,
+                intent.ToCivilizationId,
+                entity.CivilizationId,
+                intent.Topic))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.MessageDenied,
+                "Target civilization refuses this sender or topic.",
                 tick,
                 events,
                 results);
@@ -1426,12 +1513,14 @@ public sealed class SimulationEngine
                 order.BlueprintVersion);
             if (blueprint is null)
             {
+                var refunded = RefundConstruction(order);
                 events.Add(new ConstructionFailed(
                     tick,
                     order.Id,
                     order.CivilizationId,
                     order.BlueprintId,
-                    "Blueprint version is missing."));
+                    "Blueprint version is missing.",
+                    refunded));
                 continue;
             }
 
@@ -1461,14 +1550,28 @@ public sealed class SimulationEngine
             }
             catch (BlueprintValidationException exception)
             {
+                var refunded = RefundConstruction(order);
                 events.Add(new ConstructionFailed(
                     tick,
                     order.Id,
                     order.CivilizationId,
                     order.BlueprintId,
-                    exception.Message));
+                    exception.Message,
+                    refunded));
             }
         }
+    }
+
+    private long RefundConstruction(ConstructionOrder order)
+    {
+        if (!World.Regions.TryGetValue(order.RegionId, out var region))
+        {
+            return 0;
+        }
+
+        region.AddMaterial(order.CivilizationId, order.MaterialPaid);
+        World.Statistics.MaterialRefundedTotal += order.MaterialPaid;
+        return order.MaterialPaid;
     }
 
     private bool HasCommEndpoint(string regionId, string civilizationId) =>

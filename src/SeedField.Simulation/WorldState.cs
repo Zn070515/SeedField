@@ -73,6 +73,9 @@ public sealed class WorldState
 
     public SortedDictionary<string, SeedCoreState> Cores { get; } = new(StringComparer.Ordinal);
 
+    public SortedDictionary<string, MessagePolicyState> MessagePolicies { get; } =
+        new(StringComparer.Ordinal);
+
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
     public WorkshopService Workshop { get; } = new();
 
