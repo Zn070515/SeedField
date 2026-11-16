@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 设计基线与决策登记
+    url: https://github.com/Zn070515/SeedField/blob/main/docs/design-bible/v1.9-rev2/00-START-HERE/DECISION_REGISTER.md
+    about: 先确认问题是否已被 CONFIRMED / OPEN 决策覆盖。
+  - name: 工程实现基线
+    url: https://github.com/Zn070515/SeedField/blob/main/docs/engineering/IMPLEMENTATION_BASELINE.md
+    about: 当前真实能力、风险与下一步。

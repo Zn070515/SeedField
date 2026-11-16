@@ -1,0 +1,49 @@
+name: Feature request
+description: 提议新的系统、内容或工程能力
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        设计基线中 `[CONFIRMED]` 的规则不可通过 issue 直接改写；需要变更时请说明 ADR 影响。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 玩家/开发者遇到的具体瓶颈，不要只写“加一个功能”。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提议方案
+      description: 规则、数据结构、UI 或工程改动的最小闭环。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围与非目标
+      description: 哪些属于本 issue，哪些明确不做。
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 阶段
+      options:
+        - M0 技术验证
+        - M1 五分支/工坊
+        - M2 经济与自治
+        - M3 多区域/核心区
+        - M4 战斗/离线 PvE
+        - M5+ 文明/内容
+        - 工程/工具链
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 验收证据
+      description: 如何证明完成？测试、截图、哈希、性能数据。
+    validations:
+      required: true
