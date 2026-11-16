@@ -77,7 +77,7 @@ tests/SeedField.Runtime.Js.Tests/
 | NuGet Jint | 4.18.0 可还原，net10.0 资产可用 |
 | `Options.TimeoutInterval` / `MaxStatements` / `LimitMemory` | 可用 |
 | `Options.Host.StringCompilationAllowed` | 可用；`eval` 被拒绝 |
-| Godot 4.7.2 .NET | **本机未安装，未验证** |
+| Godot 4.7.2 Mono | 已安装 `D:\Dev\Godot\4.7.2-mono`；`dotnet build` + headless 运行 net10.0 冒烟通过（`NET10_SMOKE_OK`） |
 
 ## 5. 首个可运行切片
 
@@ -118,15 +118,15 @@ REPRODUCIBLE: identical state hash across both runs.
 
 | 风险 | 影响 | 处理 |
 |---|---|---|
-| 本机无 Godot 4.7.2 .NET | 无法产出 M0 要求的真实运行画面 | 需安装对应版本；安装后先验证 net10.0 兼容性 |
-| Godot 4.7.2 是否支持 net10.0 未验证 | 可能需调整目标框架 | 按 ADR-0001 的验证项处理，不擅自改回 |
+| Godot 客户端工程尚未建立 | 无法产出 M0 要求的真实运行画面 | 已装 4.7.2 Mono；下一步建立 `game/SeedField.Game` 并出首张真实截图 |
+| mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 单区域/单一路由 | 无法验证跨区因果 | 下一阶段建立多区域与队列测试 |
 | 无存档 | 无法验证迁移与长期运行 | 在 M2 前引入版本化存档 |
 
 ## 8. 下一步（按依赖顺序）
 
-1. 安装并实测 Godot 4.7.2 .NET：创建 `game/` 工程，引用 `SeedField.Simulation`，用事件绘制实体、信号与命中。
+1. 建立 `game/SeedField.Game`（Godot 4.7.2 Mono，net10.0），引用 `SeedField.Simulation`，用事件绘制实体、信号与命中，并产出真实截图。
 2. 引入 `DeterministicRandom` 与种子状态，进入哈希；为命中/损伤变体提供可复现实验。
 3. 建立版本化 `WorldSave` 最小 schema 与迁移测试。
 4. 多区域：区域索引、跨区消息队列、离屏区推进一致性测试。

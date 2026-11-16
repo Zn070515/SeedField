@@ -32,7 +32,7 @@
 |---|---|
 | 当前里程碑 | **M0 Headless 纵切片**：真实 JS 驱动单位、同规则仿真、可复现哈希 |
 | 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
-| 客户端 | **Godot 4.7.2 .NET 未安装，画面验收阻塞** |
+| 客户端 | **Godot 4.7.2 Mono 已安装并验证 net10.0；可视工程待建立** |
 | 验证 | 19 个仿真测试 + 7 个 Jint 测试通过；600 Tick 双跑哈希一致 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
@@ -79,4 +79,4 @@ Runner 运行 600 Tick 双文明对战，输出事件统计、拒绝原因与最
 
 ## 当前限制
 
-Godot 4.7.2 .NET 尚未安装，客户端未开始；多区域、存档、离线文明包、TypeScript `.d.ts`、正式美术与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 4.7.2 Mono 已安装、net10.0 冒烟通过，但客户端工程尚未建立；多区域、存档、离线文明包、TypeScript `.d.ts`、正式美术与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

@@ -1,10 +1,10 @@
 # Godot 客户端（待建立）
 
-本目录预留给 Godot 4.7.2 .NET 客户端。当前本机**未安装 Godot**，因此没有伪造 `project.godot` 或无法验证的 `.csproj`。
+本目录预留给 Godot 客户端。Godot **4.7.2 Mono** 已安装到 `D:\Dev\Godot\4.7.2-mono`，入口 `godot` / `godot-console`；net10.0 项目构建与 headless 运行已验证。
 
 ## 建立步骤
 
-1. 安装 Godot 4.7.2 .NET 版本（需支持 .NET 10.0；不支持时先提交 ADR，不得静默改框架）。
+1. 使用已安装的 Godot 4.7.2 Mono（已实测支持 net10.0；若后续版本变更导致阻断，先提交 ADR）。
 2. 在 Godot 中创建项目到 `game/SeedField.Game/`，渲染器选择与 2D 美术路线一致。
 3. 添加对 `src/SeedField.Simulation/SeedField.Simulation.csproj` 的项目引用。
 4. 只通过 `SimulationEvent` 回放移动、射击、命中、消息与核心区状态；Godot 节点不得持有或修改 `WorldState`。
