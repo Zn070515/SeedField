@@ -30,6 +30,12 @@ public sealed record EntityDamaged(
 
 public sealed record EntityDestroyed(long Tick, EntityId EntityId) : SimulationEvent(Tick);
 
+public sealed record EntityInventoryLost(
+    long Tick,
+    EntityId EntityId,
+    long Energy,
+    long Material) : SimulationEvent(Tick);
+
 public sealed record MessageQueued(
     long Tick,
     long MessageId,
@@ -110,6 +116,23 @@ public sealed record CoreRegenerated(
     string CivilizationId,
     long EnergyAdded,
     long MaterialAdded) : SimulationEvent(Tick);
+
+public sealed record EntityDeployed(
+    long Tick,
+    EntityId EntityId,
+    string CivilizationId,
+    string BlueprintId,
+    int BlueprintVersion,
+    string RegionId,
+    Vec2 Position) : SimulationEvent(Tick);
+
+public sealed record EntityUpgraded(
+    long Tick,
+    EntityId EntityId,
+    string CivilizationId,
+    string BlueprintId,
+    int OldVersion,
+    int NewVersion) : SimulationEvent(Tick);
 
 public sealed record EntityBootstrapped(
     long Tick,

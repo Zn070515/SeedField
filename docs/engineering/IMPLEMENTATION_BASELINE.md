@@ -70,6 +70,10 @@ tests/SeedField.Runtime.Js.Tests/
 - 区域活动：引擎级 active/inactive gating；非活动区拒绝意图，被动发电/投递/核心再生继续运行。
 - 意图归属与可见性：Jint 控制器写入 `IssuerCivilizationId`；跨文明实体控制与未感知目标攻击被拒绝，且不通过错误码泄漏隐藏 ID。
 - 核心区保护：外文明无法部署进核心区、无法在核心区行动；存档加载拒绝核心区内的外文明实体。
+- 设备级知识：`BuildForEntity` + `DeviceControllerSlot`；每实体独立观察/控制器，消息/运输按设备区域过滤。
+- 统一部署命令：`DeployCommand`/`UpgradeCommand` 经 `ExecuteDeploymentCommand`，产出部署/升级事件；工坊 UI 不再直接调用低层服务。
+- 存档 schema v2：接受 v1 并迁移；世界与游戏存档均有迁移测试。
+- 摧毁库存审计：`EntityInventoryLost` 与 `EnergyLostTotal`/`MaterialLostTotal` 进入事件、统计、存档与哈希。
 
 ### 尚未实现
 
@@ -158,7 +162,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `WorldSaveSerializer` 保存区域、实体、蓝图注册表、核心区最新产品、在途消息、收件箱、统计与下一 ID。
 - `GameSaveSerializer` 在外层追加每个文明的控制器脚本与版本；读取时重建 `ControllerSlot`。
 - Godot `F5`/`F9` 使用 `user://seedfield-save.json`；`--save-smoke` 自动验证保存→变更→读取的哈希一致性。
-- 实测：`SAVE_SMOKE ok=True before=198729... mutated=9ca77f... after=198729...`。
+- 实测：`SAVE_SMOKE ok=True before=cabb67... mutated=cc8132... after=cabb67...`。
 
 ### 5.5 多区域与跨区消息
 
@@ -222,7 +226,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 多跳物流无中转仓储 | 货物整段在途，不能在中途装卸/换线 | 后续加入中转节点与容量 |
 | 能源网络是显式配送 | 没有自动电网潮流/断供传播 | 后续加入电网连通与断供诊断 |
-| 传感器知识是文明级融合 | 绕过通信拓扑，S3 断联因果不成立 | 改为设备级观察或通信可达融合；见语义审查 R3 |
+| 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
 | 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
 | 活动区域无性能收益 | 非活动区仍跑被动系统，未真正离屏简化 | 后续加入分区 Tick 预算与增量加载 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
@@ -231,7 +235,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ## 8. 下一步（按依赖顺序）
 
-1. 设备级知识/传感器融合（审查 R3）；核心区恢复命令统一入口（R4 剩余）。
+1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
 2. 跨文明协议与 PvE：目标区域权限、情报过滤、内置离线对手。
 3. 经济闭环：制造队列/时间与断供/断联诊断。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。

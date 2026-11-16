@@ -11,7 +11,13 @@ public sealed record ObservedEntity(
     Vec2 Position,
     int Health,
     int MaxHealth,
-    bool IsSelf);
+    bool IsSelf,
+    bool HasSensor,
+    int SensorRangeMm,
+    bool HasWeapon,
+    int WeaponRangeMm,
+    bool HasDrive,
+    bool HasComm);
 
 public sealed record ObservedMessage(
     long MessageId,
@@ -47,4 +53,5 @@ public sealed record Observation(
     IReadOnlyList<ObservedEntity> Entities,
     IReadOnlyList<ObservedMessage> Messages,
     IReadOnlyList<ObservedShipment> Shipments,
-    IReadOnlyList<ObservedEnergyShipment> EnergyShipments);
+    IReadOnlyList<ObservedEnergyShipment> EnergyShipments,
+    long? ViewerEntityId = null);

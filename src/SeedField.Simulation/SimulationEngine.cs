@@ -60,6 +60,9 @@ public sealed class SimulationEngine
     public Observation BuildObservation(string civilizationId) =>
         ObservationBuilder.Build(World, civilizationId);
 
+    public Observation BuildDeviceObservation(EntityId entityId) =>
+        ObservationBuilder.BuildForEntity(World, entityId);
+
     public TickResult Step(IReadOnlyList<Intent>? intents = null)
     {
         var tick = World.Tick;
@@ -180,6 +183,64 @@ public sealed class SimulationEngine
     }
 
     /// <summary>
+    /// The unified host command path for workshop deployment and explicit upgrades.
+    /// UI callers must use this instead of mutating DeploymentService directly.
+    /// </summary>
+    public DeploymentCommandResult ExecuteDeploymentCommand(DeploymentCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var tick = World.Tick;
+
+        try
+        {
+            switch (command)
+            {
+                case DeployCommand deploy:
+                {
+                    var entity = DeploymentService.Deploy(
+                        World,
+                        deploy.Blueprint,
+                        deploy.CivilizationId,
+                        deploy.RegionId,
+                        deploy.Position);
+                    var deployed = new EntityDeployed(
+                        tick,
+                        entity.Id,
+                        deploy.CivilizationId,
+                        deploy.Blueprint.BlueprintId,
+                        deploy.Blueprint.Version,
+                        entity.RegionId,
+                        entity.Position);
+                    return new DeploymentCommandResult(
+                        true,
+                        entity.Id,
+                        SimulationErrorCode.None,
+                        $"Deployed {deploy.Blueprint.BlueprintId} v{deploy.Blueprint.Version}.",
+                        new SimulationEvent[] { deployed });
+                }
+                case UpgradeCommand upgrade:
+                    return ExecuteUpgrade(upgrade, tick);
+                default:
+                    return new DeploymentCommandResult(
+                        false,
+                        null,
+                        SimulationErrorCode.DeploymentRejected,
+                        "Unknown deployment command.",
+                        Array.Empty<SimulationEvent>());
+            }
+        }
+        catch (BlueprintValidationException exception)
+        {
+            return new DeploymentCommandResult(
+                false,
+                null,
+                MapDeploymentError(exception.Code),
+                exception.Message,
+                Array.Empty<SimulationEvent>());
+        }
+    }
+
+    /// <summary>
     /// Restores the latest confirmed product for one branch directly from the core.
     /// Costs are supplied by the caller because the real recovery quotas are still an
     /// open design value.
@@ -261,6 +322,56 @@ public sealed class SimulationEngine
             $"Restored {blueprint.Name} v{blueprint.Version} from the seed core.",
             bootstrapEvent);
     }
+
+    private DeploymentCommandResult ExecuteUpgrade(UpgradeCommand upgrade, long tick)
+    {
+        var entity = World.FindEntity(upgrade.EntityId);
+        if (entity is null)
+        {
+            return new DeploymentCommandResult(
+                false,
+                null,
+                SimulationErrorCode.DeploymentRejected,
+                $"Entity '{upgrade.EntityId}' does not exist.",
+                Array.Empty<SimulationEvent>());
+        }
+
+        if (!string.Equals(entity.CivilizationId, upgrade.CivilizationId, StringComparison.Ordinal))
+        {
+            return new DeploymentCommandResult(
+                false,
+                null,
+                SimulationErrorCode.DeploymentRejected,
+                "Entity does not belong to this civilization.",
+                Array.Empty<SimulationEvent>());
+        }
+
+        var oldVersion = entity.BlueprintVersion;
+        DeploymentService.Upgrade(entity, upgrade.Blueprint);
+        var upgraded = new EntityUpgraded(
+            tick,
+            entity.Id,
+            entity.CivilizationId,
+            upgrade.Blueprint.BlueprintId,
+            oldVersion,
+            upgrade.Blueprint.Version);
+
+        return new DeploymentCommandResult(
+            true,
+            entity.Id,
+            SimulationErrorCode.None,
+            $"Upgraded {upgrade.Blueprint.BlueprintId} v{oldVersion} -> v{upgrade.Blueprint.Version}.",
+            new SimulationEvent[] { upgraded });
+    }
+
+    private static SimulationErrorCode MapDeploymentError(string code) =>
+        code switch
+        {
+            "CORE_PROTECTED" => SimulationErrorCode.CoreProtected,
+            "INSUFFICIENT_MATERIAL" => SimulationErrorCode.InsufficientMaterial,
+            "OUT_OF_BOUNDS" => SimulationErrorCode.OutOfBounds,
+            _ => SimulationErrorCode.DeploymentRejected,
+        };
 
     private void ProcessIntent(
         Intent intent,
@@ -516,7 +627,14 @@ public sealed class SimulationEngine
         {
             targetRegion.Entities.Remove(target.Id);
             World.Statistics.EntitiesDestroyed += 1;
+            World.Statistics.EnergyLostTotal += target.Energy;
+            World.Statistics.MaterialLostTotal += target.Material;
             events.Add(new EntityDestroyed(tick, target.Id));
+            events.Add(new EntityInventoryLost(
+                tick,
+                target.Id,
+                target.Energy,
+                target.Material));
         }
 
         Accept(intent, $"Hit {target.Id} for {appliedDamage}.", results);

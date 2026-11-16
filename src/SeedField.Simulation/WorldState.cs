@@ -36,6 +36,10 @@ public sealed class SimulationStatistics
     public long EnergyStoredTotal { get; internal set; }
 
     public long EnergyDrawnTotal { get; internal set; }
+
+    public long EnergyLostTotal { get; internal set; }
+
+    public long MaterialLostTotal { get; internal set; }
 }
 
 /// <summary>

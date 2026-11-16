@@ -40,6 +40,7 @@ public partial class Main : Node2D
     private SimulationEngine _engine = null!;
     private ControllerSlot _slotA = null!;
     private ControllerSlot _slotB = null!;
+    private readonly List<DeviceControllerSlot> _deviceControllers = new();
     private ProgramEditor _editor = null!;
     private CanvasLayer _editorLayer = null!;
     private ColorRect _editorDimmer = null!;
@@ -88,8 +89,8 @@ public partial class Main : Node2D
         {
             OpenProgramEditor();
             _editor.Source = Scenarios.ScriptA.Replace(
-                "distance(gunner, target) <= 3500",
-                "distance(gunner, target) <= 4200");
+                "distance(me, target) <= me.weaponRangeMm",
+                "distance(me, target) <= me.weaponRangeMm + 700");
             DeployProgram();
             for (var i = 0; i < 12; i++)
             {
@@ -121,6 +122,11 @@ public partial class Main : Node2D
 
     public override void _ExitTree()
     {
+        foreach (var controller in _deviceControllers)
+        {
+            controller.Dispose();
+        }
+
         _slotA?.Dispose();
         _slotB?.Dispose();
     }
@@ -238,6 +244,32 @@ public partial class Main : Node2D
         _editor.Source = _deployedSourceA;
     }
 
+    private void RebuildDeviceControllers()
+    {
+        foreach (var controller in _deviceControllers)
+        {
+            controller.Dispose();
+        }
+
+        _deviceControllers.Clear();
+
+        foreach (var entity in _world.EnumerateEntities())
+        {
+            RegisterDeviceController(entity);
+        }
+    }
+
+    private void RegisterDeviceController(EntityState entity)
+    {
+        var source = entity.CivilizationId == "A"
+            ? _slotA.DeployedScript
+            : _slotB.DeployedScript;
+        _deviceControllers.Add(new DeviceControllerSlot(
+            entity.Id,
+            entity.CivilizationId,
+            source));
+    }
+
     private void BuildWorkshopPanel()
     {
         _workshopLayer = new CanvasLayer { Layer = 19, Visible = false };
@@ -299,22 +331,26 @@ public partial class Main : Node2D
         }
 
         var latest = versions[^1];
-        try
+        var result = _engine.ExecuteDeploymentCommand(new DeployCommand(
+            "A",
+            latest,
+            "frontier",
+            NextWorkshopSpawn()));
+
+        if (result.Success && result.EntityId is { } entityId)
         {
-            var entity = DeploymentService.Deploy(
-                _world,
-                latest,
-                "A",
-                "frontier",
-                NextWorkshopSpawn());
-            _workshop.SetStatus(
-                $"deployed {blueprintId} v{latest.Version} as entity {entity.Id}",
-                false);
+            var entity = _world.FindEntity(entityId);
+            if (entity is not null)
+            {
+                RegisterDeviceController(entity);
+            }
         }
-        catch (Exception exception)
-        {
-            _workshop.SetStatus($"deploy failed: {exception.Message}", true);
-        }
+
+        _workshop.SetStatus(
+            result.Success
+                ? $"deployed {blueprintId} v{latest.Version} as entity {result.EntityId}"
+                : $"deploy failed [{result.ErrorCode}]: {result.Message}",
+            !result.Success);
 
         _workshop.Refresh(_world);
         QueueRedraw();
@@ -343,11 +379,15 @@ public partial class Main : Node2D
         }
         else
         {
-            DeploymentService.Upgrade(entity, latest);
+            var result = _engine.ExecuteDeploymentCommand(new UpgradeCommand(
+                "A",
+                entityId,
+                latest));
             _workshop.SetStatus(
-                $"upgraded entity {entityId} {entity.BlueprintId} " +
-                $"v{latest.Version} (max HP {latest.MaxHealth})",
-                false);
+                result.Success
+                    ? $"upgraded entity {entityId}: {result.Message}"
+                    : $"upgrade failed [{result.ErrorCode}]: {result.Message}",
+                !result.Success);
         }
 
         _workshop.Refresh(_world);
@@ -402,6 +442,7 @@ public partial class Main : Node2D
         if (result.Success)
         {
             _deployedSourceA = _editor.Source;
+            RebuildDeviceControllers();
             _editor.SetStatus($"deployed v{result.Version} at tick {_world.Tick}", false);
         }
         else
@@ -502,6 +543,7 @@ public partial class Main : Node2D
                 _world = loaded.World;
                 _engine = new SimulationEngine(_world);
                 _deployedSourceA = _slotA.DeployedScript;
+                RebuildDeviceControllers();
                 _history.Clear();
                 _faultCount = 0;
                 _tickAccumulator = 0;
@@ -539,6 +581,7 @@ public partial class Main : Node2D
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
         _slotB = new ControllerSlot("B", Scenarios.ScriptB);
+        RebuildDeviceControllers();
 
         _history.Clear();
         _faultCount = 0;
@@ -565,13 +608,18 @@ public partial class Main : Node2D
     {
         var intents = new List<Intent>();
 
-        var decisionA = _slotA.Decide(_engine.BuildObservation("A"));
-        intents.AddRange(decisionA.Intents);
-        _faultCount += decisionA.Faults.Count;
+        foreach (var controller in _deviceControllers)
+        {
+            if (_world.FindEntity(controller.EntityId) is null)
+            {
+                continue;
+            }
 
-        var decisionB = _slotB.Decide(_engine.BuildObservation("B"));
-        intents.AddRange(decisionB.Intents);
-        _faultCount += decisionB.Faults.Count;
+            var decision = controller.Decide(
+                _engine.BuildDeviceObservation(controller.EntityId));
+            intents.AddRange(decision.Intents);
+            _faultCount += decision.Faults.Count;
+        }
 
         var result = _engine.Step(intents);
         foreach (var simulationEvent in result.Events)

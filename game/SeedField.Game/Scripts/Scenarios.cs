@@ -75,64 +75,74 @@ internal static class Scenarios
         return world;
     }
 
-    public const string ScriptA = """
+    /// <summary>
+    /// Generic per-device script. It only commands obs.viewerEntityId and relies on the
+    /// device-scoped observation (own sensor only, region-filtered messages).
+    /// </summary>
+    public const string DeviceScript = """
         function decide(obs) {
-            var intents = [];
-            var self = obs.entities.filter(function (e) { return e.isSelf; });
-            var enemies = obs.entities.filter(function (e) { return !e.isSelf; });
-
-            var scout = self.filter(function (e) { return e.entityId === 1; })[0];
-            var gunner = self.filter(function (e) { return e.entityId === 2; })[0];
-
-            if (scout) {
-                if (enemies.length > 0) {
-                    var seen = enemies[0];
-                    intents.push({
-                        type: "send",
-                        entityId: 1,
-                        toCivilizationId: "A",
-                        topic: "contact",
-                        payload: JSON.stringify({ x: seen.x, y: seen.y })
-                    });
-                    intents.push({
-                        type: "move",
-                        entityId: 1,
-                        target: { x: seen.x, y: seen.y }
-                    });
-                } else {
-                    intents.push({
-                        type: "move",
-                        entityId: 1,
-                        target: { x: 10000, y: 4000 }
-                    });
+            var me = null;
+            for (var i = 0; i < obs.entities.length; i++) {
+                if (obs.entities[i].entityId === obs.viewerEntityId) {
+                    me = obs.entities[i];
                 }
             }
+            if (!me) {
+                return [];
+            }
 
-            if (gunner) {
-                var target = nearest(gunner, enemies);
-                if (target && distance(gunner, target) <= 3500) {
-                    intents.push({ type: "attack", entityId: 2, targetId: target.entityId });
-                } else if (target) {
-                    intents.push({
-                        type: "move",
-                        entityId: 2,
-                        target: { x: target.x, y: target.y }
-                    });
-                } else {
-                    var last = null;
-                    for (var i = 0; i < obs.messages.length; i++) {
-                        if (obs.messages[i].topic === "contact") {
-                            last = obs.messages[i];
-                        }
-                    }
-                    if (last) {
-                        var p = JSON.parse(last.payload);
-                        intents.push({ type: "move", entityId: 2, target: p });
-                    }
+            var enemies = obs.entities.filter(function (e) { return !e.isSelf; });
+            var target = nearest(me, enemies);
+            var intents = [];
+
+            if (me.hasComm && target) {
+                intents.push({
+                    type: "send",
+                    entityId: me.entityId,
+                    toCivilizationId: obs.civilizationId,
+                    topic: "contact",
+                    payload: JSON.stringify({ x: target.x, y: target.y })
+                });
+            }
+
+            if (target && me.hasWeapon && distance(me, target) <= me.weaponRangeMm) {
+                intents.push({
+                    type: "attack",
+                    entityId: me.entityId,
+                    targetId: target.entityId
+                });
+            } else if (target && me.hasDrive) {
+                intents.push({
+                    type: "move",
+                    entityId: me.entityId,
+                    target: { x: target.x, y: target.y }
+                });
+            } else if (!target && me.hasDrive) {
+                var destination = obs.civilizationId === "A"
+                    ? { x: 10000, y: 4000 }
+                    : { x: 6000, y: 4000 };
+                var last = lastContact(obs);
+                if (last) {
+                    destination = JSON.parse(last.payload);
                 }
+                intents.push({
+                    type: "move",
+                    entityId: me.entityId,
+                    target: destination
+                });
             }
 
             return intents;
+        }
+
+        function lastContact(obs) {
+            var last = null;
+            for (var i = 0; i < obs.messages.length; i++) {
+                if (obs.messages[i].topic === "contact") {
+                    last = obs.messages[i];
+                }
+            }
+            return last;
         }
 
         function distance(a, b) {
@@ -155,32 +165,6 @@ internal static class Scenarios
         }
         """;
 
-    public const string ScriptB = """
-        function decide(obs) {
-            var self = obs.entities.filter(function (e) { return e.isSelf; })[0];
-            if (!self) {
-                return [];
-            }
-
-            var enemies = obs.entities.filter(function (e) { return !e.isSelf; });
-            if (enemies.length === 0) {
-                return [{ type: "move", entityId: 3, target: { x: 6000, y: 4000 } }];
-            }
-
-            var target = enemies[0];
-            var dx = target.x - self.x;
-            var dy = target.y - self.y;
-            var distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance <= 3500) {
-                return [{ type: "attack", entityId: 3, targetId: target.entityId }];
-            }
-
-            return [{
-                type: "move",
-                entityId: 3,
-                target: { x: target.x, y: target.y }
-            }];
-        }
-        """;
+    public const string ScriptA = DeviceScript;
+    public const string ScriptB = DeviceScript;
 }

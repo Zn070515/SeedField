@@ -119,10 +119,43 @@ public sealed class SaveLoadTests
     }
 
     [Fact]
+    public void V1SaveIsMigratedToCurrentSchema()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 25)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 50,
+                EnergyCapacity: 100,
+                Material: 5))
+            .Build();
+
+        var v1Data = WorldSaveSerializer.ToData(world) with
+        {
+            SchemaVersion = 1,
+            Blueprints = null,
+            Links = null,
+            MaterialShipments = null,
+            EnergyShipments = null,
+            NextShipmentId = 0,
+            NextEnergyShipmentId = 0,
+        };
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.SaveData(v1Data));
+
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+    }
+
+    [Fact]
     public void SaveRejectsUnsupportedSchemaVersion()
     {
         var json = WorldSaveSerializer.Save(TestWorlds.CombatPair());
-        var unsupported = json.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99");
+        var unsupported = json.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99");
 
         var exception = Assert.Throws<SaveFormatException>(() => WorldSaveSerializer.Load(unsupported));
 

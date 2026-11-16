@@ -39,6 +39,8 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EnergyDeliveredTotal);
         Append(ref hash, world.Statistics.EnergyStoredTotal);
         Append(ref hash, world.Statistics.EnergyDrawnTotal);
+        Append(ref hash, world.Statistics.EnergyLostTotal);
+        Append(ref hash, world.Statistics.MaterialLostTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)

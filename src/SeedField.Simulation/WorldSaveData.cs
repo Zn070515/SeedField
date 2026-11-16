@@ -170,7 +170,9 @@ public sealed record StatisticsSaveData(
     long EnergyShippedTotal = 0,
     long EnergyDeliveredTotal = 0,
     long EnergyStoredTotal = 0,
-    long EnergyDrawnTotal = 0);
+    long EnergyDrawnTotal = 0,
+    long EnergyLostTotal = 0,
+    long MaterialLostTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

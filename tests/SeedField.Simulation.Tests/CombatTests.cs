@@ -101,6 +101,41 @@ public sealed class CombatTests
     }
 
     [Fact]
+    public void DestroyedEntityInventoryIsAccountedAsLost()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 20_000, 20_000)
+            .AddEntity(Attacker(new Vec2(100, 100), range: 5_000, damage: 100))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "B",
+                "r0",
+                new Vec2(1_000, 100),
+                MaxHealth: 100,
+                Energy: 30,
+                EnergyCapacity: 100,
+                Material: 5))
+            .Build();
+
+        var initialEnergy = world.EnumerateEntities().Sum(entity => entity.Energy);
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+
+        Assert.Equal(30, world.Statistics.EnergyLostTotal);
+        Assert.Equal(5, world.Statistics.MaterialLostTotal);
+        var lost = Assert.Single(result.Events.OfType<EntityInventoryLost>());
+        Assert.Equal(30, lost.Energy);
+        Assert.Equal(5, lost.Material);
+
+        var finalEnergy = world.EnumerateEntities().Sum(entity => entity.Energy);
+        Assert.Equal(
+            initialEnergy,
+            finalEnergy + world.Statistics.EnergySpentTotal + world.Statistics.EnergyLostTotal);
+    }
+
+    [Fact]
     public void LethalHitRemovesTargetAndLaterIntentsCannotSeeIt()
     {
         var world = new WorldBuilder()

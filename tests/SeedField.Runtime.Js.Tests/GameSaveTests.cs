@@ -24,12 +24,27 @@ public sealed class GameSaveTests
     }
 
     [Fact]
+    public void GameSaveV1IsMigratedToCurrentSchema()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var json = GameSaveSerializer.Save(world, new[] { slot });
+        var v1 = json.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 1");
+
+        var loaded = GameSaveSerializer.Load(v1);
+
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded.World));
+        using var loadedSlot = Assert.Single(loaded.Controllers);
+        Assert.Equal(1, loadedSlot.Version);
+    }
+
+    [Fact]
     public void GameSaveRejectsUnknownSchemaVersion()
     {
         var world = BuildWorld();
         using var slot = new ControllerSlot("A", WaitScript);
         var json = GameSaveSerializer.Save(world, new[] { slot });
-        var unsupported = json.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 99");
+        var unsupported = json.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99");
 
         var exception = Assert.Throws<SaveFormatException>(() =>
             GameSaveSerializer.Load(unsupported));

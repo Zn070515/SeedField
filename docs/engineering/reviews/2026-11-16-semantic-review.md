@@ -7,7 +7,7 @@
 ## 结论摘要
 
 系统骨架与文档方向一致：单一 C# 仿真源、固定 Tick、整数坐标、事件驱动 Godot、Jint JSON 边界、蓝图版本与核心区保底均已落地。  
-本轮发现 **2 个必须立即修复的意图/信息边界问题**与 **1 个核心区规则缺口**；前两项已完全修复，核心区保护已补上部署/意图/存档校验，恢复命令统一与配额仍开放。其余为架构级原型缺口，已记录，不应被 README 的“已实现”措辞掩盖。
+本轮发现的问题已全部收口：R1/R2/R3/R5/R7/R8/R9 有代码与回归测试；R4 的部署/意图/存档入口已补保护；R6/R10 由 ADR-0003/0004 明确为原型语义或已知边界。剩余项只有核心区恢复命令统一、文明级 legacy 观察 API、离屏 Tick 预算。
 
 ## 已修复（本轮）
 
@@ -31,7 +31,10 @@
 
 ## 未修复（按严重度）
 
-### R3 — High：传感器知识是文明级瞬时融合，绕过通信拓扑
+### R3 — High（运行时已修复）：传感器知识是文明级瞬时融合，绕过通信拓扑
+
+> 已修复：`BuildForEntity` + `DeviceControllerSlot`；Godot 每个实体独立控制器，只读自己的设备观察。  
+> 保留：文明级 `BuildObservation` 仅给工具/旧测试/命令级 AI，游戏运行路径不再使用。
 
 - 文档：`CORE_LOOP_AND_RULES.md` 不变量 2「信息不能免费全图共享」；`SCENARIO_TEST_CASES.md` S3「断开中继后接收方不能继续获取新敌情」。
 - 现状：`ObservationBuilder` 把所有己方实体、所有区域的传感器结果合并成一个文明级观察；一个侦察体的发现立刻被全文明控制器看到，不经过消息/中继/延迟。
@@ -48,14 +51,16 @@
 - 影响：核心区不可毁的**产品承诺**尚不能由世界规则证明；只能证明“有一个 API 可以免费/低成本造单位”。
 - 方向：核心区保护区/多出口规则；恢复走统一命令与配额；记录核心区保底支出与吞吐，防套利。
 
-### R5 — Medium：工坊部署/升级绕过 Intent 管线
+### R5 — Medium（已修复）：工坊部署/升级绕过 Intent 管线
+
+> 已修复：`DeployCommand` / `UpgradeCommand` 经 `SimulationEngine.ExecuteDeploymentCommand`，产出 `EntityDeployed` / `EntityUpgraded`；工坊 UI 不再直接调用 `DeploymentService`。
 
 - 文档：`ARCHITECTURE_AND_COMPONENTS.md` 关键边界 3「所有意图经过统一验证」；`AGENTS.md` 单一真实状态源。
 - 现状：`WorkshopPanel` 直接调用 `DeploymentService.Deploy/Upgrade`；服务在 Simulation 内并有成本校验，但没有部署命令/事件/权限的统一入口。
 - 影响：本地玩家 UI 与 JS 控制器不是同一条受验证路径；后续权限、回放、审计会分叉。
 - 方向：引入 `DeploymentCommand`/Facade，产出稳定事件与审计；UI 只提交命令。
 
-### R6 — Medium：E/C/S/B 仍是原型近似
+### R6 — Medium（ADR-0003 关闭为原型语义）：E/C/S/B 仍是原型近似
 
 - 文档：`ECONOMY_ENERGY_MATERIALS_COMPUTE.md`；`DECISION_REGISTER` E-01/E-02/E-03。
 - 现状：
@@ -66,27 +71,30 @@
 - 影响：这些数值与语义不能当作冻结平衡；文档已标 `[PROPOSED]/[VALIDATE]`，实现与 README 需要继续明确“原型近似”。
 - 方向：写 ADR 固化原型语义；在 UI/调试面板显示实际消耗来源。
 
-### R7 — Medium：存档 schema 长期停留在 v1
+### R7 — Medium（已修复）：存档 schema 长期停留在 v1
 
 - 文档：`SCHEMAS_SAVES_AND_OPPONENT_FILES.md`「引擎/脚本/蓝图/存档分别版本化」「必须有迁移测试」。
 - 现状：`WorldSaveData`/`GameSaveData` 多次加字段，`CurrentSchemaVersion` 仍为 1；无 v1→v2 迁移测试；活动区域是会话状态，不写入存档。
 - 影响：旧存档靠 JSON 默认值“碰巧”可读；字段语义变化时无法判断兼容性。
 - 方向：下一次形状变更提升 schema；加入迁移测试；在文档中明确 active set 属于会话。
 
-### R8 — Medium：被摧毁实体的库存离开守恒统计
+### R8 — Medium（已修复）：被摧毁实体的库存离开守恒统计
 
 - 文档：`ECONOMY_ENERGY_MATERIALS_COMPUTE.md`「资源守恒必须可测试」。
 - 现状：`ProcessAttack` 直接移除实体；其剩余 E/M 不进入任何损失/回收事件，能量守恒测试只能避开摧毁场景。
 - 影响：长期经济与战斗结算无法审计资源去向。
 - 方向：摧毁时产出库存损失/残骸事件，或定义战利品/回收规则。
 
-### R9 — Medium：消息/物流知识仍是文明级全知
+### R9 — Medium（运行时已修复）：消息/物流知识仍是文明级全知
+
+> 已修复：设备观察只包含目标区域为该设备所在区域的消息/物资/能源；Godot 切片使用设备观察。  
+> 保留：文明级 `BuildObservation` 仍合并全量消息，仅供工具/旧测试。
 
 - 文档：`SIMULATION_TICK_AND_DETERMINISM.md`；`SCENARIO_TEST_CASES.md` S3/S9；O-01。
 - 现状：跨区发送要求目标区有己方 Comm 端点，但消息到达后进入文明级收件箱，所有控制器都能看到；没有“只有目标区中继知道”的边界。
 - 方向：设备/区域级收件箱，或至少按目标区域过滤 Observation。
 
-### R10 — Low：区域活动只是意图 gating
+### R10 — Low（ADR-0004 接受为边界）：区域活动只是意图 gating
 
 - 文档：`FULL_GAME_ROADMAP.md` M3「离屏区模拟/加载」；本仓库 `IMPLEMENTATION_BASELINE.md` 已标注。
 - 现状：非活动区仍跑被动发电/投递/核心再生，没有 Tick 预算或增量加载收益；活动集不持久化。

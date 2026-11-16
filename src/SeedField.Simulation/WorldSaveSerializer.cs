@@ -8,7 +8,8 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+    public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
     private static readonly JsonSerializerOptions Options = new()
@@ -19,7 +20,10 @@ public static class WorldSaveSerializer
     };
 
     public static string Save(WorldState world) =>
-        JsonSerializer.Serialize(ToData(world), Options);
+        SaveData(ToData(world));
+
+    public static string SaveData(WorldSaveData data) =>
+        JsonSerializer.Serialize(data, Options);
 
     public static WorldState Load(string json)
     {
@@ -86,7 +90,9 @@ public static class WorldSaveSerializer
                 world.Statistics.EnergyShippedTotal,
                 world.Statistics.EnergyDeliveredTotal,
                 world.Statistics.EnergyStoredTotal,
-                world.Statistics.EnergyDrawnTotal),
+                world.Statistics.EnergyDrawnTotal,
+                world.Statistics.EnergyLostTotal,
+                world.Statistics.MaterialLostTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -132,11 +138,18 @@ public static class WorldSaveSerializer
     {
         ArgumentNullException.ThrowIfNull(data);
 
-        if (data.SchemaVersion != CurrentSchemaVersion)
+        if (data.SchemaVersion < OldestSupportedSchemaVersion ||
+            data.SchemaVersion > CurrentSchemaVersion)
         {
             throw new SaveFormatException(
                 "UNSUPPORTED_SAVE_VERSION",
-                $"Save schema {data.SchemaVersion} is not supported; expected {CurrentSchemaVersion}.");
+                $"Save schema {data.SchemaVersion} is not supported; " +
+                $"expected {OldestSupportedSchemaVersion}..{CurrentSchemaVersion}.");
+        }
+
+        if (data.SchemaVersion < CurrentSchemaVersion)
+        {
+            data = Migrate(data);
         }
 
         var world = new WorldState
@@ -768,7 +781,26 @@ public static class WorldSaveSerializer
         world.Statistics.EnergyDeliveredTotal = statistics.EnergyDeliveredTotal;
         world.Statistics.EnergyStoredTotal = statistics.EnergyStoredTotal;
         world.Statistics.EnergyDrawnTotal = statistics.EnergyDrawnTotal;
+        world.Statistics.EnergyLostTotal = statistics.EnergyLostTotal;
+        world.Statistics.MaterialLostTotal = statistics.MaterialLostTotal;
     }
+
+    /// <summary>
+    /// v1 predates links, blueprint registry, material/energy shipments and the
+    /// associated ids/stats. Missing collections are treated as empty and the
+    /// loaders compute next ids from stored data when zero.
+    /// </summary>
+    private static WorldSaveData Migrate(WorldSaveData data) =>
+        data with
+        {
+            SchemaVersion = CurrentSchemaVersion,
+            Blueprints = data.Blueprints ?? Array.Empty<BlueprintSaveData>(),
+            Links = data.Links ?? Array.Empty<LinkSaveData>(),
+            MaterialShipments = data.MaterialShipments ?? Array.Empty<MaterialShipmentSaveData>(),
+            EnergyShipments = data.EnergyShipments ?? Array.Empty<EnergyShipmentSaveData>(),
+            InFlightMessages = data.InFlightMessages ?? Array.Empty<MessageSaveData>(),
+            Inboxes = data.Inboxes ?? Array.Empty<InboxSaveData>(),
+        };
 
     private static bool IsValidShipmentRoute(WorldState world, MaterialShipmentSaveData shipment) =>
         IsValidRoute(world, shipment.FromRegionId, shipment.ToRegionId, shipment.Route);

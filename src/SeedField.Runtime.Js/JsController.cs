@@ -377,7 +377,13 @@ public sealed class JsController : IDisposable
                     entity.Position.Y,
                     entity.Health,
                     entity.MaxHealth,
-                    entity.IsSelf))],
+                    entity.IsSelf,
+                    entity.HasSensor,
+                    entity.SensorRangeMm,
+                    entity.HasWeapon,
+                    entity.WeaponRangeMm,
+                    entity.HasDrive,
+                    entity.HasComm))],
                 [.. observation.Messages.Select(message => new MessageDto(
                     message.MessageId,
                     message.FromEntityId,
@@ -402,7 +408,8 @@ public sealed class JsController : IDisposable
                     shipment.Amount,
                     shipment.SentTick,
                     shipment.ArriveTick,
-                    shipment.Route))]);
+                    shipment.Route))],
+                observation.ViewerEntityId);
 
         private sealed record ObservationDto(
             long Tick,
@@ -410,7 +417,8 @@ public sealed class JsController : IDisposable
             List<EntityDto> Entities,
             List<MessageDto> Messages,
             List<ShipmentDto> Shipments,
-            List<EnergyShipmentDto> EnergyShipments);
+            List<EnergyShipmentDto> EnergyShipments,
+            long? ViewerEntityId);
 
         private sealed record ShipmentDto(
             long ShipmentId,
@@ -438,7 +446,13 @@ public sealed class JsController : IDisposable
             int Y,
             int Health,
             int MaxHealth,
-            bool IsSelf);
+            bool IsSelf,
+            bool HasSensor,
+            int SensorRangeMm,
+            bool HasWeapon,
+            int WeaponRangeMm,
+            bool HasDrive,
+            bool HasComm);
 
         private sealed record MessageDto(
             long MessageId,

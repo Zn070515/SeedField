@@ -102,6 +102,97 @@ public static class ObservationBuilder
             energyShipments);
     }
 
+    /// <summary>
+    /// Device-scoped observation. Only entities in the viewer's region are known; other
+    /// own units in that region are friendly, foreign units require this device's sensor.
+    /// Messages and shipments are filtered to the device's region, so knowledge does not
+    /// fuse across the civilization for free.
+    /// </summary>
+    public static Observation BuildForEntity(WorldState world, EntityId entityId)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        var viewer = world.FindEntity(entityId)
+            ?? throw new ArgumentException($"Entity '{entityId}' does not exist.", nameof(entityId));
+        var region = world.Regions[viewer.RegionId];
+
+        var visible = new SortedDictionary<long, ObservedEntity>();
+        foreach (var candidate in region.Entities.Values)
+        {
+            if (candidate.Id != viewer.Id &&
+                !string.Equals(candidate.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
+                !VisibilityRules.IsSensedBy(viewer, candidate))
+            {
+                continue;
+            }
+
+            visible[candidate.Id.Value] = ToObserved(
+                candidate,
+                isSelf: string.Equals(
+                    candidate.CivilizationId,
+                    viewer.CivilizationId,
+                    StringComparison.Ordinal));
+        }
+
+        var messages = world.GetInbox(viewer.CivilizationId)
+            .Where(message => string.Equals(
+                message.TargetRegionId,
+                viewer.RegionId,
+                StringComparison.Ordinal))
+            .OrderBy(message => message.Id)
+            .Select(message => new ObservedMessage(
+                message.Id,
+                message.FromEntityId.Value,
+                message.FromCivilizationId,
+                message.TargetRegionId,
+                message.Topic,
+                message.Payload,
+                message.SentTick,
+                message.DeliveredTick))
+            .ToList();
+
+        var shipments = world.InTransitMaterial
+            .Where(shipment =>
+                string.Equals(shipment.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
+                (string.Equals(shipment.FromRegionId, viewer.RegionId, StringComparison.Ordinal) ||
+                 string.Equals(shipment.ToRegionId, viewer.RegionId, StringComparison.Ordinal)))
+            .OrderBy(shipment => shipment.Id)
+            .Select(shipment => new ObservedShipment(
+                shipment.Id,
+                shipment.FromRegionId,
+                shipment.ToRegionId,
+                shipment.Amount,
+                shipment.SentTick,
+                shipment.ArriveTick,
+                shipment.Route))
+            .ToList();
+
+        var energyShipments = world.InTransitEnergy
+            .Where(shipment =>
+                string.Equals(shipment.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
+                (string.Equals(shipment.FromRegionId, viewer.RegionId, StringComparison.Ordinal) ||
+                 string.Equals(shipment.ToRegionId, viewer.RegionId, StringComparison.Ordinal)))
+            .OrderBy(shipment => shipment.Id)
+            .Select(shipment => new ObservedEnergyShipment(
+                shipment.Id,
+                shipment.FromRegionId,
+                shipment.ToRegionId,
+                shipment.Amount,
+                shipment.SentTick,
+                shipment.ArriveTick,
+                shipment.Route))
+            .ToList();
+
+        return new Observation(
+            world.Tick,
+            viewer.CivilizationId,
+            visible.Values.ToList(),
+            messages,
+            shipments,
+            energyShipments,
+            viewer.Id.Value);
+    }
+
     private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>
         new(
             entity.Id.Value,
@@ -110,5 +201,11 @@ public static class ObservationBuilder
             entity.Position,
             entity.Health,
             entity.MaxHealth,
-            isSelf);
+            isSelf,
+            entity.Sensor is not null,
+            entity.Sensor?.RangeMm ?? 0,
+            entity.Weapon is not null,
+            entity.Weapon?.RangeMm ?? 0,
+            entity.Drive is not null,
+            entity.Comm is not null);
 }

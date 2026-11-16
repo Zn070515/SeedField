@@ -10,6 +10,7 @@ public static class ScriptFaultCodes
     public const string StatementLimit = "SCRIPT_STATEMENT_LIMIT";
     public const string Fault = "SCRIPT_FAULT";
     public const string InvalidIntentSchema = "INVALID_INTENT_SCHEMA";
+    public const string DeviceScope = "DEVICE_SCOPE";
 }
 
 public sealed record ControllerFault(string Code, string Message);

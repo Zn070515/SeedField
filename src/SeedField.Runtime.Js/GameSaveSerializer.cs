@@ -20,7 +20,8 @@ public sealed record LoadedGame(
 /// </summary>
 public static class GameSaveSerializer
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+    public const int OldestSupportedSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -70,11 +71,18 @@ public static class GameSaveSerializer
             throw new SaveFormatException("INVALID_SAVE", "Save payload is null.");
         }
 
-        if (data.SchemaVersion != CurrentSchemaVersion)
+        if (data.SchemaVersion < OldestSupportedSchemaVersion ||
+            data.SchemaVersion > CurrentSchemaVersion)
         {
             throw new SaveFormatException(
                 "UNSUPPORTED_GAME_SAVE_VERSION",
-                $"Game save schema {data.SchemaVersion} is not supported; expected {CurrentSchemaVersion}.");
+                $"Game save schema {data.SchemaVersion} is not supported; " +
+                $"expected {OldestSupportedSchemaVersion}..{CurrentSchemaVersion}.");
+        }
+
+        if (data.SchemaVersion < CurrentSchemaVersion)
+        {
+            data = data with { SchemaVersion = CurrentSchemaVersion };
         }
 
         if (data.World is null)
