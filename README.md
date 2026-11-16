@@ -26,14 +26,16 @@
 
 完整游戏离线可玩，不依赖开发者服务器；设计基线为 V1.9 Rev2。本仓库是正式工程，不是设计资料包。
 
+<p align="center"><img src="game/SeedField.Game/screenshots/m0-combat.png" alt="Seed Field M0 combat slice" width="760"></p>
+
 ## 项目现状
 
 | 项目 | 说明 |
 |---|---|
-| 当前里程碑 | **M0 Headless 纵切片**：真实 JS 驱动单位、同规则仿真、可复现哈希 |
+| 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
 | 仿真核心 | 固定 Tick、意图验证、观察过滤、E/M、通信、直接交火、核心区保底复建 |
-| 客户端 | **Godot 4.7.2 Mono 已安装并验证 net10.0；可视工程待建立** |
-| 验证 | 19 个仿真测试 + 7 个 Jint 测试通过；600 Tick 双跑哈希一致 |
+| 客户端 | **Godot 4.7.2 Mono 可视切片可运行（net10.0）** |
+| 验证 | 19 个仿真测试 + 7 个 Jint 测试通过；600 Tick 双跑哈希一致；已提交真实截图 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -45,7 +47,7 @@
 | 仿真核心 | [`src/SeedField.Simulation`](src/SeedField.Simulation) | 唯一权威 `WorldState`、Tick、验证、事件、哈希 |
 | 脚本运行时 | [`src/SeedField.Runtime.Js`](src/SeedField.Runtime.Js) | Jint 4.18.0；JSON 进/JSON 出，不暴露 CLR |
 | Headless | [`src/SeedField.Headless`](src/SeedField.Headless) | 双文明纵切片 Runner |
-| 客户端 | [`game`](game) | Godot 工程（待安装编辑器后建立） |
+| 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片；只渲染 `SimulationEvent` |
 
 ## 快速开始
 
@@ -53,9 +55,12 @@
 dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
+
+godot --path game/SeedField.Game                  # 实时可视化
+godot --path game/SeedField.Game -- --capture     # 自动截图后退出
 ```
 
-Runner 运行 600 Tick 双文明对战，输出事件统计、拒绝原因与最终状态哈希，并跑两次验证可复现性。
+Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
 
 ## 文档入口
 
@@ -64,7 +69,8 @@ Runner 运行 600 Tick 双文明对战，输出事件统计、拒绝原因与最
 | [`IMPLEMENTATION_BASELINE.md`](docs/engineering/IMPLEMENTATION_BASELINE.md) | 已确认规则、真实代码状态、风险与下一步 |
 | [`DECISION_REGISTER.md`](docs/design-bible/v1.9-rev2/00-START-HERE/DECISION_REGISTER.md) | CONFIRMED / BASELINE / OPEN 决策主索引 |
 | [`ADR-0001`](docs/engineering/adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10.0 运行时目标 |
-| [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | 本轮命令、测试与运行证据 |
+| [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |
+| [`visual slice`](docs/engineering/evidence/2026-11-16-godot-visual-slice.md) | Godot 画面、截图与 net10.0 运行证据 |
 
 ## 工程原则
 
@@ -79,4 +85,4 @@ Runner 运行 600 Tick 双文明对战，输出事件统计、拒绝原因与最
 
 ## 当前限制
 
-Godot 4.7.2 Mono 已安装、net10.0 冒烟通过，但客户端工程尚未建立；多区域、存档、离线文明包、TypeScript `.d.ts`、正式美术与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制，没有正式美术、相机/完整 UI 与导出模板；多区域、存档、离线文明包、TypeScript `.d.ts` 与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

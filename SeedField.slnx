@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/game/">
+    <Project Path="game/SeedField.Game/SeedField.Game.csproj">
+      <BuildType Project="Debug" />
+    </Project>
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/SeedField.Headless/SeedField.Headless.csproj" />
     <Project Path="src/SeedField.Runtime.Js/SeedField.Runtime.Js.csproj" />

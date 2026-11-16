@@ -42,6 +42,7 @@
 src/SeedField.Simulation/     C# 权威仿真核心
 src/SeedField.Runtime.Js/     Jint 4.18.0 适配
 src/SeedField.Headless/       Headless 纵切片 Runner
+game/SeedField.Game/          Godot 4.7.2 Mono 可视切片（net10.0）
 tests/SeedField.Simulation.Tests/
 tests/SeedField.Runtime.Js.Tests/
 ```
@@ -57,6 +58,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 核心区保底 E/M 再生（带上限）与无外部工业条件下的最小实体复建。
 - FNV-1a 64 状态哈希；5,000 Tick 双跑一致。
 - Jint 沙箱：语句数、内存、超时限制；禁止 `eval`/`Function` 字符串编译；不暴露 CLR 宿主对象；观察与意图仅以 JSON 文本交换。
+- Godot 4.7.2 Mono 可视切片：渲染实体、射程环、射击轨迹、消息脉冲与事件日志；两个单位由真实 Jint 脚本驱动，Godot 不承担任何战斗结算。
 
 ### 尚未实现
 
@@ -105,6 +107,24 @@ REPRODUCIBLE: identical state hash across both runs.
 
 `WeaponCoolingDown: 50` 是脚本每 Tick 尝试开火、仿真核按冷却规则拒绝的预期结果，不是缺陷；它证明拒绝原因可诊断。
 
+### 5.1 Godot 可视切片
+
+`game/SeedField.Game` 使用同一 `WorldState`、同一 `SimulationEngine` 和同一 Jint 控制器脚本，仅把 `SimulationEvent` 渲染成画面：
+
+```powershell
+dotnet build game/SeedField.Game/SeedField.Game.csproj
+godot --path game/SeedField.Game -- --capture
+```
+
+实测（2026-11-16）：
+
+```text
+SEEDFIELD_PRERUN tick=41 shots=3 entities=3
+SCREENSHOT_SAVED .../screenshots/m0-combat.png (Ok)
+```
+
+截图见 `game/SeedField.Game/screenshots/m0-combat.png` 与 `docs/engineering/evidence/2026-11-16-godot-visual-slice.md`。该画面证明“真实 JS 驱动 + Godot 事件回放”链路；它仍是原型绘制，不是正式美术验收。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -118,7 +138,7 @@ REPRODUCIBLE: identical state hash across both runs.
 
 | 风险 | 影响 | 处理 |
 |---|---|---|
-| Godot 客户端工程尚未建立 | 无法产出 M0 要求的真实运行画面 | 已装 4.7.2 Mono；下一步建立 `game/SeedField.Game` 并出首张真实截图 |
+| Godot 画面仍为原型绘制 | 不能作为商店或正式美术验收 | 当前截图只证明事件可视化链路；正式美术、相机/UI 与动画需后续迭代 |
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 单区域/单一路由 | 无法验证跨区因果 | 下一阶段建立多区域与队列测试 |
@@ -126,7 +146,7 @@ REPRODUCIBLE: identical state hash across both runs.
 
 ## 8. 下一步（按依赖顺序）
 
-1. 建立 `game/SeedField.Game`（Godot 4.7.2 Mono，net10.0），引用 `SeedField.Simulation`，用事件绘制实体、信号与命中，并产出真实截图。
+1. 迭代可视切片：正式相机/缩放、核心区与通信网络表现、诊断面板；补装导出模板后再做 Windows 包。
 2. 引入 `DeterministicRandom` 与种子状态，进入哈希；为命中/损伤变体提供可复现实验。
 3. 建立版本化 `WorldSave` 最小 schema 与迁移测试。
 4. 多区域：区域索引、跨区消息队列、离屏区推进一致性测试。
