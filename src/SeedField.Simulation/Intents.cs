@@ -116,6 +116,7 @@ public enum SimulationErrorCode
     NegotiationExhausted,
     GridFull,
     BreakerMaintenanceRequired,
+    RecoveryQuotaExhausted,
 }
 
 public sealed record IntentResult(

@@ -179,6 +179,15 @@ public sealed record EntityBootstrapped(
     long EnergySpent,
     long MaterialSpent) : SimulationEvent(Tick);
 
+/// <summary>The fast-recovery quota is exhausted; the attempt was rejected.</summary>
+public sealed record RecoveryQuotaDenied(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    int Used,
+    int Limit,
+    long ResetsInTicks) : SimulationEvent(Tick);
+
 public sealed record TreatyProposed(
     long Tick,
     long ProposalId,

@@ -92,6 +92,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 抢占式优先级与断路器维护：同一 Tick 按 `PowerModule.Priority` 降序处理意图，结果仍按输入顺序返回；`TripCount`/`MaintenanceRequired` 持久化，达到 `BreakerTripLimit` 后锁定所有合闸路径；`MaintainBreakerCommand` 扣材料并清除锁定；F4 显示 trips/MAINT 并提供 MAINTAIN；存档 v12（ADR-0013）。
 - 确定性随机与随机故障：`WorldState.Random` 是 SplitMix64 流，种子/状态进入存档 v13 与哈希；`Percent(0)` 不消耗随机值；`BreakerFaultChancePercent` 命中后直接锁定断路器，`BreakerLockedOut.Reason` 区分 `fault`/`trips`；`--power-fault` 演示（ADR-0014）。
 - 工程约束 Lint：`tests/SeedField.Repository.Tests` 校验 `.cs`/`.md` 600 行上限、`net10.0`、仿真核心无 Godot、ADR 命名、设计基线 MANIFEST 完整性。
+- 核心区恢复配额：`SeedCoreConfig` 的窗口/配额/成本增长/债务衰减/透支字段；两个恢复入口共用配额与缩放成本；`RecoveryQuotaDenied`；慢速模式；存档 v14（ADR-0015）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
@@ -222,7 +223,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - `DeploymentService` 拒绝外文明部署进核心区（`CORE_PROTECTED`）。
 - `SimulationEngine` 拒绝外文明实体在核心区内的任何意图（`CoreProtected`）。
 - 存档加载拒绝核心区内的外文明实体（`FOREIGN_ENTITY_IN_CORE`）。
-- 仍开放：核心区恢复命令统一入口、精确配额与围困破局机制。
+- 仍开放：核心区外壳层、围困对恢复速度的影响、残骸回收与正式费率。
 
 ### 5.10 控制点目标
 
@@ -347,7 +348,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 多跳物流无中转仓储 | 货物整段在途，不能在中途装卸/换线 | 后续加入中转节点与容量 |
 | 电网模型仍简化 | 断路器无维护/故障；优先级通过取电下限而非抢占重排；无多电压/潮流方程 | 后续做故障模型/优先级重排/电压层；共享链路容量需平衡验证 |
 | 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
-| 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
+| 核心区恢复费率未定 | 成本仍由调用方传入；配额/债务已统一，正式费率仍 OPEN | 以场景配置验证后再定 R-04 数值 |
 | 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
@@ -358,7 +359,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ## 8. 下一步（按依赖顺序）
 
-1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
+1. 核心区外壳层/围困对恢复速度的影响（ADR-0016）；残骸回收；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。
 4. 用 `DeterministicRandom` 实现可复现的命中/损伤变体与掉落；补随机流回放测试。

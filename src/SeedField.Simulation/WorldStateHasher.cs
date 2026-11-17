@@ -368,6 +368,15 @@ public static class WorldStateHasher
             Append(ref hash, core.Config.MaterialPerTick);
             Append(ref hash, core.Config.MaxEnergyReserve);
             Append(ref hash, core.Config.MaxMaterialReserve);
+            Append(ref hash, core.Config.RecoveryWindowTicks);
+            Append(ref hash, core.Config.RecoveryQuotaPerWindow);
+            Append(ref hash, core.Config.RecoveryCostGrowthPercent);
+            Append(ref hash, core.Config.RecoveryStreakDecayTicks);
+            Append(ref hash, core.Config.RecoveryOverdraftCostPercent);
+            Append(ref hash, core.RecoveryWindowStartTick);
+            Append(ref hash, core.RecoveriesInWindow);
+            Append(ref hash, core.RecoveryStreak);
+            Append(ref hash, core.LastRecoveryTick);
 
             Append(ref hash, core.LatestProducts.Count);
             foreach (var product in core.LatestProducts)

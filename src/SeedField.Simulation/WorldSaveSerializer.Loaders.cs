@@ -209,11 +209,37 @@ public static partial class WorldSaveSerializer
                     $"Core '{coreData.CivilizationId}' references a missing or non-core region.");
             }
 
+            if (coreData.RecoveryWindowTicks < 0 ||
+                coreData.RecoveryQuotaPerWindow < 0 ||
+                coreData.RecoveryCostGrowthPercent < 0 ||
+                coreData.RecoveryStreakDecayTicks < 0 ||
+                coreData.RecoveryWindowStartTick < 0 ||
+                coreData.RecoveriesInWindow < 0 ||
+                coreData.RecoveryStreak < 0 ||
+                coreData.LastRecoveryTick < -1 ||
+                coreData.RecoveryOverdraftCostPercent < 0 ||
+                coreData.LastRecoveryTick > data.Tick ||
+                coreData.RecoveryWindowStartTick > data.Tick ||
+                (coreData.RecoveryWindowTicks > 0 &&
+                 coreData.RecoveryQuotaPerWindow > 0 &&
+                 coreData.RecoveryOverdraftCostPercent == 0 &&
+                 coreData.RecoveriesInWindow > coreData.RecoveryQuotaPerWindow))
+            {
+                throw Invalid(
+                    "INVALID_CORE_RECOVERY",
+                    $"Core '{coreData.CivilizationId}' has invalid recovery quota state.");
+            }
+
             var config = new SeedCoreConfig(
                 coreData.EnergyPerTick,
                 coreData.MaterialPerTick,
                 coreData.MaxEnergyReserve,
-                coreData.MaxMaterialReserve);
+                coreData.MaxMaterialReserve,
+                coreData.RecoveryWindowTicks,
+                coreData.RecoveryQuotaPerWindow,
+                coreData.RecoveryCostGrowthPercent,
+                coreData.RecoveryStreakDecayTicks,
+                coreData.RecoveryOverdraftCostPercent);
             config.Validate();
 
             var core = new SeedCoreState(
@@ -223,6 +249,10 @@ public static partial class WorldSaveSerializer
             {
                 EnergyReserve = coreData.EnergyReserve,
                 MaterialReserve = coreData.MaterialReserve,
+                RecoveryWindowStartTick = coreData.RecoveryWindowStartTick,
+                RecoveriesInWindow = coreData.RecoveriesInWindow,
+                RecoveryStreak = coreData.RecoveryStreak,
+                LastRecoveryTick = coreData.LastRecoveryTick,
             };
 
             if (core.EnergyReserve < 0 ||

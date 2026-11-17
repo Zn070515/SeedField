@@ -255,7 +255,16 @@ public sealed record CoreSaveData(
     long MaxMaterialReserve,
     long EnergyReserve,
     long MaterialReserve,
-    SeedCoreProductSaveData[]? LatestProducts = null);
+    SeedCoreProductSaveData[]? LatestProducts = null,
+    long RecoveryWindowTicks = 0,
+    int RecoveryQuotaPerWindow = 0,
+    int RecoveryCostGrowthPercent = 0,
+    long RecoveryStreakDecayTicks = 0,
+    long RecoveryWindowStartTick = 0,
+    int RecoveriesInWindow = 0,
+    int RecoveryStreak = 0,
+    long LastRecoveryTick = -1,
+    int RecoveryOverdraftCostPercent = 0);
 
 public sealed record MessageSaveData(
     long Id,

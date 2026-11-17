@@ -6,6 +6,9 @@ public sealed partial class SimulationEngine
     {
         foreach (var core in World.Cores.Values)
         {
+            core.RefreshRecoveryWindow(tick);
+            core.RefreshRecoveryDebt(tick);
+
             var energyRoom = Math.Max(0, core.Config.MaxEnergyReserve - core.EnergyReserve);
             var materialRoom = Math.Max(0, core.Config.MaxMaterialReserve - core.MaterialReserve);
 
@@ -44,7 +47,21 @@ public sealed partial class SimulationEngine
         }
     }
 
-    private static BootstrapResult BootstrapFailure(SimulationErrorCode code, string message) =>
-        new(false, null, code, message, null);
+    private static long ScaleRecoveryCost(long cost, long percent)
+    {
+        if (cost <= 0 || percent <= 100)
+        {
+            return cost;
+        }
+
+        var scaled = ((Int128)cost * percent + 99) / 100;
+        return scaled > long.MaxValue ? long.MaxValue : (long)scaled;
+    }
+
+    private static BootstrapResult BootstrapFailure(
+        SimulationErrorCode code,
+        string message,
+        SimulationEvent? recoveryEvent = null) =>
+        new(false, null, code, message, recoveryEvent);
 
 }

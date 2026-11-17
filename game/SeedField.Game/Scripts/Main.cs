@@ -435,6 +435,9 @@ public partial class Main : Node2D
             BreakerMaintained maintained =>
                 $"t{maintained.Tick,4}  {maintained.CivilizationId} breaker maintained " +
                 $"in {maintained.RegionId} (−{maintained.MaterialSpent}M)",
+            RecoveryQuotaDenied quota =>
+                $"t{quota.Tick,4}  {quota.CivilizationId} recovery quota exhausted " +
+                $"in {quota.RegionId} ({quota.Used}/{quota.Limit}, reset in {quota.ResetsInTicks}t)",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

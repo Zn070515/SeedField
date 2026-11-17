@@ -244,22 +244,45 @@ public sealed partial class SimulationEngine
             return BootstrapFailure(SimulationErrorCode.OutOfBounds, "Bootstrap position is outside the core region.");
         }
 
-        if (core.EnergyReserve < blueprint.RequiredEnergy)
+        var tick = World.Tick;
+        var quota = core.EvaluateRecoveryQuota(tick, out var resetsInTicks);
+        if (quota == SeedCoreState.RecoveryQuotaDecision.Exhausted)
+        {
+            return BootstrapFailure(
+                SimulationErrorCode.RecoveryQuotaExhausted,
+                $"Recovery quota exhausted; the window resets in {resetsInTicks} ticks.",
+                new RecoveryQuotaDenied(
+                    tick,
+                    civilizationId,
+                    core.RegionId,
+                    core.RecoveriesInWindow,
+                    core.Config.RecoveryQuotaPerWindow,
+                    resetsInTicks));
+        }
+
+        var multiplier = core.RecoveryCostMultiplierPercent(
+            tick,
+            quota == SeedCoreState.RecoveryQuotaDecision.Overdraft);
+        var energyCost = ScaleRecoveryCost(blueprint.RequiredEnergy, multiplier);
+        var materialCost = ScaleRecoveryCost(blueprint.RequiredMaterial, multiplier);
+
+        if (core.EnergyReserve < energyCost)
         {
             return BootstrapFailure(SimulationErrorCode.NoEnergy, "Core energy reserve is insufficient.");
         }
 
-        if (core.MaterialReserve < blueprint.RequiredMaterial)
+        if (core.MaterialReserve < materialCost)
         {
             return BootstrapFailure(
                 SimulationErrorCode.InsufficientMaterial,
                 "Core material reserve is insufficient.");
         }
 
-        core.EnergyReserve -= blueprint.RequiredEnergy;
-        core.MaterialReserve -= blueprint.RequiredMaterial;
-        World.Statistics.EnergySpentTotal += blueprint.RequiredEnergy;
-        World.Statistics.MaterialSpentTotal += blueprint.RequiredMaterial;
+        core.EnergyReserve -= energyCost;
+        core.MaterialReserve -= materialCost;
+        World.Statistics.EnergySpentTotal += energyCost;
+        World.Statistics.MaterialSpentTotal += materialCost;
+        core.RecordRecovery(tick);
 
         var entityId = new EntityId(World.NextEntityId++);
         var definition = new EntityDefinition(
@@ -283,8 +306,8 @@ public sealed partial class SimulationEngine
             entityId,
             civilizationId,
             blueprint.Name,
-            blueprint.RequiredEnergy,
-            blueprint.RequiredMaterial);
+            energyCost,
+            materialCost);
 
         return new BootstrapResult(
             true,
@@ -489,6 +512,27 @@ public sealed partial class SimulationEngine
             return BootstrapFailure(SimulationErrorCode.OutOfBounds, "Restore position is outside the core region.");
         }
 
+        var quota = core.EvaluateRecoveryQuota(tick, out var resetsInTicks);
+        if (quota == SeedCoreState.RecoveryQuotaDecision.Exhausted)
+        {
+            return BootstrapFailure(
+                SimulationErrorCode.RecoveryQuotaExhausted,
+                $"Recovery quota exhausted; the window resets in {resetsInTicks} ticks.",
+                new RecoveryQuotaDenied(
+                    tick,
+                    civilizationId,
+                    core.RegionId,
+                    core.RecoveriesInWindow,
+                    core.Config.RecoveryQuotaPerWindow,
+                    resetsInTicks));
+        }
+
+        var multiplier = core.RecoveryCostMultiplierPercent(
+            tick,
+            quota == SeedCoreState.RecoveryQuotaDecision.Overdraft);
+        energyCost = ScaleRecoveryCost(energyCost, multiplier);
+        materialCost = ScaleRecoveryCost(materialCost, multiplier);
+
         if (core.EnergyReserve < energyCost)
         {
             return BootstrapFailure(SimulationErrorCode.NoEnergy, "Core energy reserve is insufficient.");
@@ -505,6 +549,7 @@ public sealed partial class SimulationEngine
         core.MaterialReserve -= materialCost;
         World.Statistics.EnergySpentTotal += energyCost;
         World.Statistics.MaterialSpentTotal += materialCost;
+        core.RecordRecovery(tick);
 
         var entity = DeploymentService.Deploy(World, blueprint, civilizationId, core.RegionId, position);
         var bootstrapEvent = new EntityBootstrapped(

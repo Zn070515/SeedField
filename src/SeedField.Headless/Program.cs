@@ -97,6 +97,11 @@ internal static partial class Program
             return RunPowerFaultDemo();
         }
 
+        if (args.Contains("--recovery-quota"))
+        {
+            return RunRecoveryQuotaDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 

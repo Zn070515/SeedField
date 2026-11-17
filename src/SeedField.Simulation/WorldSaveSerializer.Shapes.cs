@@ -160,7 +160,16 @@ public static partial class WorldSaveSerializer
                     product.Key,
                     product.Value.BlueprintId,
                     product.Value.Version))
-                .ToArray());
+                .ToArray(),
+            core.Config.RecoveryWindowTicks,
+            core.Config.RecoveryQuotaPerWindow,
+            core.Config.RecoveryCostGrowthPercent,
+            core.Config.RecoveryStreakDecayTicks,
+            core.RecoveryWindowStartTick,
+            core.RecoveriesInWindow,
+            core.RecoveryStreak,
+            core.LastRecoveryTick,
+            core.Config.RecoveryOverdraftCostPercent);
 
     private static MessageSaveData ToMessage(MessageEnvelope message) =>
         new(

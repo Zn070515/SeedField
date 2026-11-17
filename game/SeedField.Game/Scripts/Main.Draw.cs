@@ -435,7 +435,8 @@ public partial class Main : Node2D
             or PowerBlackout
             or PowerRestored
             or BreakerLockedOut
-            or BreakerMaintained;
+            or BreakerMaintained
+            or RecoveryQuotaDenied;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -459,6 +460,7 @@ public partial class Main : Node2D
             PowerRestored => Green,
             BreakerLockedOut => Red,
             BreakerMaintained => Green,
+            RecoveryQuotaDenied => new Color(0.75f, 0.66f, 0.40f),
             _ => Text,
         };
 
