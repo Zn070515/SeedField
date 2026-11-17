@@ -106,6 +106,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catal
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-list --catalog-db catalog.db
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-check --catalog-db catalog.db
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-jint-parallel 100 --catalog-db catalog.db
+python tools/check_perf.py --baseline docs/engineering/evidence/perf-baseline.json --current logs/perf-1000.log --devices 1000
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent-appcontainer
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
@@ -131,8 +132,10 @@ godot --path game/SeedField.Game -- --recovery-smoke  # 恢复面板 RECOVER/MAI
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
-Godot 客户端建议以 `DOTNET_gcServer=1` 启动（多控制器并行时需要 Server GC）；
-Headless 已在项目文件中启用。
+Godot 客户端必须以 `DOTNET_gcServer=1` 启动（多控制器并行时需要 Server GC；
+Godot 宿主忽略项目 runtimeconfig）。开发/验收可用
+`pwsh tools/run-game.ps1`；游戏启动会打印 `gcServer`，Workstation 时给出警告。
+Headless 已在项目文件中启用。正式导出/Steam 启动项仍按 Issue #14 验收。
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
 

@@ -39,6 +39,23 @@ jobs:
             -OutFile $zip
           Expand-Archive $zip -DestinationPath (Join-Path $env:RUNNER_TEMP "godot")
 
+      - name: Verify GC mode switch
+        shell: pwsh
+        run: |
+          $godot = Get-ChildItem "$env:RUNNER_TEMP/godot" -Recurse -Filter "*_console.exe" | Select-Object -First 1
+          Remove-Item Env:DOTNET_gcServer -ErrorAction SilentlyContinue
+          $off = & $godot.FullName --headless --path game/SeedField.Game -- --save-smoke 2>&1
+          if ($LASTEXITCODE -ne 0 -or ($off -join "`n") -notmatch 'gcServer=False') {
+            Write-Error "Expected workstation GC without DOTNET_gcServer: $off"
+            exit 1
+          }
+          $env:DOTNET_gcServer = "1"
+          $on = & $godot.FullName --headless --path game/SeedField.Game -- --save-smoke 2>&1
+          if ($LASTEXITCODE -ne 0 -or ($on -join "`n") -notmatch 'gcServer=True') {
+            Write-Error "Expected server GC with DOTNET_gcServer=1: $on"
+            exit 1
+          }
+
       - name: Run save smoke
         shell: pwsh
         run: |
