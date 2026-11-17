@@ -72,6 +72,12 @@ dotnet test SeedField.slnx
   - `JsControllerTests.RejectsObservationAboveByteLimitBeforeParsing`
 - 顺序与并行 20 Tick 脚本化战斗：事件序列与 `WorldStateHasher` 一致；
   黄金场景哈希未改变（本轮不新增世界状态字段）。
+- Godot headless save smoke（真实 Main 的 `StepOnce` 走并行批处理）：
+
+```text
+SEEDFIELD_PRERUN tick=34 shots=4 entities=4
+SAVE_SMOKE ok=True before=59610b21d94d1119 mutated=d02ed2e97f69178f after=59610b21d94d1119
+```
 
 ## 5. 预算门禁
 
