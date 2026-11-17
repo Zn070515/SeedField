@@ -36,6 +36,8 @@ internal static class Scenarios
                 radiusMm: 1_200,
                 holdTicksRequired: 12)
             .SetVictoryCondition(capturedPointsToWin: 2)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .SetPowerPolicy("B", reserveEnergy: 10)
             .Build();
 
         world.Regions["frontier"].AddEnergy("A", 200);

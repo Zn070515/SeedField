@@ -52,6 +52,12 @@ public sealed class SimulationStatistics
     public long TradeEnergySettledTotal { get; internal set; }
 
     public long EnergyFlowedTotal { get; internal set; }
+
+    public long EnergyOverflowedTotal { get; internal set; }
+
+    public long EnergyFlowLossTotal { get; internal set; }
+
+    public long EnergyAutoDrawnTotal { get; internal set; }
 }
 
 /// <summary>
@@ -78,6 +84,8 @@ public sealed class WorldState
 
     public long NextTradeOfferId { get; internal set; } = 1;
 
+    public long NextPowerShipmentId { get; internal set; } = 1;
+
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Explicit bidirectional region links.</summary>
@@ -86,6 +94,10 @@ public sealed class WorldState
     public SortedDictionary<string, SeedCoreState> Cores { get; } = new(StringComparer.Ordinal);
 
     public SortedDictionary<string, MessagePolicyState> MessagePolicies { get; } =
+        new(StringComparer.Ordinal);
+
+    /// <summary>Per-civilization regional grid policies (reserve floor).</summary>
+    public SortedDictionary<string, PowerPolicyState> PowerPolicies { get; } =
         new(StringComparer.Ordinal);
 
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
@@ -103,6 +115,8 @@ public sealed class WorldState
     public List<MaterialShipment> InTransitMaterial { get; } = new();
 
     public List<EnergyShipment> InTransitEnergy { get; } = new();
+
+    public List<PowerShipment> InTransitPower { get; } = new();
 
     public List<ConstructionOrder> ConstructionOrders { get; } = new();
 

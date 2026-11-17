@@ -64,7 +64,8 @@ public partial class PowerPanel : PanelContainer
 
         var hint = new Label
         {
-            Text = "BLACKOUT means zero regional stock. Local buffers may still power devices.",
+            Text = "BLACKOUT = zero regional stock; SHED = reserve floor blocks draws. " +
+                   "Local buffers may still power devices.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(640, 36),
         };
@@ -92,20 +93,24 @@ public partial class PowerPanel : PanelContainer
         _summary.Text =
             $"gen {diagnostics.TotalGenerationPerTick}/t · " +
             $"grid {diagnostics.TotalGridEnergy} · " +
-            $"local {diagnostics.TotalLocalEnergy}/{diagnostics.TotalCapacity}";
+            $"local {diagnostics.TotalLocalEnergy}/{diagnostics.TotalCapacity} · " +
+            $"reserve {diagnostics.ReserveEnergy} · " +
+            $"transit {diagnostics.TotalInTransitPower}";
 
         _regions.Clear();
         foreach (var region in diagnostics.Regions)
         {
             var connected = region.ConnectedRegions.Count == 0
-                ? "isolated"
-                : string.Join(",", region.ConnectedRegions);
+                ? "iso"
+                : string.Join(",", region.ConnectedRegions.Take(3)) +
+                  (region.ConnectedRegions.Count > 3 ? "+" : string.Empty);
             _regions.AddItem(
-                $"{region.RegionId} · grid {region.GridEnergy} · " +
-                $"gen {region.GenerationPerTick}/t · " +
-                $"local {region.LocalEnergy}/{region.LocalCapacity} · " +
-                $"comp {region.ComponentRegionCount} · {connected} · " +
-                $"{(region.IsBlackedOut ? "BLACKOUT" : "OK")}");
+                $"{region.RegionId} · G{region.GridEnergy} · " +
+                $"gen{region.GenerationPerTick}/t · " +
+                $"L{region.LocalEnergy}/{region.LocalCapacity} · " +
+                $"comp{region.ComponentRegionCount} · {connected} · " +
+                $"res{region.ReserveEnergy} · in{region.IncomingPower} · " +
+                $"{(region.IsBlackedOut ? "BLACKOUT" : region.IsLoadShed ? "SHED" : "OK")}");
         }
 
         if (_regions.ItemCount > 0)

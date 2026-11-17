@@ -32,7 +32,14 @@ public sealed record WorldSaveData(
     TradeOfferSaveData[]? TradeOffers = null,
     long NextTreatyProposalId = 0,
     long NextTreatyId = 0,
-    long NextTradeOfferId = 0);
+    long NextTradeOfferId = 0,
+    PowerPolicySaveData[]? PowerPolicies = null,
+    PowerShipmentSaveData[]? PowerShipments = null,
+    long NextPowerShipmentId = 0);
+
+public sealed record PowerPolicySaveData(
+    string CivilizationId,
+    long ReserveEnergy);
 
 public sealed record TreatyProposalSaveData(
     long Id,
@@ -108,7 +115,20 @@ public sealed record LinkSaveData(
     int MessagesPerTick,
     int MaterialPerTick = 0,
     int EnergyPerTick = 0,
-    int PowerPerTick = 0);
+    int PowerPerTick = 0,
+    int PowerLatencyTicks = 0,
+    int PowerLossPercent = 0);
+
+public sealed record PowerShipmentSaveData(
+    long Id,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    string Route,
+    long Amount,
+    long DeliveredAmount,
+    long SentTick,
+    long ArriveTick);
 
 public sealed record EnergyShipmentSaveData(
     long Id,
@@ -258,7 +278,10 @@ public sealed record StatisticsSaveData(
     long MaterialRefundedTotal = 0,
     long TradeMaterialSettledTotal = 0,
     long TradeEnergySettledTotal = 0,
-    long EnergyFlowedTotal = 0);
+    long EnergyFlowedTotal = 0,
+    long EnergyOverflowedTotal = 0,
+    long EnergyFlowLossTotal = 0,
+    long EnergyAutoDrawnTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

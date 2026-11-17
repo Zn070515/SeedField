@@ -26,6 +26,7 @@ public static class WorldStateHasher
         Append(ref hash, world.NextTreatyProposalId);
         Append(ref hash, world.NextTreatyId);
         Append(ref hash, world.NextTradeOfferId);
+        Append(ref hash, world.NextPowerShipmentId);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -51,6 +52,9 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.TradeMaterialSettledTotal);
         Append(ref hash, world.Statistics.TradeEnergySettledTotal);
         Append(ref hash, world.Statistics.EnergyFlowedTotal);
+        Append(ref hash, world.Statistics.EnergyOverflowedTotal);
+        Append(ref hash, world.Statistics.EnergyFlowLossTotal);
+        Append(ref hash, world.Statistics.EnergyAutoDrawnTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -200,6 +204,21 @@ public static class WorldStateHasher
             Append(ref hash, offer.ExpiresTick);
         }
 
+        var powerShipments = world.InTransitPower.OrderBy(shipment => shipment.Id).ToList();
+        Append(ref hash, powerShipments.Count);
+        foreach (var shipment in powerShipments)
+        {
+            Append(ref hash, shipment.Id);
+            Append(ref hash, shipment.CivilizationId);
+            Append(ref hash, shipment.FromRegionId);
+            Append(ref hash, shipment.ToRegionId);
+            Append(ref hash, shipment.Route);
+            Append(ref hash, shipment.Amount);
+            Append(ref hash, shipment.DeliveredAmount);
+            Append(ref hash, shipment.SentTick);
+            Append(ref hash, shipment.ArriveTick);
+        }
+
         var energyShipments = world.InTransitEnergy
             .OrderBy(shipment => shipment.Id)
             .ToList();
@@ -228,6 +247,8 @@ public static class WorldStateHasher
             Append(ref hash, link.MaterialPerTick);
             Append(ref hash, link.EnergyPerTick);
             Append(ref hash, link.PowerPerTick);
+            Append(ref hash, link.PowerLatencyTicks);
+            Append(ref hash, link.PowerLossPercent);
         }
 
         var blueprints = world.Workshop.GetAllVersions()
@@ -295,6 +316,13 @@ public static class WorldStateHasher
             {
                 Append(ref hash, allowed);
             }
+        }
+
+        Append(ref hash, world.PowerPolicies.Count);
+        foreach (var policy in world.PowerPolicies.Values)
+        {
+            Append(ref hash, policy.CivilizationId);
+            Append(ref hash, policy.ReserveEnergy);
         }
 
         Append(ref hash, world.Cores.Count);

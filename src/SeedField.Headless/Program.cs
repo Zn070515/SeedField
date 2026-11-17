@@ -72,6 +72,11 @@ internal static class Program
             return RunPowerGridDemo();
         }
 
+        if (args.Contains("--power-recovery"))
+        {
+            return RunPowerRecoveryDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -704,6 +709,128 @@ internal static class Program
 
         return ok ? 0 : 1;
     }
+
+    private static int RunPowerRecoveryDemo()
+    {
+        var overflowWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(PowerNode(1, "r0", energy: 9, capacity: 10, generation: 2))
+            .Build();
+        new SimulationEngine(overflowWorld).Step(Array.Empty<Intent>());
+        var overflow = overflowWorld.Statistics.EnergyOverflowedTotal == 1 &&
+                       overflowWorld.Regions["r0"].GetEnergy("A") == 1;
+
+        var drawWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(PowerNode(
+                1,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 5))
+            .Build();
+        drawWorld.Regions["r0"].AddEnergy("A", 20);
+        var drawStep = new SimulationEngine(drawWorld).Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+        });
+        var autoDraw = drawStep.IntentResults[0].Accepted &&
+                       drawWorld.Statistics.EnergyAutoDrawnTotal == 5 &&
+                       drawWorld.Regions["r0"].GetEnergy("A") == 15;
+
+        var reserveWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .AddEntity(PowerNode(
+                1,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 5))
+            .Build();
+        reserveWorld.Regions["r0"].AddEnergy("A", 12);
+        var reserveStep = new SimulationEngine(reserveWorld).Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+        });
+        var reserveShed =
+            reserveStep.IntentResults[0].ErrorCode == SimulationErrorCode.NoEnergy &&
+            reserveStep.Events.OfType<PowerShortfall>()
+                .Any(shortfall => shortfall.Source == "reserve");
+
+        var transitWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddLink(
+                "l01",
+                "r0",
+                "r1",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLatencyTicks: 2)
+            .Build();
+        transitWorld.Regions["r0"].AddEnergy("A", 90);
+        var transitEngine = new SimulationEngine(transitWorld);
+        transitEngine.Step(Array.Empty<Intent>());
+        var latency = transitWorld.InTransitPower.Count == 1 &&
+                      transitWorld.Regions["r0"].GetEnergy("A") == 45 &&
+                      transitWorld.Regions["r1"].GetEnergy("A") == 0;
+        transitEngine.Step(Array.Empty<Intent>());
+        var latencyArrived = transitWorld.InTransitPower.Count == 0 &&
+                             transitWorld.Regions["r1"].GetEnergy("A") == 45;
+
+        var lossWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddLink(
+                "l01",
+                "r0",
+                "r1",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLossPercent: 10)
+            .Build();
+        lossWorld.Regions["r0"].AddEnergy("A", 90);
+        new SimulationEngine(lossWorld).Step(Array.Empty<Intent>());
+        var lossArrived = lossWorld.Regions["r0"].GetEnergy("A") == 45 &&
+                          lossWorld.Regions["r1"].GetEnergy("A") == 40 &&
+                          lossWorld.Statistics.EnergyFlowedTotal == 40 &&
+                          lossWorld.Statistics.EnergyFlowLossTotal == 5;
+
+        var ok = overflow &&
+                 autoDraw &&
+                 reserveShed &&
+                 latency &&
+                 latencyArrived &&
+                 lossArrived;
+        Console.WriteLine(
+            $"POWER_RECOVERY overflow={overflow} autoDraw={autoDraw} " +
+            $"reserveShed={reserveShed} latency={latency} " +
+            $"latencyArrived={latencyArrived} lossArrived={lossArrived} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static EntityDefinition PowerNode(
+        long id,
+        string regionId,
+        long energy,
+        long capacity,
+        int generation,
+        long driveCost = 0) =>
+        new(
+            new EntityId(id),
+            "A",
+            regionId,
+            new Vec2(100, 100),
+            MaxHealth: 10,
+            Energy: energy,
+            EnergyCapacity: capacity,
+            Material: 0,
+            Drive: driveCost > 0 ? new DriveModule(100, driveCost) : null,
+            Power: new PowerModule(generation, capacity));
 
     private static void AdvanceToTick(
         SimulationEngine engine,

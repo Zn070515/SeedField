@@ -1651,7 +1651,10 @@ public partial class Main : Node2D
             or TradeExpired
             or TradeCountered
             or PowerFlowed
-            or PowerShortfall;
+            or PowerShipped
+            or PowerArrived
+            or PowerShortfall
+            or EnergyAutoDrawn;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1666,6 +1669,9 @@ public partial class Main : Node2D
                 new Color(0.75f, 0.66f, 0.40f),
             TradeCancelled or TradeExpired => Muted,
             PowerFlowed => Cyan,
+            PowerShipped => new Color(0.45f, 0.75f, 1.00f),
+            PowerArrived => Green,
+            EnergyAutoDrawn => Blue,
             PowerShortfall => Red,
             _ => Text,
         };
@@ -1728,10 +1734,21 @@ public partial class Main : Node2D
             PowerFlowed flowed =>
                 $"t{flowed.Tick,4}  power {flowed.CivilizationId} " +
                 $"{flowed.FromRegionId} → {flowed.ToRegionId} +{flowed.Amount}E",
+            PowerShipped shipped =>
+                $"t{shipped.Tick,4}  power {shipped.CivilizationId} " +
+                $"{shipped.FromRegionId} → {shipped.ToRegionId} " +
+                $"{shipped.Amount}E shipped · arrives t{shipped.ArriveTick}",
+            PowerArrived arrived =>
+                $"t{arrived.Tick,4}  power {arrived.CivilizationId} arrived " +
+                $"{arrived.ToRegionId} +{arrived.Amount}E" +
+                (arrived.LostAmount > 0 ? $" (−{arrived.LostAmount}E loss)" : string.Empty),
             PowerShortfall shortfall =>
                 $"t{shortfall.Tick,4}  {shortfall.CivilizationId} power shortfall " +
                 $"{shortfall.EntityId} in {shortfall.RegionId}: need {shortfall.Requested}E, " +
                 $"have {shortfall.Available}E ({shortfall.Source})",
+            EnergyAutoDrawn autoDrawn =>
+                $"t{autoDrawn.Tick,4}  {autoDrawn.EntityId} auto-drew {autoDrawn.Amount}E " +
+                $"from {autoDrawn.RegionId}",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

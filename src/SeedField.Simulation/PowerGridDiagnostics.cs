@@ -10,7 +10,11 @@ public sealed record RegionPowerSnapshot(
     long ComponentEnergy,
     int ComponentRegionCount,
     bool IsBlackedOut,
-    IReadOnlyList<string> ConnectedRegions);
+    IReadOnlyList<string> ConnectedRegions,
+    long ReserveEnergy,
+    bool IsLoadShed,
+    long IncomingPower,
+    long OutgoingPower);
 
 public sealed record PowerGridDiagnostics(
     string CivilizationId,
@@ -18,7 +22,9 @@ public sealed record PowerGridDiagnostics(
     long TotalLocalEnergy,
     long TotalCapacity,
     long TotalGenerationPerTick,
-    IReadOnlyList<RegionPowerSnapshot> Regions);
+    IReadOnlyList<RegionPowerSnapshot> Regions,
+    long ReserveEnergy,
+    long TotalInTransitPower);
 
 /// <summary>
 /// Derived diagnostics only. It never mutates the world and does not change simulation
@@ -32,6 +38,12 @@ public static class PowerGridDiagnosticsBuilder
     {
         ArgumentNullException.ThrowIfNull(world);
         ArgumentException.ThrowIfNullOrEmpty(civilizationId);
+
+        var reserveEnergy = world.PowerPolicies.TryGetValue(
+            civilizationId,
+            out var policy)
+            ? policy.ReserveEnergy
+            : 0;
 
         var components = PowerGridTopology.BuildComponents(world);
         var componentByRegion = new Dictionary<string, IReadOnlyList<string>>(
@@ -87,17 +99,50 @@ public static class PowerGridDiagnosticsBuilder
                 .Where(regionId =>
                     !string.Equals(regionId, region.Id, StringComparison.Ordinal))
                 .ToList();
+            var regionHasPower = region.Entities.Values.Any(entity =>
+                string.Equals(
+                    entity.CivilizationId,
+                    civilizationId,
+                    StringComparison.Ordinal) &&
+                entity.Power is not null);
+            var gridEnergy = region.GetEnergy(civilizationId);
+            var incomingPower = world.InTransitPower
+                .Where(shipment =>
+                    string.Equals(
+                        shipment.CivilizationId,
+                        civilizationId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        shipment.ToRegionId,
+                        region.Id,
+                        StringComparison.Ordinal))
+                .Sum(shipment => shipment.Amount);
+            var outgoingPower = world.InTransitPower
+                .Where(shipment =>
+                    string.Equals(
+                        shipment.CivilizationId,
+                        civilizationId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        shipment.FromRegionId,
+                        region.Id,
+                        StringComparison.Ordinal))
+                .Sum(shipment => shipment.Amount);
 
             snapshots.Add(new RegionPowerSnapshot(
                 region.Id,
-                region.GetEnergy(civilizationId),
+                gridEnergy,
                 generation,
                 localEnergy,
                 localCapacity,
                 componentEnergy,
                 component.Count,
                 componentEnergy == 0 && componentHasPower,
-                connected));
+                connected,
+                reserveEnergy,
+                regionHasPower && gridEnergy < reserveEnergy,
+                incomingPower,
+                outgoingPower));
 
             totalGrid += region.GetEnergy(civilizationId);
             totalLocal += localEnergy;
@@ -111,6 +156,13 @@ public static class PowerGridDiagnosticsBuilder
             totalLocal,
             totalCapacity,
             totalGeneration,
-            snapshots);
+            snapshots,
+            reserveEnergy,
+            world.InTransitPower
+                .Where(shipment => string.Equals(
+                    shipment.CivilizationId,
+                    civilizationId,
+                    StringComparison.Ordinal))
+                .Sum(shipment => shipment.Amount));
     }
 }

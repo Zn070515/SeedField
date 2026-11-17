@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -98,7 +98,10 @@ public static class WorldSaveSerializer
                 world.Statistics.MaterialRefundedTotal,
                 world.Statistics.TradeMaterialSettledTotal,
                 world.Statistics.TradeEnergySettledTotal,
-                world.Statistics.EnergyFlowedTotal),
+                world.Statistics.EnergyFlowedTotal,
+                world.Statistics.EnergyOverflowedTotal,
+                world.Statistics.EnergyFlowLossTotal,
+                world.Statistics.EnergyAutoDrawnTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -109,7 +112,9 @@ public static class WorldSaveSerializer
                     link.MessagesPerTick,
                     link.MaterialPerTick,
                     link.EnergyPerTick,
-                    link.PowerPerTick))
+                    link.PowerPerTick,
+                    link.PowerLatencyTicks,
+                    link.PowerLossPercent))
                 .ToArray(),
             world.InTransitMaterial
                 .OrderBy(shipment => shipment.Id)
@@ -211,7 +216,26 @@ public static class WorldSaveSerializer
                 .ToArray(),
             world.NextTreatyProposalId,
             world.NextTreatyId,
-            world.NextTradeOfferId);
+            world.NextTradeOfferId,
+            world.PowerPolicies.Values
+                .Select(policy => new PowerPolicySaveData(
+                    policy.CivilizationId,
+                    policy.ReserveEnergy))
+                .ToArray(),
+            world.InTransitPower
+                .OrderBy(shipment => shipment.Id)
+                .Select(shipment => new PowerShipmentSaveData(
+                    shipment.Id,
+                    shipment.CivilizationId,
+                    shipment.FromRegionId,
+                    shipment.ToRegionId,
+                    shipment.Route,
+                    shipment.Amount,
+                    shipment.DeliveredAmount,
+                    shipment.SentTick,
+                    shipment.ArriveTick))
+                .ToArray(),
+            world.NextPowerShipmentId);
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -383,7 +407,9 @@ public static class WorldSaveSerializer
                 linkData.MessagesPerTick < 0 ||
                 linkData.MaterialPerTick < 0 ||
                 linkData.EnergyPerTick < 0 ||
-                linkData.PowerPerTick < 0)
+                linkData.PowerPerTick < 0 ||
+                linkData.PowerLatencyTicks < 0 ||
+                linkData.PowerLossPercent is < 0 or > 100)
             {
                 throw Invalid("INVALID_LINK", $"Link '{linkData.Id}' has negative values.");
             }
@@ -398,7 +424,9 @@ public static class WorldSaveSerializer
                     linkData.MessagesPerTick,
                     linkData.MaterialPerTick,
                     linkData.EnergyPerTick,
-                    linkData.PowerPerTick));
+                    linkData.PowerPerTick,
+                    linkData.PowerLatencyTicks,
+                    linkData.PowerLossPercent));
         }
 
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())
@@ -957,6 +985,61 @@ public static class WorldSaveSerializer
             maxTradeOfferId,
             "INVALID_NEXT_TRADE_OFFER_ID");
 
+        var maxPowerShipmentId = 0L;
+        foreach (var shipmentData in data.PowerShipments ?? Array.Empty<PowerShipmentSaveData>())
+        {
+            if (shipmentData.Id <= 0 ||
+                string.IsNullOrWhiteSpace(shipmentData.CivilizationId) ||
+                string.IsNullOrWhiteSpace(shipmentData.Route) ||
+                !world.Regions.ContainsKey(shipmentData.FromRegionId) ||
+                !world.Regions.ContainsKey(shipmentData.ToRegionId) ||
+                shipmentData.Amount <= 0 ||
+                shipmentData.DeliveredAmount < 0 ||
+                shipmentData.DeliveredAmount > shipmentData.Amount ||
+                shipmentData.ArriveTick <= shipmentData.SentTick ||
+                world.InTransitPower.Any(shipment => shipment.Id == shipmentData.Id))
+            {
+                throw Invalid(
+                    "INVALID_POWER_SHIPMENT",
+                    $"Power shipment '{shipmentData.Id}' is invalid.");
+            }
+
+            world.InTransitPower.Add(new PowerShipment(
+                shipmentData.Id,
+                shipmentData.CivilizationId,
+                shipmentData.FromRegionId,
+                shipmentData.ToRegionId,
+                shipmentData.Route,
+                shipmentData.Amount,
+                shipmentData.DeliveredAmount,
+                shipmentData.SentTick,
+                shipmentData.ArriveTick));
+            maxPowerShipmentId = Math.Max(maxPowerShipmentId, shipmentData.Id);
+        }
+
+        world.NextPowerShipmentId = ResolveNextId(
+            data.NextPowerShipmentId,
+            maxPowerShipmentId,
+            "INVALID_NEXT_POWER_SHIPMENT_ID");
+
+        foreach (var policyData in data.PowerPolicies ?? Array.Empty<PowerPolicySaveData>())
+        {
+            if (string.IsNullOrWhiteSpace(policyData.CivilizationId) ||
+                policyData.ReserveEnergy < 0 ||
+                world.PowerPolicies.ContainsKey(policyData.CivilizationId))
+            {
+                throw Invalid(
+                    "INVALID_POWER_POLICY",
+                    "Power policy ids must be unique and non-empty; reserve must be non-negative.");
+            }
+
+            world.PowerPolicies.Add(
+                policyData.CivilizationId,
+                new PowerPolicyState(
+                    policyData.CivilizationId,
+                    policyData.ReserveEnergy));
+        }
+
         ApplyStatistics(world, data.Statistics);
         return world;
     }
@@ -1182,6 +1265,9 @@ public static class WorldSaveSerializer
         world.Statistics.TradeMaterialSettledTotal = statistics.TradeMaterialSettledTotal;
         world.Statistics.TradeEnergySettledTotal = statistics.TradeEnergySettledTotal;
         world.Statistics.EnergyFlowedTotal = statistics.EnergyFlowedTotal;
+        world.Statistics.EnergyOverflowedTotal = statistics.EnergyOverflowedTotal;
+        world.Statistics.EnergyFlowLossTotal = statistics.EnergyFlowLossTotal;
+        world.Statistics.EnergyAutoDrawnTotal = statistics.EnergyAutoDrawnTotal;
     }
 
     /// <summary>
@@ -1211,6 +1297,8 @@ public static class WorldSaveSerializer
                               Array.Empty<TreatyProposalSaveData>(),
             Treaties = data.Treaties ?? Array.Empty<TreatySaveData>(),
             TradeOffers = data.TradeOffers ?? Array.Empty<TradeOfferSaveData>(),
+            PowerPolicies = data.PowerPolicies ?? Array.Empty<PowerPolicySaveData>(),
+            PowerShipments = data.PowerShipments ?? Array.Empty<PowerShipmentSaveData>(),
         };
 
     private static ControlPointSaveData ToControlPointSave(ControlPointState point) =>

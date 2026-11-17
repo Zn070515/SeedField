@@ -52,11 +52,11 @@
 | 消息 ACL | 发送方/话题白名单、黑名单优先；引擎派生发送者；重复消息 ID 拒绝；断联不扣能量 |
 | 条约/贸易 | 互不侵犯/贸易协定；宿主命令签约；互不侵犯阻止攻击；贸易托管、原子交换与退款；反提议最多 3 轮；存档 v8 |
 | 对手外交 | B 按画像主动提议/下单并响应 A：Skirmisher 拒绝 NAP、要求贸易利润；Turtle 接受 NAP/公平贸易；反提议逐轮让步 |
-| 电力网络 | 自动潮流沿 `PowerPerTick` 链路按连通分量均衡电网库存；断供/断联事件、停电诊断、F4 面板；存档 v9 |
+| 电力网络 | 发电溢出入网、设备自动取电/储备抑制、自动潮流、延迟/损耗、在途电力、断供诊断与 F4 面板；存档 v10 |
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | 156 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | 168 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -88,6 +88,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplo
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-ai
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-negotiation
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-grid
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-recovery
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交，F4 电网
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -136,6 +137,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`opponent diplomacy`](docs/engineering/evidence/2026-11-17-opponent-diplomacy.md) | B 方画像化自动响应、Headless/Godot 证据与截图 |
 | [`negotiation`](docs/engineering/evidence/2026-11-17-negotiation.md) | 主动提议、多轮反提议、回合上限与让步证据 |
 | [`power grid`](docs/engineering/evidence/2026-11-17-power-grid.md) | 自动潮流、断供诊断、F4 面板与存档 v9 证据 |
+| [`power recovery`](docs/engineering/evidence/2026-11-17-power-recovery.md) | 溢出入网、自动取电/储备、潮流延迟损耗与 v10 证据 |
 
 ## 工程原则
 
@@ -150,4 +152,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；电网已有自动潮流、断供事件与 F4 诊断，但发电不自动溢出入网、设备不自动取电，潮流无延迟/损耗；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；电网已有溢出入网、自动取电/储备、自动潮流、延迟/损耗与 F4 诊断，但区域电网容量无上限、没有按设备优先级的负载切除或持久 blackout 合闸；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

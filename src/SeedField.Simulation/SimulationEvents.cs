@@ -271,6 +271,31 @@ public sealed record PowerFlowed(
     string ToRegionId,
     long Amount) : SimulationEvent(Tick);
 
+public sealed record PowerShipped(
+    long Tick,
+    long PowerShipmentId,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long DeliveredAmount,
+    long ArriveTick,
+    string Route) : SimulationEvent(Tick);
+
+public sealed record PowerArrived(
+    long Tick,
+    long PowerShipmentId,
+    string CivilizationId,
+    string ToRegionId,
+    long Amount,
+    long LostAmount) : SimulationEvent(Tick);
+
+public sealed record EnergyAutoDrawn(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount) : SimulationEvent(Tick);
+
 public sealed record PowerShortfall(
     long Tick,
     string CivilizationId,

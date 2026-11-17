@@ -87,12 +87,13 @@ tests/SeedField.Runtime.Js.Tests/
 - 对手外交响应：`OpponentDiplomacyPolicy` 纯函数按画像响应 B 的 incoming 提议/贸易单；Skirmisher 拒绝 NAP、要求 120% 贸易收益，Turtle 接受 NAP 与公平贸易；无通信/库存不足时拒绝或不响应；事件进入日志（ADR-0008）。
 - 主动提议与多轮谈判：B 按 Tick 节奏主动提 NAP/Trade/贸易单；`CounterTradeCommand` 支持最多 3 轮反提议，`NegotiationId`/`Round` 进入观察、哈希与存档 v8；Skirmisher 每轮让步 10%；面板显示 `R{round}/3` 与 COUNTER（ADR-0009）。
 - 自动电力潮流：`RegionLink.PowerPerTick` 定义自动潮流通量；按文明/连通分量把电网库存从盈余区经确定性 BFS 移到缺口区，受共享链路容量限制；非活动区也参与；`PowerFlowed`/`PowerShortfall`、停电诊断、F4 面板、存档 v9（ADR-0010）。
+- 电力恢复与网络细化：本地满电后的发电溢出入网；设备移动/攻击/发信自动从电网取电，受每文明 `ReserveEnergy` 恢复储备约束；`PowerLatencyTicks`/`PowerLossPercent` 支持在途电力与损耗；诊断显示储备/负载抑制/在途；存档 v10（ADR-0011）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、发电自动入网/设备自动取电、潮流延迟与损耗。
+- 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、区域电网容量上限、优先级负载切除、持久 blackout 合闸。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -295,6 +296,17 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
   `POWER_GRID balanced=True flowed=60 grid=90 regions=3 components=1 blackout=True shortfall=True ok=True`
 - 测试：156 仿真 + 48 Jint；600 Tick 双跑哈希 `84a14f0fc04a1201` 一致；截图 `m0-power.png`。
 
+### 5.17 发电溢出、自动取电与潮流时序
+
+- 发电先填本地，满后溢出入区域电网；非活动区激活/保存前按同规则补算。
+- 移动/攻击/发信本地不足时自动从电网取电，受每文明恢复储备限制；显式 `DrawEnergyIntent` 同样受储备限制。
+- `PowerLatencyTicks` > 0 时创建在途 `PowerShipment`；`PowerLossPercent` 逐跳损耗；在途参与缺口估算。
+- 事件：`EnergyAutoDrawn`、`PowerShipped`、`PowerArrived`；诊断显示储备/`IsLoadShed`/在途。
+- 存档 schema v10；旧 v9 默认延迟/损耗 0、储备 0、无在途。
+- Headless 实测：
+  `POWER_RECOVERY overflow=True autoDraw=True reserveShed=True latency=True latencyArrived=True lossArrived=True ok=True`
+- 测试：168 仿真 + 48 Jint；600 Tick 双跑哈希 `0e53707713539498` 一致；截图 `m0-power.png`。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -306,7 +318,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 7. 多区域链路延迟/带宽是场景配置；BFS 以跳数为序、链路 ID 破同分；`MessagesPerTick=0` 表示不限。
 8. 跨区同文明消息要求目标区域有己方 Comm 端点；跨文明消息要求目标文明端点和入站策略允许；条约/贸易是原型，签约与接单由宿主命令触发，贸易在单区域结算。
 9. 材料运输支持多跳路径但无中途仓储；无运输单位实体位置/油耗建模；链路同时承载消息与物资，容量分别限制。
-10. 自动潮流每 Tick 即时均衡，无延迟/损耗；容量按文明共享；发电仍进本地储能，显式 `SendEnergyIntent` 才入网。
+10. 自动潮流默认 `PowerLatencyTicks=0`、`PowerLossPercent=0`；容量按文明共享。发电先入本地储能，满后溢出入电网；设备可在储备以上自动取电。区域电网库存仍无上限。
 
 ## 7. 风险与阻塞
 
@@ -316,7 +328,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 多跳物流无中转仓储 | 货物整段在途，不能在中途装卸/换线 | 后续加入中转节点与容量 |
-| 电网潮流是原型 | 发电不自动入网、设备不自动取电；潮流无延迟/损耗；链路容量按文明共享 | 后续做发电溢出/自动取电与潮流时序；共享容量需平衡验证 |
+| 电网模型仍简化 | 区域电网无容量上限；负载切除按设备 ID 顺序，无蓝图优先级；损耗会导致补偿性发货 | 后续做容量上限/优先级/净额补偿；共享链路容量需平衡验证 |
 | 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
 | 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
 | 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
@@ -331,7 +343,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
-3. 电网后续：发电溢出/自动取电、潮流延迟/损耗、存量/负载曲线与断供恢复策略。
+3. 电网后续：区域容量上限、优先级负载切除、损耗净额补偿与持久 blackout 合闸。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。
 5. 存档迁移/回放与离线文明包。
 6. 可视切片：正式相机/缩放、核心区与网络表现、诊断面板。

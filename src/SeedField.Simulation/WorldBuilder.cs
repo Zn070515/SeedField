@@ -48,7 +48,9 @@ public sealed class WorldBuilder
         int messagesPerTick = 0,
         int materialPerTick = 0,
         int energyPerTick = 0,
-        int powerPerTick = 0)
+        int powerPerTick = 0,
+        int powerLatencyTicks = 0,
+        int powerLossPercent = 0)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -74,7 +76,9 @@ public sealed class WorldBuilder
             messagesPerTick < 0 ||
             materialPerTick < 0 ||
             energyPerTick < 0 ||
-            powerPerTick < 0)
+            powerPerTick < 0 ||
+            powerLatencyTicks < 0 ||
+            powerLossPercent is < 0 or > 100)
         {
             throw new ArgumentOutOfRangeException(nameof(latencyTicks), "Link values must be non-negative.");
         }
@@ -89,7 +93,9 @@ public sealed class WorldBuilder
                 messagesPerTick,
                 materialPerTick,
                 energyPerTick,
-                powerPerTick));
+                powerPerTick,
+                powerLatencyTicks,
+                powerLossPercent));
         return this;
     }
 
@@ -132,6 +138,32 @@ public sealed class WorldBuilder
         }
 
         _world.MessagePolicies.Add(civilizationId, policy);
+        return this;
+    }
+
+    public WorldBuilder SetPowerPolicy(string civilizationId, long reserveEnergy)
+    {
+        if (string.IsNullOrWhiteSpace(civilizationId))
+        {
+            throw new ArgumentException("Civilization id is required.", nameof(civilizationId));
+        }
+
+        if (reserveEnergy < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(reserveEnergy),
+                "Power reserve must be non-negative.");
+        }
+
+        if (_world.PowerPolicies.ContainsKey(civilizationId))
+        {
+            throw new InvalidOperationException(
+                $"Power policy for '{civilizationId}' already exists.");
+        }
+
+        _world.PowerPolicies.Add(
+            civilizationId,
+            new PowerPolicyState(civilizationId, reserveEnergy));
         return this;
     }
 

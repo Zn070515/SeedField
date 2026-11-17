@@ -108,14 +108,21 @@ public sealed class SimulationEngine
 
             var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
             var perTick = Math.Max(0L, entity.Power.EnergyPerTick);
-            var added = Math.Min(perTick * ticks, room);
-            if (added <= 0)
+            var generated = perTick * ticks;
+            var toLocal = Math.Min(generated, room);
+            var overflow = generated - toLocal;
+            if (toLocal > 0)
             {
-                continue;
+                entity.Energy += toLocal;
             }
 
-            entity.Energy += added;
-            World.Statistics.EnergyGeneratedTotal += added;
+            if (overflow > 0)
+            {
+                region.AddEnergy(entity.CivilizationId, overflow);
+                World.Statistics.EnergyOverflowedTotal += overflow;
+            }
+
+            World.Statistics.EnergyGeneratedTotal += generated;
         }
     }
 
@@ -166,6 +173,7 @@ public sealed class SimulationEngine
         DeliverDueMessages(World.Tick, events);
         DeliverDueMaterialShipments(World.Tick, events);
         DeliverDueEnergyShipments(World.Tick, events);
+        DeliverDuePowerShipments(World.Tick, events);
         DeliverDueConstructions(World.Tick, events);
         RegenerateCores(World.Tick, events);
 
@@ -1455,15 +1463,27 @@ public sealed class SimulationEngine
                     continue;
                 }
 
-                var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
-                var added = Math.Min(Math.Max(0, entity.Power.EnergyPerTick), room);
-                if (added <= 0)
+                var generated = Math.Max(0, entity.Power.EnergyPerTick);
+                if (generated <= 0)
                 {
                     continue;
                 }
 
-                entity.Energy += added;
-                World.Statistics.EnergyGeneratedTotal += added;
+                var room = Math.Max(0, entity.EnergyCapacity - entity.Energy);
+                var toLocal = Math.Min(generated, room);
+                var overflow = generated - toLocal;
+                if (toLocal > 0)
+                {
+                    entity.Energy += toLocal;
+                }
+
+                if (overflow > 0)
+                {
+                    region.AddEnergy(entity.CivilizationId, overflow);
+                    World.Statistics.EnergyOverflowedTotal += overflow;
+                }
+
+                World.Statistics.EnergyGeneratedTotal += generated;
             }
         }
     }
@@ -1493,8 +1513,10 @@ public sealed class SimulationEngine
                 FlowPowerComponent(
                     civilizationId,
                     component,
+                    tick,
                     linkUsage,
-                    flowAmounts);
+                    flowAmounts,
+                    events);
             }
         }
 
@@ -1515,11 +1537,39 @@ public sealed class SimulationEngine
     private void FlowPowerComponent(
         string civilizationId,
         IReadOnlyList<string> component,
+        long tick,
         Dictionary<string, int> linkUsage,
-        Dictionary<(string Civ, string From, string To), long> flowAmounts)
+        Dictionary<(string Civ, string From, string To), long> flowAmounts,
+        List<SimulationEvent> events)
     {
-        var total = component.Sum(regionId =>
-            World.Regions[regionId].GetEnergy(civilizationId));
+        var componentSet = new HashSet<string>(component, StringComparer.Ordinal);
+        var incoming = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var shipment in World.InTransitPower)
+        {
+            if (!string.Equals(
+                    shipment.CivilizationId,
+                    civilizationId,
+                    StringComparison.Ordinal) ||
+                shipment.ArriveTick <= tick ||
+                !componentSet.Contains(shipment.ToRegionId))
+            {
+                continue;
+            }
+
+            incoming[shipment.ToRegionId] =
+                incoming.GetValueOrDefault(shipment.ToRegionId) +
+                shipment.DeliveredAmount;
+        }
+
+        var projected = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var regionId in component)
+        {
+            projected[regionId] =
+                World.Regions[regionId].GetEnergy(civilizationId) +
+                incoming.GetValueOrDefault(regionId);
+        }
+
+        var total = projected.Values.Sum();
         if (total <= 0)
         {
             return;
@@ -1529,8 +1579,7 @@ public sealed class SimulationEngine
         var remainder = (int)(total % component.Count);
         var desired = new Dictionary<string, long>(StringComparer.Ordinal);
         var ordered = component
-            .OrderBy(regionId =>
-                World.Regions[regionId].GetEnergy(civilizationId))
+            .OrderBy(regionId => projected[regionId])
             .ThenBy(regionId => regionId, StringComparer.Ordinal)
             .ToList();
         for (var index = 0; index < ordered.Count; index++)
@@ -1538,15 +1587,13 @@ public sealed class SimulationEngine
             desired[ordered[index]] = target + (index < remainder ? 1 : 0);
         }
 
-        var componentSet = new HashSet<string>(component, StringComparer.Ordinal);
         var distances = ComputePowerDistances(
             civilizationId,
             componentSet,
             desired,
             linkUsage);
         var deficits = component
-            .Where(regionId =>
-                World.Regions[regionId].GetEnergy(civilizationId) < desired[regionId])
+            .Where(regionId => projected[regionId] < desired[regionId])
             .OrderBy(regionId =>
                 distances.TryGetValue(regionId, out var distance)
                     ? distance
@@ -1558,8 +1605,10 @@ public sealed class SimulationEngine
         {
             while (true)
             {
-                var deficit = desired[deficitRegionId] -
-                              World.Regions[deficitRegionId].GetEnergy(civilizationId);
+                var projectedStock =
+                    World.Regions[deficitRegionId].GetEnergy(civilizationId) +
+                    incoming.GetValueOrDefault(deficitRegionId);
+                var deficit = desired[deficitRegionId] - projectedStock;
                 if (deficit <= 0)
                 {
                     break;
@@ -1589,14 +1638,18 @@ public sealed class SimulationEngine
                     break;
                 }
 
+                var delivered = amount;
+                foreach (var link in path.Links)
+                {
+                    delivered = delivered * (100 - link.PowerLossPercent) / 100;
+                }
+
+                var lost = amount - delivered;
                 if (!World.Regions[path.SourceRegionId]
                         .TryConsumeEnergy(civilizationId, amount))
                 {
                     break;
                 }
-
-                World.Regions[deficitRegionId].AddEnergy(civilizationId, amount);
-                World.Statistics.EnergyFlowedTotal += amount;
 
                 foreach (var link in path.Links)
                 {
@@ -1604,8 +1657,55 @@ public sealed class SimulationEngine
                         linkUsage.GetValueOrDefault(link.Id) + (int)amount;
                 }
 
-                var key = (civilizationId, path.SourceRegionId, deficitRegionId);
-                flowAmounts[key] = flowAmounts.GetValueOrDefault(key) + amount;
+                var latency = path.Links.Sum(link => link.PowerLatencyTicks);
+                if (latency <= 0)
+                {
+                    World.Regions[deficitRegionId].AddEnergy(
+                        civilizationId,
+                        delivered);
+                    World.Statistics.EnergyFlowedTotal += delivered;
+                    World.Statistics.EnergyFlowLossTotal += lost;
+
+                    if (delivered > 0)
+                    {
+                        var key = (
+                            civilizationId,
+                            path.SourceRegionId,
+                            deficitRegionId);
+                        flowAmounts[key] =
+                            flowAmounts.GetValueOrDefault(key) + delivered;
+                    }
+                }
+                else
+                {
+                    var shipmentId = World.NextPowerShipmentId++;
+                    var arriveTick = tick + latency;
+                    var route = string.Join(
+                        ">",
+                        path.Links.Select(link => link.Id));
+                    World.InTransitPower.Add(new PowerShipment(
+                        shipmentId,
+                        civilizationId,
+                        path.SourceRegionId,
+                        deficitRegionId,
+                        route,
+                        amount,
+                        delivered,
+                        tick,
+                        arriveTick));
+                    incoming[deficitRegionId] =
+                        incoming.GetValueOrDefault(deficitRegionId) + delivered;
+                    events.Add(new PowerShipped(
+                        tick,
+                        shipmentId,
+                        civilizationId,
+                        path.SourceRegionId,
+                        deficitRegionId,
+                        amount,
+                        delivered,
+                        arriveTick,
+                        route));
+                }
             }
         }
     }
@@ -1762,10 +1862,18 @@ public sealed class SimulationEngine
         }
 
         var cost = entity.Drive.EnergyCostPerMove;
-        if (entity.Energy < cost)
+        if (entity.Energy < cost &&
+            !TryAutoDrawForAction(entity, region, cost, tick, events))
         {
-            AddPowerShortfall(entity, region.Id, cost, entity.Energy, "local", tick, events);
-            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to move.", tick, events, results);
+            AddPowerShortfall(
+                entity,
+                region.Id,
+                cost,
+                ActionAvailableEnergy(entity, region),
+                ActionShortfallSource(entity, region, cost),
+                tick,
+                events);
+            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough energy to move.", tick, events, results);
             return;
         }
 
@@ -1843,10 +1951,18 @@ public sealed class SimulationEngine
         }
 
         var cost = entity.Weapon.EnergyCost;
-        if (entity.Energy < cost)
+        if (entity.Energy < cost &&
+            !TryAutoDrawForAction(entity, region, cost, tick, events))
         {
-            AddPowerShortfall(entity, region.Id, cost, entity.Energy, "local", tick, events);
-            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to fire.", tick, events, results);
+            AddPowerShortfall(
+                entity,
+                region.Id,
+                cost,
+                ActionAvailableEnergy(entity, region),
+                ActionShortfallSource(entity, region, cost),
+                tick,
+                events);
+            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough energy to fire.", tick, events, results);
             return;
         }
 
@@ -2019,10 +2135,19 @@ public sealed class SimulationEngine
         }
 
         var cost = entity.Comm.EnergyCostPerMessage;
-        if (entity.Energy < cost)
+        var powerRegion = World.Regions[entity.RegionId];
+        if (entity.Energy < cost &&
+            !TryAutoDrawForAction(entity, powerRegion, cost, tick, events))
         {
-            AddPowerShortfall(entity, entity.RegionId, cost, entity.Energy, "local", tick, events);
-            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to send.", tick, events, results);
+            AddPowerShortfall(
+                entity,
+                powerRegion.Id,
+                cost,
+                ActionAvailableEnergy(entity, powerRegion),
+                ActionShortfallSource(entity, powerRegion, cost),
+                tick,
+                events);
+            Reject(intent, SimulationErrorCode.NoEnergy, "Not enough energy to send.", tick, events, results);
             return;
         }
 
@@ -2407,20 +2532,28 @@ public sealed class SimulationEngine
             return;
         }
 
-        if (!region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
+        var reserve = PowerReserve(entity.CivilizationId);
+        var gridEnergy = region.GetEnergy(entity.CivilizationId);
+        var availableAboveReserve = Math.Max(0, gridEnergy - reserve);
+        if (availableAboveReserve < intent.Amount ||
+            !region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
         {
             AddPowerShortfall(
                 entity,
                 region.Id,
                 intent.Amount,
-                region.GetEnergy(entity.CivilizationId),
-                "grid",
+                availableAboveReserve,
+                reserve > 0 && gridEnergy < intent.Amount + reserve
+                    ? "reserve"
+                    : "grid",
                 tick,
                 events);
             Reject(
                 intent,
                 SimulationErrorCode.NoEnergy,
-                $"Region '{region.Id}' grid has insufficient energy.",
+                reserve > 0 && gridEnergy < intent.Amount + reserve
+                    ? $"Region '{region.Id}' grid reserve leaves insufficient energy."
+                    : $"Region '{region.Id}' grid has insufficient energy.",
                 tick,
                 events,
                 results);
@@ -2548,6 +2681,52 @@ public sealed class SimulationEngine
             match.WinnerCivilizationId = pair.Key;
             events.Add(new MatchEnded(tick, pair.Key, null, pair.Value));
             break;
+        }
+    }
+
+    private void DeliverDuePowerShipments(long tick, List<SimulationEvent> events)
+    {
+        if (World.InTransitPower.Count == 0)
+        {
+            return;
+        }
+
+        var due = World.InTransitPower
+            .Where(shipment => shipment.ArriveTick <= tick)
+            .OrderBy(shipment => shipment.ArriveTick)
+            .ThenBy(shipment => shipment.Id)
+            .ToList();
+
+        foreach (var shipment in due)
+        {
+            World.InTransitPower.Remove(shipment);
+            var lost = shipment.Amount - shipment.DeliveredAmount;
+
+            if (!World.Regions.TryGetValue(shipment.ToRegionId, out var destination))
+            {
+                World.Statistics.EnergyFlowLossTotal += shipment.Amount;
+                events.Add(new PowerArrived(
+                    tick,
+                    shipment.Id,
+                    shipment.CivilizationId,
+                    shipment.ToRegionId,
+                    0,
+                    shipment.Amount));
+                continue;
+            }
+
+            destination.AddEnergy(
+                shipment.CivilizationId,
+                shipment.DeliveredAmount);
+            World.Statistics.EnergyFlowedTotal += shipment.DeliveredAmount;
+            World.Statistics.EnergyFlowLossTotal += lost;
+            events.Add(new PowerArrived(
+                tick,
+                shipment.Id,
+                shipment.CivilizationId,
+                shipment.ToRegionId,
+                shipment.DeliveredAmount,
+                lost));
         }
     }
 
@@ -2893,6 +3072,93 @@ public sealed class SimulationEngine
 
     private static BootstrapResult BootstrapFailure(SimulationErrorCode code, string message) =>
         new(false, null, code, message, null);
+
+    private long PowerReserve(string civilizationId) =>
+        World.PowerPolicies.TryGetValue(civilizationId, out var policy)
+            ? policy.ReserveEnergy
+            : 0;
+
+    private bool TryAutoDrawForAction(
+        EntityState entity,
+        RegionState region,
+        long cost,
+        long tick,
+        List<SimulationEvent> events)
+    {
+        if (entity.Energy >= cost)
+        {
+            return true;
+        }
+
+        if (entity.Power is null)
+        {
+            return false;
+        }
+
+        var reserve = PowerReserve(entity.CivilizationId);
+        var available = Math.Max(
+            0,
+            region.GetEnergy(entity.CivilizationId) - reserve);
+        var needed = cost - entity.Energy;
+        var headroom = entity.EnergyCapacity - entity.Energy;
+        if (needed > headroom ||
+            entity.Energy + available < cost)
+        {
+            return false;
+        }
+
+        var amount = Math.Min(needed, available);
+        if (amount <= 0 ||
+            !region.TryConsumeEnergy(entity.CivilizationId, amount))
+        {
+            return false;
+        }
+
+        entity.Energy += amount;
+        World.Statistics.EnergyDrawnTotal += amount;
+        World.Statistics.EnergyAutoDrawnTotal += amount;
+        events.Add(new EnergyAutoDrawn(
+            tick,
+            entity.Id,
+            region.Id,
+            amount));
+        return entity.Energy >= cost;
+    }
+
+    private long ActionAvailableEnergy(EntityState entity, RegionState region)
+    {
+        if (entity.Power is null)
+        {
+            return entity.Energy;
+        }
+
+        var reserve = PowerReserve(entity.CivilizationId);
+        return entity.Energy + Math.Max(
+            0,
+            region.GetEnergy(entity.CivilizationId) - reserve);
+    }
+
+    private string ActionShortfallSource(
+        EntityState entity,
+        RegionState region,
+        long requested)
+    {
+        if (entity.Power is null)
+        {
+            return "local";
+        }
+
+        var grid = region.GetEnergy(entity.CivilizationId);
+        if (grid <= 0)
+        {
+            return "local";
+        }
+
+        var reserve = PowerReserve(entity.CivilizationId);
+        return reserve > 0 && grid < requested + reserve
+            ? "reserve"
+            : "grid";
+    }
 
     private static void AddPowerShortfall(
         EntityState entity,
