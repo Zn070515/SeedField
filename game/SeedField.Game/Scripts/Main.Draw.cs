@@ -15,6 +15,11 @@ public partial class Main : Node2D
         }
 
         DrawGrid();
+        if (!_classicVisuals)
+        {
+            DrawWorldProps();
+        }
+
         DrawStagingZones();
         if (!_classicVisuals)
         {
