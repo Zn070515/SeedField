@@ -84,12 +84,13 @@ tests/SeedField.Runtime.Js.Tests/
 - 无状态消息 ACL：发送方/话题白名单、黑名单优先、同文明绕过；发送者由引擎从实体派生；重复消息 ID 读档拒绝；断联发送在扣能量前返回 `NoRoute`，已提交消息仍按 `DeliverTick` 投递；策略进入存档 schema v6 与哈希（ADR-0006）。
 - 条约/贸易：互不侵犯/贸易协定；宿主 `ExecuteDiplomacyCommand` 独占签约与接单；互不侵犯在扣能量前阻止攻击；贸易单在指定区域托管 E/M、接受时原子交换、拒绝/取消/到期退款；撕毁贸易协定级联退款；状态进入存档 schema v7、哈希与观察（ADR-0007）。
 - 外交面板：Godot `F3` 面板列出条约/提议/贸易单，A 方按钮经宿主命令签约、接受/拒绝/撕毁、创建/取消贸易单；面板与 F1/F2 互斥；`--capture-diplomacy` 与 `--diplomacy-smoke`。
+- 对手外交响应：`OpponentDiplomacyPolicy` 纯函数按画像响应 B 的 incoming 提议/贸易单；Skirmisher 拒绝 NAP、要求 120% 贸易收益，Turtle 接受 NAP 与公平贸易；无通信/库存不足时拒绝或不响应；事件进入日志（ADR-0008）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 离屏区域性能优化（当前 active 仅做意图 gating）、B 方自动外交/AI 谈判。
+- 离屏区域性能优化（当前 active 仅做意图 gating）、B 方主动谈判/多轮讨价还价。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -256,6 +257,18 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
   `DIPLOMACY_SMOKE treaties=2 offers=0 A=M380/E210 B=M410/E190 settled=M70/E30 ok=True`
 - `--diplomacy-smoke` 覆盖接受 NAP、接受贸易单、取消贸易单三条面板接线。
 
+### 5.14 对手外交响应
+
+- `OpponentDiplomacyPolicy.Decide` 纯函数，按画像响应 B 的 incoming 提议/贸易单；不修改世界、无隐藏状态。
+- 画像：Skirmisher 拒绝 NAP、接受 Trade 条约、贸易需 ≥120% 收益；Turtle 接受 NAP/Trade、公平贸易 ≥100%；未知包默认 Cautious。
+- Godot `StepOnce` 在仿真 Step 后执行策略，事件进入日志；`--diplomacy-ai-smoke` 与 `--capture-diplomacy-ai` 为证据。
+- Headless 实测：
+  `DIPLOMACY_AI turtleNap=True aggressiveNapRejected=True fairAccepted=True unfairRejected=True ok=True`
+- Godot 实测：
+  `DIPLOMACY_AI_SMOKE opponent=builtin.skirmisher ... napAccepted=False expectNapAccepted=False napHandled=True settledM=50 ok=True`
+  `DIPLOMACY_AI_SMOKE opponent=builtin.turtle ... napAccepted=True expectNapAccepted=True napHandled=True settledM=50 ok=True`
+- 测试：136 仿真 + 37 Jint；截图 `m0-diplomacy-ai.png`。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -282,7 +295,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
-| 跨文明协议是原型 | 外交面板只操作 A，B 无自动外交；无信誉、关税或消息签名；贸易只在单区域结算 | 后续做 B 方外交 AI；签名/信誉/跨区贸易需独立 ADR |
+| 跨文明协议是原型 | B 只被动响应，不主动谈判；无信誉、关税或消息签名；贸易只在单区域结算 | 后续做主动谈判/多轮；签名/信誉/跨区贸易需独立 ADR |
 | 建造失败仍不退款 | 到期目标失效会损失已付 M；仅手动取消退款 | 后续定义失败退款/残骸规则 |
 | 第三方对手包未导入 | 只有内置受信任包 | 先完成进程隔离与 IPC 校验 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
@@ -290,7 +303,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 ## 8. 下一步（按依赖顺序）
 
 1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
-2. B 方自动外交/AI 谈判；信誉/关税/跨区贸易与消息签名单独立 ADR。
+2. B 方主动提议/多轮谈判；信誉/关税/跨区贸易与消息签名单独立 ADR。
 3. 经济闭环：制造队列/时间与断供/断联诊断。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。
 5. 存档迁移/回放与离线文明包。

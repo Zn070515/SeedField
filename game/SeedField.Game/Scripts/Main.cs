@@ -42,6 +42,7 @@ public partial class Main : Node2D
     private ControllerSlot _slotB = null!;
     private readonly List<DeviceControllerSlot> _deviceControllers = new();
     private OpponentPackage _opponent = BuiltInOpponents.Skirmisher;
+    private DiplomacyProfile _opponentDiplomacy = OpponentDiplomacyProfiles.Default;
     private ProgramEditor _editor = null!;
     private CanvasLayer _editorLayer = null!;
     private ColorRect _editorDimmer = null!;
@@ -60,6 +61,7 @@ public partial class Main : Node2D
     private bool _captureEditor;
     private bool _captureWorkshop;
     private bool _captureDiplomacy;
+    private bool _captureDiplomacyAi;
     private bool _captureVictory;
     private int _frame;
     private int _faultCount;
@@ -91,25 +93,35 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--diplomacy-ai-smoke"))
+        {
+            RunDiplomacyAiSmoke();
+            return;
+        }
+
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
         _captureDiplomacy = arguments.Contains("--capture-diplomacy");
+        _captureDiplomacyAi = arguments.Contains("--capture-diplomacy-ai");
         _captureVictory = arguments.Contains("--capture-victory");
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
                   _captureWorkshop ||
                   _captureDiplomacy ||
+                  _captureDiplomacyAi ||
                   _captureVictory;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
             : _captureWorkshop
                 ? "res://screenshots/m0-workshop.png"
-                : _captureDiplomacy
-                    ? "res://screenshots/m0-diplomacy.png"
-                    : _captureVictory
-                        ? "res://screenshots/m0-victory.png"
-                        : "res://screenshots/m0-combat.png";
+                : _captureDiplomacyAi
+                    ? "res://screenshots/m0-diplomacy-ai.png"
+                    : _captureDiplomacy
+                        ? "res://screenshots/m0-diplomacy.png"
+                        : _captureVictory
+                            ? "res://screenshots/m0-victory.png"
+                            : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -144,6 +156,18 @@ public partial class Main : Node2D
             OpenDiplomacy();
             SeedDiplomacyCapture();
             _status = "diplomacy · paused";
+        }
+        else if (_captureDiplomacyAi)
+        {
+            SeedDiplomacyAiCapture();
+            OpenDiplomacy();
+            var napAccepted = _world.Treaties.Values.Any(treaty =>
+                treaty.Kind == TreatyKind.NonAggression);
+            _diplomacy.SetStatus(
+                $"B responded: trade accepted, offer settled, " +
+                $"NAP {(napAccepted ? "accepted" : "rejected")}",
+                false);
+            _status = "diplomacy AI · paused";
         }
         else if (_captureVictory)
         {
@@ -685,6 +709,19 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
+    private void SeedDiplomacyAiCapture()
+    {
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 200));
+        StepOnce();
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "frontier", 30, 0, 20, 0, ExpiresInTicks: 200));
+        StepOnce();
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 200));
+        StepOnce();
+    }
+
     private void RunDiplomacySmoke()
     {
         var frontier = _world.Regions["frontier"];
@@ -723,6 +760,40 @@ public partial class Main : Node2D
             $"B=M{frontier.GetMaterial("B")}/E{frontier.GetEnergy("B")} " +
             $"settled=M{_world.Statistics.TradeMaterialSettledTotal}/" +
             $"E{_world.Statistics.TradeEnergySettledTotal} ok={ok}");
+
+        GetTree().Quit();
+    }
+
+    private void RunDiplomacyAiSmoke()
+    {
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 200));
+        StepOnce();
+        var tradeAccepted = _world.Treaties.Values.Any(treaty =>
+            treaty.Kind == TreatyKind.Trade);
+        var settledBefore = _world.Statistics.TradeMaterialSettledTotal;
+
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "frontier", 30, 0, 20, 0, ExpiresInTicks: 200));
+        StepOnce();
+        var offerAccepted =
+            _world.TradeOffers.Count == 0 &&
+            _world.Statistics.TradeMaterialSettledTotal > settledBefore;
+
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 200));
+        StepOnce();
+        var napAccepted = _world.Treaties.Values.Any(treaty =>
+            treaty.Kind == TreatyKind.NonAggression);
+        var napHandled = napAccepted == _opponentDiplomacy.AcceptsNonAggression;
+
+        var ok = tradeAccepted && offerAccepted && napHandled;
+        GD.Print(
+            $"DIPLOMACY_AI_SMOKE opponent={_opponent.Manifest.PackageId} " +
+            $"tradeAccepted={tradeAccepted} offerAccepted={offerAccepted} " +
+            $"napAccepted={napAccepted} expectNapAccepted={_opponentDiplomacy.AcceptsNonAggression} " +
+            $"napHandled={napHandled} " +
+            $"settledM={_world.Statistics.TradeMaterialSettledTotal} ok={ok}");
 
         GetTree().Quit();
     }
@@ -798,6 +869,9 @@ public partial class Main : Node2D
                     _opponent = opponent;
                 }
 
+                _opponentDiplomacy = OpponentDiplomacyProfiles.ForPackage(
+                    _opponent.Manifest.PackageId);
+
                 var slotA = loaded.Controllers.FirstOrDefault(controller =>
                     controller.CivilizationId == "A");
                 var slotB = loaded.Controllers.FirstOrDefault(controller =>
@@ -863,6 +937,8 @@ public partial class Main : Node2D
             _deployedSourceA = Scenarios.ScriptA;
         }
 
+        _opponentDiplomacy = OpponentDiplomacyProfiles.ForPackage(
+            _opponent.Manifest.PackageId);
         _world = Scenarios.BuildWorld();
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
@@ -921,7 +997,27 @@ public partial class Main : Node2D
             }
         }
 
+        RunOpponentDiplomacy();
         PruneHistory();
+    }
+
+    private void RunOpponentDiplomacy()
+    {
+        var commands = OpponentDiplomacyPolicy.Decide(
+            _world,
+            "B",
+            "A",
+            _engine.HasCommunicationPath("B", "A"),
+            _opponentDiplomacy);
+
+        foreach (var command in commands)
+        {
+            var result = _engine.ExecuteDiplomacyCommand(command);
+            foreach (var simulationEvent in result.Events)
+            {
+                _history.Add(new TimedEvent(simulationEvent.Tick, simulationEvent));
+            }
+        }
     }
 
     private void PruneHistory()
@@ -1358,7 +1454,17 @@ public partial class Main : Node2D
             or CoreRegenerated
             or EntityBootstrapped
             or ControlPointCaptured
-            or MatchEnded;
+            or MatchEnded
+            or TreatyProposed
+            or TreatyAccepted
+            or TreatyRejected
+            or TreatyBroken
+            or TreatyProposalExpired
+            or TradeProposed
+            or TradeAccepted
+            or TradeRejected
+            or TradeCancelled
+            or TradeExpired;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1367,6 +1473,11 @@ public partial class Main : Node2D
             EntityDestroyed => Red,
             MessageDelivered => Amber,
             MessageQueued => new Color(0.75f, 0.66f, 0.40f),
+            TreatyAccepted or TradeAccepted => Green,
+            TreatyRejected or TreatyBroken or TradeRejected => Red,
+            TreatyProposed or TreatyProposalExpired or TradeProposed =>
+                new Color(0.75f, 0.66f, 0.40f),
+            TradeCancelled or TradeExpired => Muted,
             _ => Text,
         };
 
@@ -1388,8 +1499,43 @@ public partial class Main : Node2D
                 $"t{captured.Tick,4}  {captured.ControlPointId} captured by {captured.CivilizationId}",
             MatchEnded ended =>
                 $"t{ended.Tick,4}  match won by {ended.CivilizationId} ({ended.CapturedPoints} points)",
+            TreatyProposed proposed =>
+                $"t{proposed.Tick,4}  {proposed.ProposerCivilizationId} → " +
+                $"{proposed.TargetCivilizationId} propose {KindLabel(proposed.Kind)}",
+            TreatyAccepted accepted =>
+                $"t{accepted.Tick,4}  {accepted.CivilizationA} ↔ " +
+                $"{accepted.CivilizationB} {KindLabel(accepted.Kind)} accepted",
+            TreatyRejected rejected =>
+                $"t{rejected.Tick,4}  {rejected.ProposerCivilizationId} → " +
+                $"{rejected.TargetCivilizationId} {KindLabel(rejected.Kind)} rejected",
+            TreatyBroken broken =>
+                $"t{broken.Tick,4}  {KindLabel(broken.Kind)} broken by " +
+                $"{broken.BrokenByCivilizationId}",
+            TreatyProposalExpired expired =>
+                $"t{expired.Tick,4}  {KindLabel(expired.Kind)} proposal " +
+                $"{expired.ProposalId} expired",
+            TradeProposed proposed =>
+                $"t{proposed.Tick,4}  trade {proposed.TradeOfferId} proposed: " +
+                $"give M{proposed.GiveMaterial}/E{proposed.GiveEnergy} → " +
+                $"want M{proposed.WantMaterial}/E{proposed.WantEnergy}",
+            TradeAccepted accepted =>
+                $"t{accepted.Tick,4}  trade {accepted.TradeOfferId} settled " +
+                $"M{accepted.GiveMaterial + accepted.WantMaterial}/" +
+                $"E{accepted.GiveEnergy + accepted.WantEnergy}",
+            TradeRejected rejected =>
+                $"t{rejected.Tick,4}  trade {rejected.TradeOfferId} rejected; " +
+                $"refund M{rejected.RefundedMaterial}/E{rejected.RefundedEnergy}",
+            TradeCancelled cancelled =>
+                $"t{cancelled.Tick,4}  trade {cancelled.TradeOfferId} cancelled; " +
+                $"refund M{cancelled.RefundedMaterial}/E{cancelled.RefundedEnergy}",
+            TradeExpired expired =>
+                $"t{expired.Tick,4}  trade {expired.TradeOfferId} expired; " +
+                $"refund M{expired.RefundedMaterial}/E{expired.RefundedEnergy}",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
+
+    private static string KindLabel(TreatyKind kind) =>
+        kind == TreatyKind.NonAggression ? "NAP" : "TRADE";
 
     private static Vector2 Map(Vec2 position) =>
         MapOrigin + new Vector2(position.X * MapScale, position.Y * MapScale);

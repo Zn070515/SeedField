@@ -57,6 +57,11 @@ internal static class Program
             return RunDiplomacyDemo();
         }
 
+        if (args.Contains("--diplomacy-ai"))
+        {
+            return RunDiplomacyAiDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -451,6 +456,104 @@ internal static class Program
 
         return ok ? 0 : 1;
     }
+
+    private static int RunDiplomacyAiDemo()
+    {
+        var turtleWorld = AiWorld();
+        var turtleEngine = new SimulationEngine(turtleWorld);
+        turtleEngine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 50));
+        var turtleResponse = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                turtleWorld,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.ForPackage("builtin.turtle")));
+        turtleEngine.ExecuteDiplomacyCommand(turtleResponse);
+        var turtleNap = turtleWorld.Treaties.Count == 1;
+
+        var aggressiveWorld = AiWorld();
+        var aggressiveEngine = new SimulationEngine(aggressiveWorld);
+        aggressiveEngine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 50));
+        var aggressiveResponse = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                aggressiveWorld,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.ForPackage("builtin.skirmisher")));
+        aggressiveEngine.ExecuteDiplomacyCommand(aggressiveResponse);
+        var aggressiveNapRejected =
+            aggressiveWorld.Treaties.Count == 0 &&
+            aggressiveResponse is RespondTreatyCommand { Accept: false };
+
+        var tradeWorld = AiWorld();
+        var tradeEngine = new SimulationEngine(tradeWorld);
+        var tradeProposal = tradeEngine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 50));
+        tradeEngine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("B", tradeProposal.ProposalId!.Value, Accept: true));
+
+        tradeEngine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 20, 0, 10, 0, ExpiresInTicks: 50));
+        var fairResponse = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                tradeWorld,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Cautious));
+        tradeEngine.ExecuteDiplomacyCommand(fairResponse);
+        var fairAccepted =
+            fairResponse is RespondTradeCommand { Accept: true } &&
+            tradeWorld.TradeOffers.Count == 0 &&
+            tradeWorld.Regions["r0"].GetMaterial("A") == 90 &&
+            tradeWorld.Regions["r0"].GetMaterial("B") == 110;
+
+        tradeEngine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 10, 0, 20, 0, ExpiresInTicks: 50));
+        var unfairResponse = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                tradeWorld,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Cautious));
+        tradeEngine.ExecuteDiplomacyCommand(unfairResponse);
+        var unfairRejected =
+            unfairResponse is RespondTradeCommand { Accept: false } &&
+            tradeWorld.TradeOffers.Count == 0 &&
+            tradeWorld.Regions["r0"].GetMaterial("A") == 90;
+
+        var ok = turtleNap &&
+                 aggressiveNapRejected &&
+                 fairAccepted &&
+                 unfairRejected;
+        Console.WriteLine(
+            $"DIPLOMACY_AI turtleNap={turtleNap} " +
+            $"aggressiveNapRejected={aggressiveNapRejected} " +
+            $"fairAccepted={fairAccepted} unfairRejected={unfairRejected} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static DiplomacyCommand AssertSinglePolicyCommand(
+        IReadOnlyList<DiplomacyCommand> commands) =>
+        commands.Count == 1
+            ? commands[0]
+            : throw new InvalidOperationException(
+                $"Expected one diplomacy command, got {commands.Count}.");
+
+    private static WorldState AiWorld() =>
+        new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(DiplomacyUnit(1, "A", 100))
+            .AddEntity(DiplomacyUnit(2, "B", 200))
+            .AddStock("r0", "A", 100)
+            .AddStock("r0", "B", 100)
+            .Build();
 
     private static EntityDefinition DiplomacyUnit(
         long id,
