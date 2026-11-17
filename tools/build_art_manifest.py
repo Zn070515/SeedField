@@ -114,24 +114,27 @@ def sha256(path: Path) -> str:
 
 def build_manifest(repo: Path) -> dict:
     art_root = repo / "game" / "SeedField.Game" / "Art"
-    generated = repo / "art" / "generated"
+    source = "art/blender/render_style_assets.py"
+    license_name = "original-procedural-source"
     entries = []
 
     for route in ROUTES:
+        folder = art_root / f"style_{route}"
         for name in ASSETS:
             asset_id = f"{name}.{route}.v0"
-            meta_path = generated / f"style_{route}" / f"{name}_{route}.meta.json"
-            if not meta_path.exists():
-                raise FileNotFoundError(f"missing render metadata: {meta_path}")
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            runtime_files = sorted(
+                folder.glob(f"{name}_{route}_*.png"),
+                key=lambda path: path.name,
+            )
+            if not runtime_files:
+                raise FileNotFoundError(
+                    f"missing runtime assets: {folder}/{name}_{route}_*.png"
+                )
 
             files = []
             front_bottom = None
             width = 0
-            for item in meta["files"]:
-                runtime = art_root / f"style_{route}" / item["file"]
-                if not runtime.exists():
-                    raise FileNotFoundError(f"missing runtime asset: {runtime}")
+            for runtime in runtime_files:
                 bbox, coverage, width = decode_alpha(runtime)
                 if coverage < 0.04:
                     raise ValueError(f"{runtime}: only {coverage:.1%} opaque pixels")
@@ -141,7 +144,7 @@ def build_manifest(repo: Path) -> dict:
                     front_bottom = bbox[3]
                 files.append(
                     {
-                        "path": f"style_{route}/{item['file']}",
+                        "path": f"style_{route}/{runtime.name}",
                         "sha256": sha256(runtime),
                         "alphaBBox": list(bbox),
                     }
@@ -152,18 +155,17 @@ def build_manifest(repo: Path) -> dict:
             else:
                 pivot = [0.5, round((front_bottom + 1) / float(width), 3)]
 
-            files.sort(key=lambda entry: entry["path"])
             entries.append(
                 {
                     "assetId": asset_id,
                     "kind": "style-test",
                     "route": route,
                     "directions": len(files),
-                    "resolutionPx": meta["resolutionPx"],
+                    "resolutionPx": [width, width],
                     "footprintPx": FOOTPRINTS[name],
                     "pivot": pivot,
-                    "source": meta["source"],
-                    "license": meta["license"],
+                    "source": source,
+                    "license": license_name,
                     "status": "style-test-not-final",
                     "files": files,
                 }
