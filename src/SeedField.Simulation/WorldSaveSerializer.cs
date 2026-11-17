@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -164,7 +164,10 @@ public static class WorldSaveSerializer
                     policy.CivilizationId,
                     policy.AllowAllInbound,
                     policy.BlockedCivilizations.ToArray(),
-                    policy.BlockedTopics.ToArray()))
+                    policy.BlockedTopics.ToArray(),
+                    policy.AllowAllTopics,
+                    policy.AllowedCivilizations.ToArray(),
+                    policy.AllowedTopics.ToArray()))
                 .ToArray());
     }
 
@@ -457,11 +460,19 @@ public static class WorldSaveSerializer
         }
 
         var maxMessageId = 0L;
+        var seenMessageIds = new HashSet<long>();
         foreach (var message in data.InFlightMessages)
         {
             if (message.Id <= 0 || message.DeliverTick <= message.SentTick)
             {
                 throw Invalid("INVALID_MESSAGE", $"Message '{message.Id}' has invalid timing.");
+            }
+
+            if (!seenMessageIds.Add(message.Id))
+            {
+                throw Invalid(
+                    "DUPLICATE_MESSAGE_ID",
+                    $"Message id '{message.Id}' appears more than once.");
             }
 
             var targetRegionId = ResolveTargetRegionId(
@@ -499,6 +510,13 @@ public static class WorldSaveSerializer
                     throw Invalid(
                         "INVALID_DELIVERED_MESSAGE",
                         $"Delivered message '{message.Id}' has invalid timing.");
+                }
+
+                if (!seenMessageIds.Add(message.Id))
+                {
+                    throw Invalid(
+                        "DUPLICATE_MESSAGE_ID",
+                        $"Message id '{message.Id}' appears more than once.");
                 }
 
                 var targetRegionId = ResolveTargetRegionId(
@@ -712,15 +730,29 @@ public static class WorldSaveSerializer
 
             var policy = new MessagePolicyState(
                 policyData.CivilizationId,
-                policyData.AllowAllInbound);
+                policyData.AllowAllInbound)
+            {
+                AllowAllTopics = policyData.AllowAllTopics,
+            };
+
             foreach (var blocked in policyData.BlockedCivilizations)
             {
                 policy.BlockedCivilizations.Add(blocked);
             }
 
+            foreach (var allowed in policyData.AllowedCivilizations ?? Array.Empty<string>())
+            {
+                policy.AllowedCivilizations.Add(allowed);
+            }
+
             foreach (var blocked in policyData.BlockedTopics)
             {
                 policy.BlockedTopics.Add(blocked);
+            }
+
+            foreach (var allowed in policyData.AllowedTopics ?? Array.Empty<string>())
+            {
+                policy.AllowedTopics.Add(allowed);
             }
 
             world.MessagePolicies.Add(policyData.CivilizationId, policy);

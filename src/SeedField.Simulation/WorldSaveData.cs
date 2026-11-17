@@ -32,7 +32,10 @@ public sealed record MessagePolicySaveData(
     string CivilizationId,
     bool AllowAllInbound,
     string[] BlockedCivilizations,
-    string[] BlockedTopics);
+    string[] BlockedTopics,
+    bool AllowAllTopics = true,
+    string[]? AllowedCivilizations = null,
+    string[]? AllowedTopics = null);
 
 public sealed record ConstructionOrderSaveData(
     long Id,

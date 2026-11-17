@@ -49,10 +49,11 @@
 | 工程收口 | 统一部署/升级命令、存档 schema v2 + v1 迁移、摧毁库存损失审计 |
 | PvE 目标 | 多控制点：独占驻留、争夺重置、占领数量达到阈值即胜负；HUD 与胜利截图 |
 | 通信/对手 | 跨文明消息要求目标区 Comm 端点 + 目标文明策略允许；内置对手包可选并持久化 |
+| 消息 ACL | 发送方/话题白名单、黑名单优先；引擎派生发送者；重复消息 ID 拒绝；断联不扣能量 |
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 100 个仿真测试 + 23 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | 113 个仿真测试 + 24 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -79,6 +80,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energ
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-load
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction-cancel
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --message-acl
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -115,6 +117,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`cancel & opponents`](docs/engineering/evidence/2026-11-17-cancel-and-opponents.md) | 取消退款、对手选择与协议边界证据 |
 | [`persistence & queue UI`](docs/engineering/evidence/2026-11-17-persistence-and-queue-ui.md) | 对手元数据存档、建造队列 UI 证据 |
 | [`policy/refund/offscreen`](docs/engineering/evidence/2026-11-17-policy-refund-offscreen.md) | 消息权限、失败退款、离屏发电预算证据 |
+| [`message ACL`](docs/engineering/evidence/2026-11-17-message-acl.md) | 发送方/话题白名单、身份边界、重复消息与断联证据 |
 
 ## 工程原则
 
@@ -129,4 +132,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复命令/配额未统一；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；跨文明协议只有无状态消息 ACL，尚无条约/签名/贸易；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

@@ -91,14 +91,20 @@ public sealed class WorldBuilder
         string civilizationId,
         bool allowAllInbound,
         IEnumerable<string>? blockedCivilizations = null,
-        IEnumerable<string>? blockedTopics = null)
+        IEnumerable<string>? blockedTopics = null,
+        IEnumerable<string>? allowedCivilizations = null,
+        bool allowAllTopics = true,
+        IEnumerable<string>? allowedTopics = null)
     {
         if (_world.MessagePolicies.ContainsKey(civilizationId))
         {
             throw new InvalidOperationException($"Message policy for '{civilizationId}' already exists.");
         }
 
-        var policy = new MessagePolicyState(civilizationId, allowAllInbound);
+        var policy = new MessagePolicyState(civilizationId, allowAllInbound)
+        {
+            AllowAllTopics = allowAllTopics,
+        };
         foreach (var blocked in blockedCivilizations ?? Array.Empty<string>())
         {
             policy.BlockedCivilizations.Add(blocked);
@@ -107,6 +113,16 @@ public sealed class WorldBuilder
         foreach (var blocked in blockedTopics ?? Array.Empty<string>())
         {
             policy.BlockedTopics.Add(blocked);
+        }
+
+        foreach (var allowed in allowedCivilizations ?? Array.Empty<string>())
+        {
+            policy.AllowedCivilizations.Add(allowed);
+        }
+
+        foreach (var allowed in allowedTopics ?? Array.Empty<string>())
+        {
+            policy.AllowedTopics.Add(allowed);
         }
 
         _world.MessagePolicies.Add(civilizationId, policy);

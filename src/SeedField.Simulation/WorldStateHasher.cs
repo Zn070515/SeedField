@@ -230,10 +230,24 @@ public static class WorldStateHasher
                 Append(ref hash, blocked);
             }
 
+            Append(ref hash, policy.AllowAllTopics);
+
             Append(ref hash, policy.BlockedTopics.Count);
             foreach (var blocked in policy.BlockedTopics)
             {
                 Append(ref hash, blocked);
+            }
+
+            Append(ref hash, policy.AllowedCivilizations.Count);
+            foreach (var allowed in policy.AllowedCivilizations)
+            {
+                Append(ref hash, allowed);
+            }
+
+            Append(ref hash, policy.AllowedTopics.Count);
+            foreach (var allowed in policy.AllowedTopics)
+            {
+                Append(ref hash, allowed);
             }
         }
 

@@ -81,12 +81,13 @@ tests/SeedField.Runtime.Js.Tests/
 - 建造取消：`CancelConstructionCommand` 退款并产生 `ConstructionCancelled`；退款统计进入存档/哈希；工坊队列 UI 可选中取消。
 - 建造失败：蓝图缺失/到期校验失败退还 `MaterialPaid`，事件携带退款额。
 - 消息策略：每文明可拒绝发送者/话题或关闭入站；`MessageDenied`；策略进入存档 schema v5。
+- 无状态消息 ACL：发送方/话题白名单、黑名单优先、同文明绕过；发送者由引擎从实体派生；重复消息 ID 读档拒绝；断联发送在扣能量前返回 `NoRoute`，已提交消息仍按 `DeliverTick` 投递；策略进入存档 schema v6 与哈希（ADR-0006）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 离屏区域性能优化（当前 active 仅做意图 gating）、跨文明通信。
+- 离屏区域性能优化（当前 active 仅做意图 gating）、跨文明条约/贸易协议。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -221,6 +222,17 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - Godot HUD 绘制每个点与比分；`--capture-victory` 跑到比赛结束。
 - Godot 实测：A 在 Tick 51 占 2 点（west/center）获胜；`m0-victory.png`。
 
+### 5.11 无状态消息 ACL 与身份边界
+
+- 策略新增发送方/话题白名单；判定顺序为黑名单 > 白名单 > 默认开关，同文明消息绕过。
+- 消息信封发送文明由引擎从实体派生；脚本无法自带发送者字段，伪造 issuer 按 `UnknownEntity` 拒绝。
+- 消息 ID 在在途与所有收件箱中必须唯一；读档重复返回 `DUPLICATE_MESSAGE_ID`。
+- 无链路发送在扣能量前返回 `NoRoute`；已提交消息在链路删除后仍按 `DeliverTick` 投递。
+- 存档 schema v6；v5 策略按 `AllowAllTopics=true`、空允许列表迁移。
+- Headless 实测：
+  `MESSAGE_ACL senderAllowed=True senderDenied=True topicAllowed=True topicDenied=True noRoute=True energy=99 inboxB=1 inboxC=0 hashOk=True ok=True`
+- 测试：113 仿真 + 24 Jint；600 Tick 双跑哈希 `4ca65e0d83768a38` 一致。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -230,7 +242,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 5. 尚无随机数消费者；`WorldState` 也未包含 RNG 状态。
 6. 核心区复建为脚本化 API，不是正式建造 UI。
 7. 多区域链路延迟/带宽是场景配置；BFS 以跳数为序、链路 ID 破同分；`MessagesPerTick=0` 表示不限。
-8. 跨区消息只允许同文明，且目标区域必须有己方 Comm 端点；跨文明路由尚未开放。
+8. 跨区同文明消息要求目标区域有己方 Comm 端点；跨文明消息要求目标文明端点和目标文明入站策略允许；条约/贸易仍未开放。
 9. 材料运输支持多跳路径但无中途仓储；无运输单位实体位置/油耗建模；链路同时承载消息与物资，容量分别限制。
 
 ## 7. 风险与阻塞
@@ -247,7 +259,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
-| 跨文明协议仅基础收发 | 没有结盟/条约/身份认证 | 后续加入协议层与情报权限 |
+| 跨文明协议仅无状态 ACL | 没有条约/关系评分/消息签名；设备不能读取目标策略详情 | 后续按 OPEN-10 做条约/贸易；签名需独立 ADR |
 | 建造失败仍不退款 | 到期目标失效会损失已付 M；仅手动取消退款 | 后续定义失败退款/残骸规则 |
 | 第三方对手包未导入 | 只有内置受信任包 | 先完成进程隔离与 IPC 校验 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
@@ -255,7 +267,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 ## 8. 下一步（按依赖顺序）
 
 1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
-2. 跨文明协议与 PvE：目标区域权限、情报过滤、内置离线对手。
+2. 跨文明条约/贸易与 PvE 长期策略；消息签名与重放窗口单独立 ADR。
 3. 经济闭环：制造队列/时间与断供/断联诊断。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。
 5. 存档迁移/回放与离线文明包。
