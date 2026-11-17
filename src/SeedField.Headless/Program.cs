@@ -145,6 +145,22 @@ internal static partial class Program
             return RunSandboxCheck();
         }
 
+        var catalogRebuild = ReadStringFlag(args, "--catalog-rebuild");
+        if (catalogRebuild is not null)
+        {
+            return RunCatalogRebuild(catalogRebuild, ReadStringFlag(args, "--catalog-db"));
+        }
+
+        if (args.Contains("--catalog-list"))
+        {
+            return RunCatalogList(ReadStringFlag(args, "--catalog-db"));
+        }
+
+        if (args.Contains("--catalog-check"))
+        {
+            return RunCatalogCheck(ReadStringFlag(args, "--catalog-db"));
+        }
+
         if (args.Contains("--worker-opponent"))
         {
             return RunWorkerOpponentDemo();

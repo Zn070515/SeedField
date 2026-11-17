@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using SeedField.Catalog;
 using SeedField.Runtime.Js;
 using SeedField.Simulation;
 
@@ -202,7 +203,8 @@ internal static partial class Program
         int dof,
         double budgetMs,
         int ticks = 10,
-        int chunkSize = 0)
+        int chunkSize = 0,
+        string? catalogDb = null)
     {
         ticks = Math.Max(1, ticks);
         var world = BuildPerfWorld(devices);
@@ -302,6 +304,35 @@ internal static partial class Program
             $"dof={runner.LastUsedDegreeOfParallelism} chunk={chunk} " +
             $"peakWorkingSetMb={peakMb:0.0} " +
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
+
+        if (catalogDb is not null)
+        {
+            try
+            {
+                using var store = new CatalogStore(catalogDb);
+                var id = store.RecordBenchmark(new BenchmarkCatalogEntry(
+                    0,
+                    "jint-parallel",
+                    devices,
+                    ticks,
+                    avgTickMs,
+                    observationMs / ticks,
+                    SerMs: 0,
+                    decideMs / ticks,
+                    stepMs / ticks,
+                    1000.0 / avgTickMs,
+                    peakMb,
+                    System.Runtime.GCSettings.IsServerGC,
+                    runner.LastUsedDegreeOfParallelism,
+                    Environment.GetEnvironmentVariable("GIT_COMMIT"),
+                    DateTimeOffset.UtcNow));
+                Console.WriteLine($"CATALOG_RECORDED benchmarkId={id} db={catalogDb}");
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"CATALOG_WRITE_FAILED {exception.Message}");
+            }
+        }
 
         if (budgetMs > 0 && avgTickMs > budgetMs)
         {
