@@ -33,12 +33,18 @@ ASSETS = (
     "ruin_block",
     "pipe_junction",
     "wreck_hauler",
+    "terrain_concrete",
+    "terrain_road",
 )
 TOPDOWN_ASSETS = {
     "power_node", "seed_core", "worker_frame",
     "ruin_block", "pipe_junction", "wreck_hauler",
+    "terrain_concrete", "terrain_road",
 }
-TOPDOWN_ONLY = {"ruin_block", "pipe_junction", "wreck_hauler"}
+TOPDOWN_ONLY = {
+    "ruin_block", "pipe_junction", "wreck_hauler",
+    "terrain_concrete", "terrain_road",
+}
 ROUTES = ("oblique", "topdown")
 FOOTPRINTS = {
     "power_node": 300,
@@ -54,6 +60,8 @@ FOOTPRINTS = {
     "ruin_block": 220,
     "pipe_junction": 240,
     "wreck_hauler": 200,
+    "terrain_concrete": 160,
+    "terrain_road": 160,
 }
 STATES = {
     "seed_core": "idle",
@@ -65,7 +73,11 @@ WORLD_PROP_SOURCES = {
     "ruin_block": "art/blender/render_world_props.py",
     "pipe_junction": "art/blender/render_world_props.py",
     "wreck_hauler": "art/blender/render_world_props.py",
+    "terrain_concrete": "tools/generate_terrain_tiles.py",
+    "terrain_road": "tools/generate_terrain_tiles.py",
 }
+
+TERRAIN_ASSETS = {"terrain_concrete", "terrain_road"}
 
 PIVOT_OVERRIDES = {
     "seed_core": [0.5, 0.84],
@@ -198,11 +210,11 @@ def build_manifest(repo: Path) -> dict:
                 bbox, coverage, width, height = decode_alpha(runtime)
                 if coverage < 0.04:
                     raise ValueError(f"{runtime}: only {coverage:.1%} opaque pixels")
-                if coverage > 0.80:
+                if name not in TERRAIN_ASSETS and coverage > 0.80:
                     raise ValueError(
                         f"{runtime}: {coverage:.1%} opaque pixels; alpha likely broken"
                     )
-                if (
+                if name not in TERRAIN_ASSETS and (
                     bbox[0] < 2
                     or bbox[1] < 2
                     or bbox[2] > width - 3

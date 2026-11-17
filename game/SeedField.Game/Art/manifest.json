@@ -1098,6 +1098,86 @@
           ]
         }
       ]
+    },
+    {
+      "assetId": "terrain_concrete.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_concrete_topdown_000.png",
+          "sha256": "992e73514ed80fed6127c709696903db723529620e895bdce2bc0a44b64699d7",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_concrete_topdown_000_normal.png",
+            "sha256": "cf9796b35361658eff686753cf09cc245056e02ca3ca403ba76b2512a106ce43",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "assetId": "terrain_road.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_road_topdown_000.png",
+          "sha256": "db0dd95ba966461fef81b0f37785f783af63f8d019e4d5d3d341ab6e28d1b678",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_road_topdown_000_normal.png",
+            "sha256": "aafbc0acc98c7a48d315351e2aaac8350e334e7c9bccaa72ed6435137b72c51f",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
     }
   ]
 }
