@@ -88,6 +88,10 @@ public partial class Main
         {
             _hitUntil.Remove(expired);
         }
+
+        // Prune here as well as at draw time so the feed cannot grow without
+        // bound when the sprite presentation path is not drawn (classic visuals).
+        _effects.Prune(_world.Tick);
     }
 
     private void RefreshVisibleEntities()
@@ -285,8 +289,7 @@ public partial class Main
 
     private void DrawPresentationEffects()
     {
-        _effects.Prune(_world.Tick);
-        _effects.Draw(this, Map, _world.Tick, _zoom, MapScale);
+        _effects.Draw(this, Map, _world.Tick, MapScale);
     }
 
     private CoreVisualState CurrentCoreState()
@@ -336,13 +339,13 @@ public partial class Main
             10, new EntityId(1), new EntityId(2), 5, new Vec2(0, 0), new Vec2(1, 1), 2);
         var hiddenDestroyed = new EntityDestroyed(10, new EntityId(4));
         var hiddenMessage = new MessageQueued(
-            10, 1, new EntityId(4), "A", "frontier", "contact", 12, 1, "direct");
+            10, 1, new EntityId(4), "B", "frontier", "contact", 12, 1, "direct");
         var visibleMessage = new MessageQueued(
             10, 2, new EntityId(1), "A", "frontier", "contact", 12, 1, "direct");
         var hiddenOk = !PlayerEventFilter.IsVisible(hiddenShot, visible, false) &&
                        PlayerEventFilter.IsVisible(visibleShot, visible, false) &&
                        !PlayerEventFilter.IsVisible(hiddenDestroyed, visible, false) &&
-                       !visible.Contains(hiddenMessage.FromEntityId.Value) &&
+                       !PlayerEventFilter.IsVisible(hiddenMessage, visible, false) &&
                        PlayerEventFilter.IsVisible(visibleMessage, visible, false) &&
                        PlayerEventFilter.IsVisible(hiddenShot, visible, true);
         GD.Print($"EVENT_VISIBILITY_SMOKE hiddenShot/visibleShot/destroyed/message ok={hiddenOk}");

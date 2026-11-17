@@ -1023,7 +1023,7 @@
         0.5,
         0.5
       ],
-      "source": "art/blender/render_style_assets.py",
+      "source": "art/blender/render_world_props.py",
       "license": "original-procedural-source",
       "status": "style-test-not-final",
       "files": [
@@ -1053,7 +1053,7 @@
         0.5,
         0.5
       ],
-      "source": "art/blender/render_style_assets.py",
+      "source": "art/blender/render_world_props.py",
       "license": "original-procedural-source",
       "status": "style-test-not-final",
       "files": [
@@ -1083,7 +1083,7 @@
         0.5,
         0.5
       ],
-      "source": "art/blender/render_style_assets.py",
+      "source": "art/blender/render_world_props.py",
       "license": "original-procedural-source",
       "status": "style-test-not-final",
       "files": [

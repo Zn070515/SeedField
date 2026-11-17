@@ -222,7 +222,7 @@ public partial class Main : Node2D
         {
             if (item.Event is not MessageQueued queued ||
                 !IsPlayerVisible(item.Event) ||
-                !_visibleEntityIds.Contains(queued.FromEntityId.Value))
+                (!_classicVisuals && !_visibleEntityIds.Contains(queued.FromEntityId.Value)))
             {
                 continue;
             }
@@ -254,7 +254,7 @@ public partial class Main : Node2D
             var mate = _world.EnumerateEntities().FirstOrDefault(entity =>
                 entity.RegionId == "frontier" &&
                 entity.Id != sender.Id &&
-                _visibleEntityIds.Contains(entity.Id.Value) &&
+                (_classicVisuals || _visibleEntityIds.Contains(entity.Id.Value)) &&
                 string.Equals(entity.CivilizationId, sender.CivilizationId, StringComparison.Ordinal));
 
             if (mate is not null)

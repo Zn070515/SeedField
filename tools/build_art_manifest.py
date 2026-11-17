@@ -61,6 +61,12 @@ STATES = {
     "seed_core_bootstrap": "bootstrap",
     "seed_core_besieged": "besieged",
 }
+WORLD_PROP_SOURCES = {
+    "ruin_block": "art/blender/render_world_props.py",
+    "pipe_junction": "art/blender/render_world_props.py",
+    "wreck_hauler": "art/blender/render_world_props.py",
+}
+
 PIVOT_OVERRIDES = {
     "seed_core": [0.5, 0.84],
     "seed_core_regenerating": [0.5, 0.84],
@@ -245,7 +251,7 @@ def build_manifest(repo: Path) -> dict:
                 "resolutionPx": [width, height],
                 "footprintPx": FOOTPRINTS[name],
                 "pivot": pivot,
-                "source": source,
+                "source": WORLD_PROP_SOURCES.get(name, source),
                 "license": license_name,
                 "status": "style-test-not-final",
                 "files": files,

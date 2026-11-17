@@ -5,6 +5,18 @@ namespace SeedField.Game;
 
 public partial class Main
 {
+    private static readonly (string Name, Vec2 Position, float Scale)[] WorldProps =
+    {
+        ("ruin_block", new Vec2(2_200, 1_600), 0.38f),
+        ("pipe_junction", new Vec2(6_200, 2_000), 0.36f),
+        ("wreck_hauler", new Vec2(10_200, 1_400), 0.38f),
+        ("ruin_block", new Vec2(13_200, 2_400), 0.34f),
+        ("wreck_hauler", new Vec2(2_600, 6_200), 0.32f),
+        ("pipe_junction", new Vec2(7_200, 6_300), 0.35f),
+        ("ruin_block", new Vec2(11_200, 6_200), 0.38f),
+        ("pipe_junction", new Vec2(13_800, 6_800), 0.33f),
+    };
+
     private void DrawWorldProps()
     {
         if (_classicVisuals)
@@ -12,19 +24,7 @@ public partial class Main
             return;
         }
 
-        var props = new (string Name, Vec2 Position, float Scale)[]
-        {
-            ("ruin_block", new Vec2(2_200, 1_600), 0.38f),
-            ("pipe_junction", new Vec2(6_200, 2_000), 0.36f),
-            ("wreck_hauler", new Vec2(10_200, 1_400), 0.38f),
-            ("ruin_block", new Vec2(13_200, 2_400), 0.34f),
-            ("wreck_hauler", new Vec2(2_600, 6_200), 0.32f),
-            ("pipe_junction", new Vec2(7_200, 6_300), 0.35f),
-            ("ruin_block", new Vec2(11_200, 6_200), 0.38f),
-            ("pipe_junction", new Vec2(13_800, 6_800), 0.33f),
-        };
-
-        foreach (var prop in props)
+        foreach (var prop in WorldProps)
         {
             var frame = _worldCatalog.Get(prop.Name);
             if (frame is null)

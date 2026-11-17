@@ -400,11 +400,26 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
+    private bool AnyOverlayVisible =>
+        _editorLayer.Visible ||
+        _workshopLayer.Visible ||
+        _diplomacyLayer.Visible ||
+        _powerLayer.Visible ||
+        _recoveryLayer.Visible;
+
     public override void _Input(InputEvent @event)
     {
         if (@event is InputEventMouseButton mouseButton)
         {
-            if (mouseButton.Pressed &&
+            if (mouseButton.ButtonIndex == MouseButton.Middle)
+            {
+                _panning = mouseButton.Pressed && !AnyOverlayVisible;
+                GetViewport().SetInputAsHandled();
+                return;
+            }
+
+            if (!AnyOverlayVisible &&
+                mouseButton.Pressed &&
                 mouseButton.ButtonIndex == MouseButton.WheelUp)
             {
                 ZoomAt(mouseButton.Position, 1.12f);
@@ -412,23 +427,17 @@ public partial class Main : Node2D
                 return;
             }
 
-            if (mouseButton.Pressed &&
+            if (!AnyOverlayVisible &&
+                mouseButton.Pressed &&
                 mouseButton.ButtonIndex == MouseButton.WheelDown)
             {
                 ZoomAt(mouseButton.Position, 1f / 1.12f);
                 GetViewport().SetInputAsHandled();
                 return;
             }
-
-            if (mouseButton.ButtonIndex == MouseButton.Middle)
-            {
-                _panning = mouseButton.Pressed;
-                GetViewport().SetInputAsHandled();
-                return;
-            }
         }
 
-        if (@event is InputEventMouseMotion motion && _panning)
+        if (!AnyOverlayVisible && @event is InputEventMouseMotion motion && _panning)
         {
             _pan += motion.Relative;
             QueueRedraw();

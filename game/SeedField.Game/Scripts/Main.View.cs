@@ -23,10 +23,8 @@ public partial class Main
             return;
         }
 
-        var fps = _benchmarkSamples == 0 ? 0 : _benchmarkFpsSum / _benchmarkSamples;
-        var processMs = _benchmarkSamples == 0
-            ? 0
-            : _benchmarkProcessSum / _benchmarkSamples;
+        var fps = _benchmarkFpsSum / _benchmarkSamples;
+        var processMs = _benchmarkProcessSum / _benchmarkSamples;
         GD.Print(
             $"MAIN_BENCH devices={_benchmarkDevices} sprites={_visibleEntities.Count} " +
             $"fps={fps:0.0} processMs={processMs:0.00} " +
@@ -41,7 +39,7 @@ public partial class Main
         var size = new Vector2(
             Scenarios.WidthMm * MapScale,
             Scenarios.HeightMm * MapScale);
-        _pan = new Vector2(640, 360) - (BaseMapOrigin + size / 2f);
+        _pan = new Vector2(ViewWidth / 2f, ViewHeight / 2f) - (BaseMapOrigin + size / 2f);
     }
 
     private void ZoomAt(Vector2 screen, float factor)

@@ -44,7 +44,6 @@ public sealed class VisualEffectFeed
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
         long tick,
-        float zoom,
         float mapScale)
     {
         foreach (var effect in _effects)
@@ -58,7 +57,7 @@ public sealed class VisualEffectFeed
             var progress = age / (float)effect.DurationTicks;
             var alpha = 1f - progress;
             var center = map(effect.WorldPosition);
-            var radius = effect.RadiusMm * mapScale * zoom *
+            var radius = effect.RadiusMm * mapScale *
                          (0.35f + progress * 0.85f);
             canvas.DrawArc(
                 center,
