@@ -54,7 +54,8 @@ public static partial class WorldSaveSerializer
                 world.Statistics.EnergyOverflowedTotal,
                 world.Statistics.EnergyFlowLossTotal,
                 world.Statistics.EnergyAutoDrawnTotal,
-                world.Statistics.EnergyWastedTotal),
+                world.Statistics.EnergyWastedTotal,
+                world.Statistics.MaterialSalvagedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -217,6 +218,21 @@ public static partial class WorldSaveSerializer
                     state.MaintenanceRequired))
                 .ToArray(),
             world.Random.Seed,
-            world.Random.State);
+            world.Random.State,
+            world.Wrecks.Values
+                .OrderBy(wreck => wreck.Id)
+                .Select(wreck => new WreckSaveData(
+                    wreck.Id,
+                    wreck.RegionId,
+                    wreck.Position.X,
+                    wreck.Position.Y,
+                    wreck.OwnerCivilizationId,
+                    wreck.BlueprintId,
+                    wreck.BlueprintVersion,
+                    wreck.MaterialRecoverable,
+                    wreck.CreatedTick))
+                .ToArray(),
+            world.NextWreckId,
+            world.WreckRecoveryPercent);
     }
 }

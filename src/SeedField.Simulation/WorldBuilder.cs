@@ -14,6 +14,19 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder SetWreckRecoveryPercent(int percent)
+    {
+        if (percent is < 0 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(percent),
+                "Wreck recovery percent must be within 0..100.");
+        }
+
+        _world.WreckRecoveryPercent = percent;
+        return this;
+    }
+
     public WorldBuilder AddRegion(string id, int widthMm, int heightMm, bool isCoreRegion = false)
     {
         if (_world.Regions.ContainsKey(id))

@@ -179,6 +179,23 @@ public sealed record EntityBootstrapped(
     long EnergySpent,
     long MaterialSpent) : SimulationEvent(Tick);
 
+/// <summary>A destroyed blueprint instance left salvageable material.</summary>
+public sealed record WreckCreated(
+    long Tick,
+    long WreckId,
+    string RegionId,
+    string OwnerCivilizationId,
+    string BlueprintId,
+    int BlueprintVersion,
+    long MaterialRecoverable) : SimulationEvent(Tick);
+
+public sealed record WreckSalvaged(
+    long Tick,
+    long WreckId,
+    string CivilizationId,
+    string RegionId,
+    long MaterialRecovered) : SimulationEvent(Tick);
+
 /// <summary>The fast-recovery quota is exhausted; the attempt was rejected.</summary>
 public sealed record RecoveryQuotaDenied(
     long Tick,

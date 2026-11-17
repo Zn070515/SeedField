@@ -60,6 +60,8 @@ public sealed class SimulationStatistics
     public long EnergyAutoDrawnTotal { get; internal set; }
 
     public long EnergyWastedTotal { get; internal set; }
+
+    public long MaterialSalvagedTotal { get; internal set; }
 }
 
 /// <summary>
@@ -87,6 +89,14 @@ public sealed class WorldState
     public long NextTradeOfferId { get; internal set; } = 1;
 
     public long NextPowerShipmentId { get; internal set; } = 1;
+
+    public long NextWreckId { get; internal set; } = 1;
+
+    /// <summary>Scenario rule: percent of blueprint material left as a wreck.</summary>
+    public int WreckRecoveryPercent { get; internal set; }
+
+    /// <summary>Salvageable remains by stable wreck id.</summary>
+    public SortedDictionary<long, WreckState> Wrecks { get; } = new();
 
     /// <summary>Authoritative reproducible randomness; seed and state are hashed/saved.</summary>
     public DeterministicRandom Random { get; } = new();

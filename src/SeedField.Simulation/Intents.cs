@@ -117,6 +117,8 @@ public enum SimulationErrorCode
     GridFull,
     BreakerMaintenanceRequired,
     RecoveryQuotaExhausted,
+    WreckNotFound,
+    WreckUnavailable,
 }
 
 public sealed record IntentResult(

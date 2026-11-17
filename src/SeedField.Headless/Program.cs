@@ -107,6 +107,11 @@ internal static partial class Program
             return RunCoreSiegeDemo();
         }
 
+        if (args.Contains("--wrecks"))
+        {
+            return RunWreckDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 

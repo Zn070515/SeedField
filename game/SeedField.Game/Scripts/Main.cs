@@ -438,6 +438,12 @@ public partial class Main : Node2D
             RecoveryQuotaDenied quota =>
                 $"t{quota.Tick,4}  {quota.CivilizationId} recovery quota exhausted " +
                 $"in {quota.RegionId} ({quota.Used}/{quota.Limit}, reset in {quota.ResetsInTicks}t)",
+            WreckCreated wreck =>
+                $"t{wreck.Tick,4}  wreck {wreck.WreckId} in {wreck.RegionId}: " +
+                $"{wreck.BlueprintId} v{wreck.BlueprintVersion} · {wreck.MaterialRecoverable}M",
+            WreckSalvaged salvaged =>
+                $"t{salvaged.Tick,4}  {salvaged.CivilizationId} salvaged wreck " +
+                $"{salvaged.WreckId} in {salvaged.RegionId} (+{salvaged.MaterialRecovered}M)",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

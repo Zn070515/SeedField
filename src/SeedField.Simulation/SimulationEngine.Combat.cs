@@ -167,9 +167,57 @@ public sealed partial class SimulationEngine
                 target.Id,
                 target.Energy,
                 target.Material));
+            CreateWreck(target, targetRegion, tick, events);
         }
 
         Accept(intent, $"Hit {target.Id} for {appliedDamage}.", results);
     }
 
+    private void CreateWreck(
+        EntityState target,
+        RegionState region,
+        long tick,
+        List<SimulationEvent> events)
+    {
+        if (World.WreckRecoveryPercent <= 0 || target.BlueprintId is null)
+        {
+            return;
+        }
+
+        var blueprint = World.Workshop.GetVersion(
+            target.BlueprintId,
+            target.BlueprintVersion);
+        if (blueprint is null || blueprint.MaterialCost <= 0)
+        {
+            return;
+        }
+
+        var material = (long)(
+            (Int128)blueprint.MaterialCost * World.WreckRecoveryPercent / 100);
+        if (material <= 0)
+        {
+            return;
+        }
+
+        var wreckId = World.NextWreckId++;
+        World.Wrecks.Add(
+            wreckId,
+            new WreckState(
+                wreckId,
+                region.Id,
+                target.Position,
+                target.CivilizationId,
+                target.BlueprintId,
+                target.BlueprintVersion,
+                material,
+                tick));
+        events.Add(new WreckCreated(
+            tick,
+            wreckId,
+            region.Id,
+            target.CivilizationId,
+            target.BlueprintId,
+            target.BlueprintVersion,
+            material));
+    }
 }

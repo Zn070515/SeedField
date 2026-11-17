@@ -39,7 +39,10 @@ public sealed record WorldSaveData(
     GridCapacitySaveData[]? GridCapacities = null,
     PowerGridStateSaveData[]? PowerGridStates = null,
     ulong RandomSeed = 0,
-    ulong RandomState = 0);
+    ulong RandomState = 0,
+    WreckSaveData[]? Wrecks = null,
+    long NextWreckId = 0,
+    int WreckRecoveryPercent = 0);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
@@ -243,6 +246,17 @@ public sealed record BlueprintSaveData(
     int BuildTicks = 0,
     bool IsCoreAnchor = false);
 
+public sealed record WreckSaveData(
+    long Id,
+    string RegionId,
+    int X,
+    int Y,
+    string OwnerCivilizationId,
+    string BlueprintId,
+    int BlueprintVersion,
+    long MaterialRecoverable,
+    long CreatedTick);
+
 public sealed record SeedCoreProductSaveData(
     DeviceBranch Branch,
     string BlueprintId,
@@ -323,7 +337,8 @@ public sealed record StatisticsSaveData(
     long EnergyOverflowedTotal = 0,
     long EnergyFlowLossTotal = 0,
     long EnergyAutoDrawnTotal = 0,
-    long EnergyWastedTotal = 0);
+    long EnergyWastedTotal = 0,
+    long MaterialSalvagedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

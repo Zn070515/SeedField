@@ -176,6 +176,55 @@ public static partial class WorldSaveSerializer
         }
     }
 
+    private static void LoadWrecks(WorldState world, WorldSaveData data)
+    {
+        if (data.WreckRecoveryPercent is < 0 or > 100)
+        {
+            throw Invalid(
+                "INVALID_WRECK_RECOVERY_PERCENT",
+                "Wreck recovery percent must be within 0..100.");
+        }
+
+        world.WreckRecoveryPercent = data.WreckRecoveryPercent;
+        foreach (var wreckData in data.Wrecks ?? Array.Empty<WreckSaveData>())
+        {
+            if (wreckData.Id <= 0 ||
+                world.Wrecks.ContainsKey(wreckData.Id) ||
+                string.IsNullOrWhiteSpace(wreckData.RegionId) ||
+                string.IsNullOrWhiteSpace(wreckData.OwnerCivilizationId) ||
+                string.IsNullOrWhiteSpace(wreckData.BlueprintId) ||
+                wreckData.BlueprintVersion <= 0 ||
+                wreckData.MaterialRecoverable < 0 ||
+                wreckData.CreatedTick < 0 ||
+                wreckData.CreatedTick > data.Tick ||
+                !world.Regions.TryGetValue(wreckData.RegionId, out var region) ||
+                !region.Contains(new Vec2(wreckData.X, wreckData.Y)))
+            {
+                throw Invalid(
+                    "INVALID_WRECK",
+                    $"Wreck '{wreckData.Id}' is invalid.");
+            }
+
+            world.Wrecks.Add(
+                wreckData.Id,
+                new WreckState(
+                    wreckData.Id,
+                    wreckData.RegionId,
+                    new Vec2(wreckData.X, wreckData.Y),
+                    wreckData.OwnerCivilizationId,
+                    wreckData.BlueprintId,
+                    wreckData.BlueprintVersion,
+                    wreckData.MaterialRecoverable,
+                    wreckData.CreatedTick));
+        }
+
+        var maxWreckId = world.Wrecks.Keys.DefaultIfEmpty(0).Max();
+        world.NextWreckId = ResolveNextId(
+            data.NextWreckId,
+            maxWreckId,
+            "INVALID_NEXT_WRECK_ID");
+    }
+
     private static void LoadBlueprints(WorldState world, WorldSaveData data)
     {
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())

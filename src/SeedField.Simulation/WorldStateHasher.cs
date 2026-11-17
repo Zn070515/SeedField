@@ -29,6 +29,8 @@ public static class WorldStateHasher
         Append(ref hash, world.NextPowerShipmentId);
         Append(ref hash, world.Random.Seed);
         Append(ref hash, world.Random.State);
+        Append(ref hash, world.NextWreckId);
+        Append(ref hash, world.WreckRecoveryPercent);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -58,6 +60,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EnergyFlowLossTotal);
         Append(ref hash, world.Statistics.EnergyAutoDrawnTotal);
         Append(ref hash, world.Statistics.EnergyWastedTotal);
+        Append(ref hash, world.Statistics.MaterialSalvagedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -121,6 +124,20 @@ public static class WorldStateHasher
                     Append(ref hash, entity.State.StorageCapacity);
                 }
             }
+        }
+
+        Append(ref hash, world.Wrecks.Count);
+        foreach (var wreck in world.Wrecks.Values.OrderBy(wreck => wreck.Id))
+        {
+            Append(ref hash, wreck.Id);
+            Append(ref hash, wreck.RegionId);
+            Append(ref hash, wreck.Position.X);
+            Append(ref hash, wreck.Position.Y);
+            Append(ref hash, wreck.OwnerCivilizationId);
+            Append(ref hash, wreck.BlueprintId);
+            Append(ref hash, wreck.BlueprintVersion);
+            Append(ref hash, wreck.MaterialRecoverable);
+            Append(ref hash, wreck.CreatedTick);
         }
 
         Append(ref hash, world.ControlPoints.Count);
