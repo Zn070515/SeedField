@@ -91,6 +91,7 @@ godot --headless --path game/SeedField.Game -- --save-smoke
 godot --headless --path game/SeedField.Game -- --recovery-smoke
 godot --headless --path game/SeedField.Game -- --power-breaker-smoke
 godot --path game/SeedField.Game -- --capture-recovery
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
 ```
 
 Godot 不在 CI 中运行；改 UI 后必须实机截图检查，不能只看代码。

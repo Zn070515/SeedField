@@ -107,6 +107,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catal
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-check --catalog-db catalog.db
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-jint-parallel 100 --catalog-db catalog.db
 python tools/check_perf.py --baseline docs/engineering/evidence/perf-baseline.json --current logs/perf-1000.log --devices 1000
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent-appcontainer
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent

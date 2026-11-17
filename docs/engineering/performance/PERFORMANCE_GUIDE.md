@@ -74,6 +74,12 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- `
 python tools/check_perf.py `
   --baseline docs/engineering/evidence/perf-baseline.json `
   --current logs/perf-1000.log --devices 1000
+
+# 正式客户端混合负载（Godot windowed，真实 scout + 渲染）
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
+# 对照：不发消息的 quiet 脚本
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10 `
+  --benchmark-mixed-quiet
 ```
 
 不要把长命令接 `| tail` / `| head`；重定向到日志后读文件。
@@ -115,6 +121,28 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- `
 - 4 核 Server 的 1000 台平均约 19.9 ms，仍在 6 Hz 预算内；p99 约 77 ms
   主要来自 GC，需要后续 LOD/休眠/对象复用。
 - 60 Hz 的 16.7 ms 预算不适合 1000 台；100 台是更现实的高频档位。
+
+### 4.1 混合客户端（Godot windowed）
+
+Godot 4.7.2、1280×720、vsync off、Server GC、真实 `program.scout.v1` +
+渲染 + 通信/战斗，测量 2 s（跳过 1.5 s 预热）：
+
+| 设备 | avgTick | p95Tick | FPS | alloc/Tick | Fault |
+|---:|---:|---:|---:|---:|---:|
+| 100 | 1.91 ms | 3.24 | 154 | 11.9 MB | 0 |
+| 500 | 9.82 ms | 15.48 | 62 | 42.0 MB | 0 |
+| 1000 | 27.96 ms | 34.38 | 28 | 92.1 MB | 0 |
+
+修复前（完整收件箱进入每个观测）：
+
+| 设备 | avgTick | p95Tick | FPS | alloc/Tick | Fault |
+|---:|---:|---:|---:|---:|---:|
+| 500 | 137.03 ms | 174.95 | 14 | 1087 MB | 24 timeout |
+| 1000 | 309.32 ms | 372.63 | 5 | 2891 MB | 24 timeout |
+
+根因与修复见 ADR-0037：观测消息历史限制为最近 32 条；收件箱容量/世界状态/
+存档/哈希不变。quiet 脚本 1000 台约 5.2 ms/Tick、33 FPS，证明剩余成本在
+渲染/呈现层。
 
 ## 5. GC 发行要求
 
@@ -172,8 +200,9 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 
 按优先级：
 
-1. **正式客户端混合负载**：Godot 渲染 + 100/500/1000 台 + Jint + 通信/
-   电网/战斗同时运行；统一 FPS、Tick、内存与 GC 指标。
+1. **正式客户端混合负载**：已加入 `--benchmark-mixed`，并修复观测消息放大
+   （ADR-0037）；1000 台约 28 ms/Tick、28 FPS。仍需正式导出、真实 GPU/
+   低端硬件与更长窗口验收。
 2. **真实 4/6/8 核硬件**：当前只有 `DOTNET_PROCESSOR_COUNT` 模拟；
    需要低端 CPU、不同内存档位的真实数据。
 3. **长时间稳定性**：10k+ Tick 的内存增长、P99 尾部、GC 暂停与泄漏。
@@ -203,6 +232,8 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 - ADR-0033：离屏控制器抑制
 - ADR-0035：本地 SQLite 派生目录
 - ADR-0036：墙钟超时宿主安全阀
+- ADR-0037：观测消息历史确定性上限
 - 证据：`docs/engineering/evidence/2026-11-17-perf-release-acceptance.md`
+- 证据：`docs/engineering/evidence/2026-11-17-mixed-client-message-cap.md`
 - 基线：`docs/engineering/evidence/perf-baseline.json`
 - 工具：`tools/check_perf.py`、`tools/run-game.ps1`
