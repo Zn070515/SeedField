@@ -31,7 +31,7 @@
 
 完整游戏离线可玩，不依赖开发者服务器；设计基线为 V1.9 Rev2。本仓库是正式工程，不是设计资料包。
 
-<p align="center"><img src="game/SeedField.Game/screenshots/m0-combat.png" alt="Seed Field M0 combat slice" width="760"></p>
+<p align="center"><img src="game/SeedField.Game/screenshots/art-main-combat.png" alt="Seed Field Gate 2 sprite slice" width="760"></p>
 
 ## 项目现状
 
@@ -127,6 +127,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 分支、提交格式、验证门禁与 PR 流程 |
 | [`ENGINEERING_STANDARDS.md`](docs/engineering/ENGINEERING_STANDARDS.md) | 权威来源、确定性、schema、依赖与发布标准 |
 | [`TESTING.md`](docs/engineering/TESTING.md) | 分层测试、黄金场景、不变量 fuzz 与结构门禁 |
+| [Art vertical slice](art/README.md) | A/B 相机、8 方向工体、核心四态、模块替换、mask 与性能证据 |
+| [`docs/art/`](docs/art/VISUAL_LANGUAGE_V0_1.md) | ChatGPT Art-DeepPush 视觉语言/管线/验收参考 |
 | [`DECISION_REGISTER.md`](docs/design-bible/v1.9-rev2/00-START-HERE/DECISION_REGISTER.md) | CONFIRMED / BASELINE / OPEN 决策主索引 |
 | [`ADR-0001`](docs/engineering/adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10.0 运行时目标 |
 | [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |
@@ -164,6 +166,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`device wrecks`](docs/engineering/evidence/2026-11-17-device-wrecks.md) | 设备残骸、原主/在场回收、v16 证据 |
 | [`ruin snapshots`](docs/engineering/evidence/2026-11-17-ruin-snapshots.md) | 本地离线快照、切片/老化/掠夺、数据-only 校验 |
 | [`recovery panel`](docs/engineering/evidence/2026-11-17-recovery-panel.md) | F6 配额/债务/锚点/围困面板、核心维护与 v17 证据 |
+| [`art vertical slice`](docs/engineering/evidence/2026-11-17-art-vertical-slice.md) | A/B 相机、Blender 资产、Godot 层叠/缩放截图与资产门禁 |
 
 ## 工程原则
 

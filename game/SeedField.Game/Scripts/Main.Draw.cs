@@ -13,10 +13,25 @@ public partial class Main : Node2D
         DrawGrid();
         DrawStagingZones();
         DrawControlPoint();
-        DrawRanges();
-        DrawTracers();
-        DrawMessages();
-        DrawEntities();
+        if (_classicVisuals)
+        {
+            DrawRanges();
+            DrawTracers();
+            DrawMessages();
+            DrawEntities();
+        }
+        else
+        {
+            DrawPresentationCore();
+            DrawPresentationEntities();
+            DrawTracers();
+            DrawMessages();
+            if (_debugVisible)
+            {
+                DrawPresentationDebug();
+            }
+        }
+
         DrawHud();
     }
 
@@ -95,8 +110,12 @@ public partial class Main : Node2D
                 _ => Amber,
             };
 
-            DrawCircle(center, radius, new Color(color, 0.05f));
-            DrawArc(center, radius, 0, Mathf.Tau, 80, new Color(color, 0.6f), 2f, true);
+            if (_classicVisuals)
+            {
+                DrawCircle(center, radius, new Color(color, 0.05f));
+                DrawArc(center, radius, 0, Mathf.Tau, 80, new Color(color, 0.6f), 2f, true);
+            }
+
             DrawCircle(center, 5f, new Color(color, 0.8f));
 
             var name = point.Id.Replace("relay-", string.Empty).ToUpperInvariant();
@@ -263,7 +282,7 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 62),
-            "M0 visual slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
+            "Gate 2 visual slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
             HorizontalAlignment.Left,
             -1,
             12,

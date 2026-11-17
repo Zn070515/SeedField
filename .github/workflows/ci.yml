@@ -39,6 +39,9 @@ jobs:
       - name: Build
         run: dotnet build SeedField.slnx -c Release --no-restore
 
+      - name: Art manifest freshness
+        run: python tools/build_art_manifest.py --check
+
       - name: Test
         run: dotnet test SeedField.slnx -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test-results.trx"
 

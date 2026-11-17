@@ -69,9 +69,14 @@ public partial class Main : Node2D
     private bool _capturePower;
     private bool _captureRecovery;
     private bool _captureVictory;
+    private bool _captureVisual;
+    private bool _captureTactical;
+    private bool _captureDebug;
+    private bool _captureOmniscient;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
+    private bool _peacefulScenario;
 
     public override void _Ready()
     {
@@ -81,13 +86,47 @@ public partial class Main : Node2D
         _opponent = arguments.Contains("--opponent-turtle")
             ? BuiltInOpponents.Turtle
             : BuiltInOpponents.Skirmisher;
+        _peacefulScenario = arguments.Contains("--peaceful");
 
-        ResetScenario();
+        ResetScenario(_peacefulScenario);
         BuildProgramEditor();
         BuildWorkshopPanel();
         BuildDiplomacyPanel();
         BuildPowerPanel();
         BuildRecoveryPanel();
+        InitializePresentation(arguments);
+
+        var coreStateArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--core-state=", StringComparison.Ordinal));
+        if (coreStateArgument is not null)
+        {
+            ConfigureCoreStateScenario(coreStateArgument["--core-state=".Length..]);
+            return;
+        }
+
+        if (arguments.Contains("--capture-module-swap"))
+        {
+            ConfigureModuleSwapCapture();
+            return;
+        }
+
+        if (arguments.Contains("--visibility-smoke"))
+        {
+            RunVisibilitySmoke();
+            return;
+        }
+
+        if (arguments.Contains("--module-swap-smoke"))
+        {
+            RunModuleSwapSmoke();
+            return;
+        }
+
+        if (arguments.Contains("--core-state-smoke"))
+        {
+            RunCoreStateSmoke();
+            return;
+        }
 
         if (arguments.Contains("--save-smoke"))
         {
@@ -132,6 +171,13 @@ public partial class Main : Node2D
         _capturePower = arguments.Contains("--capture-power");
         _captureRecovery = arguments.Contains("--capture-recovery");
         _captureVictory = arguments.Contains("--capture-victory");
+        _captureVisual = arguments.Contains("--capture-visual");
+        _captureTactical = arguments.Contains("--capture-tactical");
+        _captureDebug = arguments.Contains("--capture-debug");
+        _captureOmniscient = arguments.Contains("--capture-omniscient");
+        _tacticalVisible = _captureTactical;
+        _debugVisible = _captureDebug || _captureOmniscient;
+        _omniscientDebug |= _captureOmniscient;
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
                   _captureWorkshop ||
@@ -139,7 +185,11 @@ public partial class Main : Node2D
                   _captureDiplomacyAi ||
                   _capturePower ||
                   _captureRecovery ||
-                  _captureVictory;
+                  _captureVictory ||
+                  _captureVisual ||
+                  _captureTactical ||
+                  _captureDebug ||
+                  _captureOmniscient;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
@@ -155,7 +205,16 @@ public partial class Main : Node2D
                                 ? "res://screenshots/m0-recovery.png"
                                 : _captureVictory
                                     ? "res://screenshots/m0-victory.png"
-                                    : "res://screenshots/m0-combat.png";
+                                    : _captureVisual
+                                        ? "res://screenshots/art-main-combat.png"
+                                        : _captureTactical
+                                            ? "res://screenshots/art-main-tactical.png"
+                                            : _captureDebug
+                                                ? "res://screenshots/art-main-debug.png"
+                                                : _captureOmniscient
+                                                    ? "res://screenshots/art-main-omniscient.png"
+                                                    : "res://screenshots/m0-combat.png";
+        UpdateFacing();
 
         if (_captureEditor)
         {
@@ -331,6 +390,31 @@ public partial class Main : Node2D
             return;
         }
 
+        if (key.Keycode == Key.F7)
+        {
+            _tacticalVisible = !_tacticalVisible;
+            QueueRedraw();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (key.Keycode == Key.F8)
+        {
+            _debugVisible = !_debugVisible;
+            QueueRedraw();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (key.Keycode == Key.F10)
+        {
+            _omniscientDebug = !_omniscientDebug;
+            UpdateFacing();
+            QueueRedraw();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode == Key.F1)
         {
             ToggleProgramEditor();
@@ -369,7 +453,7 @@ public partial class Main : Node2D
                 StepOnce();
                 break;
             case Key.R:
-                ResetScenario();
+                ResetScenario(_peacefulScenario);
                 _paused = true;
                 _status = "reset";
                 break;

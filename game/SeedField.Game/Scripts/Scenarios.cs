@@ -22,9 +22,9 @@ internal static class Scenarios
         Drive: new DriveModule(60, EnergyCostPerMove: 1),
         Comm: new CommModule(1, EnergyCostPerMessage: 1));
 
-    public static WorldState BuildWorld()
+    public static WorldState BuildWorld(bool peaceful = false)
     {
-        var world = new WorldBuilder()
+        var builder = new WorldBuilder()
             .AddRegion("core-a", 2_000, 2_000, isCoreRegion: true)
             .AddRegion("frontier", WidthMm, HeightMm)
             .AddLink("l-core", "core-a", "frontier", latencyTicks: 1)
@@ -77,8 +77,11 @@ internal static class Scenarios
                 "B",
                 reserveEnergy: 10,
                 highPriorityThreshold: 5,
-                priorityReserveEnergy: 20)
-            .AddEntity(new EntityDefinition(
+                priorityReserveEnergy: 20);
+
+        if (!peaceful)
+        {
+            builder.AddEntity(new EntityDefinition(
                 new EntityId(4),
                 "B",
                 "frontier",
@@ -86,8 +89,10 @@ internal static class Scenarios
                 MaxHealth: 1_000,
                 Energy: 0,
                 EnergyCapacity: 0,
-                Material: 0))
-            .Build();
+                Material: 0));
+        }
+
+        var world = builder.Build();
 
         world.Regions["frontier"].AddEnergy("A", 200);
         world.Regions["frontier"].AddEnergy("B", 200);
@@ -145,9 +150,25 @@ internal static class Scenarios
             ControllerProgramId: "program.scout.v2",
             MaterialCost: 60));
 
+        // A same-frame module swap used by the visual smoke test:
+        // sensor-only scout -> sensor + drill arm. UpgradeCommand drives it.
+        workshop.Publish(new DeviceBlueprint(
+            "scout", 0, "Scout Mk3 Breacher", 150, 5_000,
+            Sensor: new SensorModule(6_500),
+            Weapon: new WeaponModule(3_000, Damage: 6, EnergyCost: 1, CooldownTicks: 2),
+            Drive: new DriveModule(130, EnergyCostPerMove: 1),
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 3, StorageCapacity: 5_000),
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: "program.scout.v1",
+            MaterialCost: 65));
+
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", new Vec2(2_000, 4_000));
-        DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(3_000, 4_000));
-        DeploymentService.Deploy(world, strike, "B", "frontier", new Vec2(13_000, 4_000));
+        DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
+        if (!peaceful)
+        {
+            DeploymentService.Deploy(world, strike, "B", "frontier", new Vec2(13_000, 4_000));
+        }
 
         return world;
     }

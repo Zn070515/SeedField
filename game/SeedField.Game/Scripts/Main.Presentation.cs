@@ -1,0 +1,360 @@
+using Godot;
+using SeedField.Simulation;
+
+namespace SeedField.Game;
+
+public partial class Main
+{
+    private readonly Dictionary<long, FacingState> _facing = new();
+    private readonly List<VisualEntitySnapshot> _visibleEntities = new();
+    private VisualAssetCatalog _visualCatalog = null!;
+    private EntityVisual _entityVisual = null!;
+    private CoreVisual _coreVisual = null!;
+    private long _bootstrapUntilTick;
+    private bool _tacticalVisible;
+    private bool _debugVisible;
+    private bool _classicVisuals;
+    private bool _omniscientDebug;
+
+    private readonly record struct FacingState(Vec2 Position, int Direction);
+
+    private void InitializePresentation(string[] arguments)
+    {
+        _classicVisuals = arguments.Contains("--classic-visuals");
+        _omniscientDebug = arguments.Contains("--omniscient-debug");
+        if (_classicVisuals)
+        {
+            return;
+        }
+
+        _visualCatalog = VisualAssetCatalog.Load();
+        _entityVisual = new EntityVisual(_visualCatalog);
+        _coreVisual = new CoreVisual(_visualCatalog);
+        UpdateFacing();
+    }
+
+    private void UpdateFacing()
+    {
+        RefreshVisibleEntities();
+
+        var alive = new HashSet<long>();
+        foreach (var entity in _visibleEntities)
+        {
+            alive.Add(entity.EntityId);
+            var direction = _facing.TryGetValue(entity.EntityId, out var previous)
+                ? DirectionFor(previous.Position, entity.Position, previous.Direction)
+                : 0;
+            _facing[entity.EntityId] = new FacingState(entity.Position, direction);
+        }
+
+        foreach (var stale in _facing.Keys.Where(id => !alive.Contains(id)).ToList())
+        {
+            _facing.Remove(stale);
+        }
+    }
+
+    private void RefreshVisibleEntities()
+    {
+        _visibleEntities.Clear();
+        if (_classicVisuals)
+        {
+            return;
+        }
+
+        var own = _world.EnumerateEntities()
+            .Where(entity => entity.RegionId == "frontier" &&
+                             string.Equals(entity.CivilizationId, "A", StringComparison.Ordinal))
+            .Select(VisualEntitySnapshot.From);
+        _visibleEntities.AddRange(own);
+
+        if (_omniscientDebug)
+        {
+            _visibleEntities.AddRange(_world.EnumerateEntities()
+                .Where(entity => entity.RegionId == "frontier" &&
+                                 !string.Equals(entity.CivilizationId, "A", StringComparison.Ordinal))
+                .Select(VisualEntitySnapshot.From));
+        }
+        else
+        {
+            var observation = ObservationBuilder.Build(_world, "A");
+            _visibleEntities.AddRange(observation.Entities
+                .Where(entity => !entity.IsSelf && entity.RegionId == "frontier")
+                .Select(VisualEntitySnapshot.FromObserved));
+        }
+
+        _visibleEntities.Sort((left, right) => left.Position.Y.CompareTo(right.Position.Y));
+    }
+
+    private static int DirectionFor(Vec2 previous, Vec2 current, int fallback)
+    {
+        var dx = current.X - previous.X;
+        var dy = current.Y - previous.Y;
+        if (dx == 0 && dy == 0)
+        {
+            return fallback;
+        }
+
+        var angle = Mathf.Atan2(dy, dx);
+        return Mathf.PosMod(Mathf.RoundToInt(angle / Mathf.Tau * 8f), 8);
+    }
+
+    private int FacingFor(long entityId) =>
+        _facing.TryGetValue(entityId, out var facing) ? facing.Direction : 0;
+
+    private void DrawPresentationEntities()
+    {
+        var snapshots = _visibleEntities;
+
+        if (_tacticalVisible)
+        {
+            TacticalOverlay.DrawEntityRanges(this, snapshots, Map, MapScale);
+            TacticalOverlay.DrawControlPointRadii(
+                this,
+                _world.ControlPoints.Values.Select(point => (
+                    point.Position,
+                    point.RadiusMm)),
+                Map,
+                MapScale);
+        }
+
+        foreach (var entity in snapshots)
+        {
+            _entityVisual.Draw(
+                this,
+                entity,
+                Map(entity.Position),
+                FacingFor(entity.EntityId),
+                _debugVisible,
+                _debugVisible);
+        }
+
+        if (_tacticalVisible)
+        {
+            TacticalOverlay.DrawIds(this, snapshots, Map);
+        }
+    }
+
+    private void DrawPresentationCore()
+    {
+        var snapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
+        var state = CoreVisualStateRules.Classify(
+            snapshot,
+            _world.Tick,
+            _bootstrapUntilTick);
+        if (state == CoreVisualState.Absent)
+        {
+            return;
+        }
+
+        // The core lives in its own region (core-a). Show it in a separate
+        // region panel and connect it to the frontier staging exit; never place
+        // the core body itself on frontier coordinates.
+        var origin = new Vector2(24, 214);
+        DrawRect(new Rect2(origin, new Vector2(156, 230)), new Color(0.03f, 0.06f, 0.10f, 0.94f));
+        DrawRect(new Rect2(origin, new Vector2(156, 230)), new Color(0.55f, 0.42f, 0.20f, 0.85f), false, 1f);
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(12, 20),
+            "CORE-A REGION",
+            HorizontalAlignment.Left,
+            -1,
+            12,
+            new Color(0.95f, 0.78f, 0.40f));
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(12, 36),
+            "separate from frontier",
+            HorizontalAlignment.Left,
+            -1,
+            9,
+            new Color(0.55f, 0.66f, 0.74f));
+
+        var corePosition = origin + new Vector2(78, 136);
+        var exit = Map(new Vec2(2_000, 4_000));
+        DrawLine(
+            origin + new Vector2(150, 136),
+            exit,
+            new Color(0.95f, 0.78f, 0.40f, 0.55f),
+            1.4f);
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(154, 130),
+            "EXIT",
+            HorizontalAlignment.Left,
+            -1,
+            9,
+            new Color(0.95f, 0.78f, 0.40f, 0.80f));
+        _coreVisual.Draw(
+            this,
+            corePosition,
+            state,
+            _world.Tick,
+            _debugVisible);
+    }
+
+    private void DrawPresentationDebug()
+    {
+        DebugOverlay.Draw(
+            this,
+            new Vector2(900, 130),
+            _world.EnumerateEntities().Count(),
+            _world.Tick);
+    }
+
+    private void TrackPresentationEvent(SimulationEvent simulationEvent)
+    {
+        if (simulationEvent is EntityBootstrapped bootstrapped &&
+            string.Equals(bootstrapped.CivilizationId, "A", StringComparison.Ordinal))
+        {
+            _bootstrapUntilTick = bootstrapped.Tick + 12;
+        }
+    }
+
+    private CoreVisualState CurrentCoreState()
+    {
+        var snapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
+        return CoreVisualStateRules.Classify(
+            snapshot,
+            _world.Tick,
+            _bootstrapUntilTick);
+    }
+
+    private void RunModuleSwapSmoke()
+    {
+        ResetScenario(peaceful: true, preRun: false);
+        var scout = _world.EnumerateEntities().FirstOrDefault(entity =>
+            entity.CivilizationId == "A" &&
+            string.Equals(entity.BlueprintId, "scout", StringComparison.Ordinal));
+        if (scout is null)
+        {
+            GD.Print("MODULE_SWAP_SMOKE missing scout ok=False");
+            GetTree().Quit(1);
+            return;
+        }
+
+        var before = VisualEntitySnapshot.From(scout).VisualAssetName;
+        var latest = _world.Workshop.GetVersions("scout").Last();
+        var result = _engine.ExecuteDeploymentCommand(
+            new UpgradeCommand("A", scout.Id, latest));
+        var after = _world.FindEntity(scout.Id) is { } upgraded
+            ? VisualEntitySnapshot.From(upgraded).VisualAssetName
+            : "<destroyed>";
+        var ok = result.Success &&
+                 before == "worker_frame_sensor" &&
+                 after == "worker_frame_weapon";
+        GD.Print(
+            $"MODULE_SWAP_SMOKE before={before} after={after} " +
+            $"version={latest.Version} ok={ok}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private void RunVisibilitySmoke()
+    {
+        ResetScenario(peaceful: false, preRun: true);
+        RefreshVisibleEntities();
+        var hidden = _visibleEntities.All(entity => entity.EntityId != 4);
+        _omniscientDebug = true;
+        RefreshVisibleEntities();
+        var omniscient = _visibleEntities.Any(entity => entity.EntityId == 4);
+        var ok = hidden && omniscient;
+        GD.Print(
+            $"VISIBILITY_SMOKE unseenB4={hidden} omniscientB4={omniscient} ok={ok}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private void RunCoreStateSmoke()
+    {
+        ResetScenario(peaceful: true, preRun: true);
+        var idle = CurrentCoreState();
+        var core = _world.Cores["A"];
+        var region = _world.Regions[core.RegionId];
+        var recovery = _engine.ExecuteRecoveryCommand(new BootstrapCoreCommand(
+            "A",
+            Scenarios.EmergencyRecovery,
+            new Vec2(region.WidthMm / 2, region.HeightMm / 2)));
+        if (recovery.Event is not null)
+        {
+            TrackPresentationEvent(recovery.Event);
+        }
+
+        var bootstrap = CurrentCoreState();
+        for (var index = 0; index < 13; index++)
+        {
+            StepOnce();
+        }
+
+        var regenerating = CurrentCoreState();
+        ResetScenario(peaceful: false, preRun: true);
+        var besieged = CurrentCoreState();
+        var ok = idle == CoreVisualState.Idle &&
+                 bootstrap == CoreVisualState.Bootstrap &&
+                 regenerating == CoreVisualState.Regenerating &&
+                 besieged == CoreVisualState.Besieged;
+        GD.Print(
+            $"CORE_STATE_SMOKE idle={idle} bootstrap={bootstrap} " +
+            $"regenerating={regenerating} besieged={besieged} ok={ok}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private void ConfigureCoreStateScenario(string state)
+    {
+        switch (state)
+        {
+            case "regenerating":
+                ResetScenario(peaceful: true, preRun: true);
+                RecoverCoreForPresentation();
+                for (var index = 0; index < 13; index++)
+                {
+                    StepOnce();
+                }
+
+                break;
+            case "bootstrap":
+                ResetScenario(peaceful: true, preRun: true);
+                RecoverCoreForPresentation();
+                break;
+            case "besieged":
+                ResetScenario(peaceful: false, preRun: true);
+                break;
+            default:
+                ResetScenario(peaceful: true, preRun: true);
+                break;
+        }
+
+        _capturePath = $"res://screenshots/art-core-{state}.png";
+        _paused = true;
+        _captureRequested = true;
+    }
+
+    private void RecoverCoreForPresentation()
+    {
+        var core = _world.Cores["A"];
+        var region = _world.Regions[core.RegionId];
+        var result = _engine.ExecuteRecoveryCommand(new BootstrapCoreCommand(
+            "A",
+            Scenarios.EmergencyRecovery,
+            new Vec2(region.WidthMm / 2, region.HeightMm / 2)));
+        if (result.Event is not null)
+        {
+            TrackPresentationEvent(result.Event);
+        }
+    }
+
+    private void ConfigureModuleSwapCapture()
+    {
+        ResetScenario(peaceful: true, preRun: false);
+        var scout = _world.EnumerateEntities().FirstOrDefault(entity =>
+            entity.CivilizationId == "A" &&
+            string.Equals(entity.BlueprintId, "scout", StringComparison.Ordinal));
+        if (scout is not null)
+        {
+            var latest = _world.Workshop.GetVersions("scout").Last();
+            _engine.ExecuteDeploymentCommand(new UpgradeCommand("A", scout.Id, latest));
+            UpdateFacing();
+        }
+
+        _capturePath = "res://screenshots/art-module-swap.png";
+        _paused = true;
+        _captureRequested = true;
+    }
+}

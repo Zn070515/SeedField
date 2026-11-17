@@ -10,6 +10,7 @@ TestResults/
 .godot/
 game/.godot/
 *.translation
+game/SeedField.Game/screenshots/*.png.import
 
 # IDE
 .idea/
@@ -19,6 +20,9 @@ game/.godot/
 logs/
 *.tmp
 *.log
+__pycache__/
+*.pyc
+*.pyo
 
 # Local agent worktrees
 .claude/worktrees/
@@ -26,3 +30,4 @@ logs/
 # OS
 Thumbs.db
 .DS_Store
+art/generated/

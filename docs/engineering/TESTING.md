@@ -26,8 +26,9 @@
 | 分层 | `SeedField.Simulation` 不引用 Godot / Runtime.Js / 任何 ProjectReference |
 | 仿真确定性 | Simulation 源码禁止 `System.Random`、`new Random(`、`DateTime.Now`、`Stopwatch`、`Thread.Sleep`、`Task.Delay`、`double/float/decimal`、`Godot` |
 | 测试质量 | 禁止 `Skip=`、`Thread.Sleep`、`Task.Delay`、无种子 `new Random()`、墙钟时间、`Assert.True(true)`、`Assert.False(false)`、`#pragma warning disable` |
-| 运行产物 | `git ls-files` 不得包含 bin/obj/logs/TestResults/.godot/密钥/数据库/日志/zip |
-| `.gitignore` | 必须继续覆盖 bin/obj/logs/TestResults/.godot 等根目录 |
+| 运行产物 | `git ls-files` 不得包含 bin/obj/logs/TestResults/.godot/密钥/数据库/日志/zip/`__pycache__`/`*.pyc` |
+| `.gitignore` | 必须继续覆盖 bin/obj/logs/TestResults/.godot/`__pycache__`/`*.pyc` 等根目录 |
+| 美术资产 | 清单 schemaVersion 3；PNG 解码校验 alpha 覆盖率/留边/`alphaBBox`/pivot/方向帧/pass/SHA-256；`python tools/build_art_manifest.py --check` 防清单过期 |
 | ADR | 每个 ADR 被 README 或实现基线链接；ADR-0013+ 必须有 `## 非目标` 与 `## 后果` |
 | 文档链接 | 本地 Markdown 链接必须解析到文件/目录 |
 | 计划 | `docs/superpowers/plans/*.md` 必须有 Verification 与 Rollback，且无 TBD/TODO |
