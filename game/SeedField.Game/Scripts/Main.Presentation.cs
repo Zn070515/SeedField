@@ -8,6 +8,7 @@ public partial class Main
     private readonly Dictionary<long, FacingState> _facing = new();
     private readonly Dictionary<long, long> _hitUntil = new();
     private readonly List<VisualEntitySnapshot> _visibleEntities = new();
+    private readonly HashSet<long> _visibleEntityIds = new();
     private VisualAssetCatalog _visualCatalog = null!;
     private EntityVisual _entityVisual = null!;
     private CoreVisual _coreVisual = null!;
@@ -70,6 +71,7 @@ public partial class Main
     private void RefreshVisibleEntities()
     {
         _visibleEntities.Clear();
+        _visibleEntityIds.Clear();
         if (_classicVisuals)
         {
             return;
@@ -97,7 +99,15 @@ public partial class Main
         }
 
         _visibleEntities.Sort((left, right) => left.Position.Y.CompareTo(right.Position.Y));
+        foreach (var entity in _visibleEntities)
+        {
+            _visibleEntityIds.Add(entity.EntityId);
+        }
     }
+
+    private bool IsPlayerVisible(SimulationEvent simulationEvent) =>
+        _classicVisuals ||
+        PlayerEventFilter.IsVisible(simulationEvent, _visibleEntityIds, _omniscientDebug);
 
     private static int DirectionFor(Vec2 previous, Vec2 current, int fallback)
     {
@@ -132,6 +142,12 @@ public partial class Main
                 .ToList());
     }
 
+    private bool GridClosed(string civilizationId) =>
+        !_world.PowerGridStates.TryGetValue(
+            ("frontier", civilizationId),
+            out var grid) ||
+        !grid.BreakerOpen;
+
     private void DrawPresentationNetworks()
     {
         var frontier = _world.Regions["frontier"];
@@ -141,8 +157,8 @@ public partial class Main
             _world.ControlPoints.Values
                 .Select(point => (point.Position, point.OwnerCivilizationId))
                 .ToList(),
-            frontier.GetEnergy("A") > 0,
-            frontier.GetEnergy("B") > 0,
+            frontier.GetEnergy("A") > 0 && GridClosed("A"),
+            frontier.GetEnergy("B") > 0 && GridClosed("B"),
             _world.Tick,
             _tacticalVisible);
     }
@@ -304,6 +320,43 @@ public partial class Main
         GD.Print(
             $"MODULE_SWAP_SMOKE before={before} after={after} " +
             $"version={latest.Version} ok={ok}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private void RunEventVisibilitySmoke()
+    {
+        var visible = new HashSet<long> { 1, 2 };
+        var hiddenShot = new ShotFired(
+            10, new EntityId(3), new EntityId(4), 5, new Vec2(0, 0), new Vec2(1, 1), 2);
+        var visibleShot = new ShotFired(
+            10, new EntityId(1), new EntityId(2), 5, new Vec2(0, 0), new Vec2(1, 1), 2);
+        var hiddenDestroyed = new EntityDestroyed(10, new EntityId(4));
+        var hiddenMessage = new MessageQueued(
+            10, 1, new EntityId(4), "A", "frontier", "contact", 12, 1, "direct");
+        var visibleMessage = new MessageQueued(
+            10, 2, new EntityId(1), "A", "frontier", "contact", 12, 1, "direct");
+        var hiddenOk = !PlayerEventFilter.IsVisible(hiddenShot, visible, false) &&
+                       PlayerEventFilter.IsVisible(visibleShot, visible, false) &&
+                       !PlayerEventFilter.IsVisible(hiddenDestroyed, visible, false) &&
+                       !visible.Contains(hiddenMessage.FromEntityId.Value) &&
+                       PlayerEventFilter.IsVisible(visibleMessage, visible, false) &&
+                       PlayerEventFilter.IsVisible(hiddenShot, visible, true);
+        GD.Print($"EVENT_VISIBILITY_SMOKE hiddenShot/visibleShot/destroyed/message ok={hiddenOk}");
+        GetTree().Quit(hiddenOk ? 0 : 1);
+    }
+
+    private void RunPowerVisualSmoke()
+    {
+        ResetScenario(peaceful: true, preRun: false);
+        var before = GridClosed("A");
+        var result = _engine.ExecutePowerCommand(new OpenBreakerCommand("A", "frontier"));
+        var after = GridClosed("A");
+        var powered = _world.Regions["frontier"].GetEnergy("A") > 0 && after;
+        var ok = before && result.Success && !after && !powered;
+        GD.Print(
+            $"POWER_VISUAL_SMOKE before={before} after={after} " +
+            $"energy={_world.Regions["frontier"].GetEnergy("A")} powered={powered} " +
+            $"ok={ok}");
         GetTree().Quit(ok ? 0 : 1);
     }
 

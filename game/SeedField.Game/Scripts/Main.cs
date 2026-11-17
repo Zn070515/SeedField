@@ -110,6 +110,18 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--event-visibility-smoke"))
+        {
+            RunEventVisibilitySmoke();
+            return;
+        }
+
+        if (arguments.Contains("--power-visual-smoke"))
+        {
+            RunPowerVisualSmoke();
+            return;
+        }
+
         if (arguments.Contains("--visibility-smoke"))
         {
             RunVisibilitySmoke();

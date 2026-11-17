@@ -186,7 +186,7 @@ public partial class Main : Node2D
     {
         foreach (var item in _history)
         {
-            if (item.Event is not ShotFired shot)
+            if (item.Event is not ShotFired shot || !IsPlayerVisible(item.Event))
             {
                 continue;
             }
@@ -211,7 +211,9 @@ public partial class Main : Node2D
     {
         foreach (var item in _history)
         {
-            if (item.Event is not MessageQueued queued)
+            if (item.Event is not MessageQueued queued ||
+                !IsPlayerVisible(item.Event) ||
+                !_visibleEntityIds.Contains(queued.FromEntityId.Value))
             {
                 continue;
             }
@@ -243,6 +245,7 @@ public partial class Main : Node2D
             var mate = _world.EnumerateEntities().FirstOrDefault(entity =>
                 entity.RegionId == "frontier" &&
                 entity.Id != sender.Id &&
+                _visibleEntityIds.Contains(entity.Id.Value) &&
                 string.Equals(entity.CivilizationId, sender.CivilizationId, StringComparison.Ordinal));
 
             if (mate is not null)
@@ -389,7 +392,7 @@ public partial class Main : Node2D
         DrawString(HudFont, new Vector2(24, 612), "EVENT LOG · authoritative simulation events", HorizontalAlignment.Left, -1, 12, Muted);
 
         var entries = _history
-            .Where(item => IsLogworthy(item.Event))
+            .Where(item => IsLogworthy(item.Event) && IsPlayerVisible(item.Event))
             .TakeLast(5)
             .ToList();
 
