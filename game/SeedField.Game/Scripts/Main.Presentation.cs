@@ -6,6 +6,7 @@ namespace SeedField.Game;
 public partial class Main
 {
     private readonly Dictionary<long, FacingState> _facing = new();
+    private readonly Dictionary<long, long> _hitUntil = new();
     private readonly List<VisualEntitySnapshot> _visibleEntities = new();
     private VisualAssetCatalog _visualCatalog = null!;
     private EntityVisual _entityVisual = null!;
@@ -16,7 +17,7 @@ public partial class Main
     private bool _classicVisuals;
     private bool _omniscientDebug;
 
-    private readonly record struct FacingState(Vec2 Position, int Direction);
+    private readonly record struct FacingState(Vec2 Position, int Direction, bool Moving);
 
     private void InitializePresentation(string[] arguments)
     {
@@ -41,15 +42,20 @@ public partial class Main
         foreach (var entity in _visibleEntities)
         {
             alive.Add(entity.EntityId);
-            var direction = _facing.TryGetValue(entity.EntityId, out var previous)
+            var previous = _facing.GetValueOrDefault(entity.EntityId);
+            var moving = previous != default &&
+                         (previous.Position.X != entity.Position.X ||
+                          previous.Position.Y != entity.Position.Y);
+            var direction = previous != default
                 ? DirectionFor(previous.Position, entity.Position, previous.Direction)
                 : 0;
-            _facing[entity.EntityId] = new FacingState(entity.Position, direction);
+            _facing[entity.EntityId] = new FacingState(entity.Position, direction, moving);
         }
 
         foreach (var stale in _facing.Keys.Where(id => !alive.Contains(id)).ToList())
         {
             _facing.Remove(stale);
+            _hitUntil.Remove(stale);
         }
     }
 
@@ -101,6 +107,40 @@ public partial class Main
     private int FacingFor(long entityId) =>
         _facing.TryGetValue(entityId, out var facing) ? facing.Direction : 0;
 
+    private bool MovingFor(long entityId) =>
+        _facing.TryGetValue(entityId, out var facing) && facing.Moving;
+
+    private bool HitFlashFor(long entityId) =>
+        _hitUntil.TryGetValue(entityId, out var until) && _world.Tick < until;
+
+    private void DrawWorldBackdrop()
+    {
+        WorldBackdrop.Draw(
+            this,
+            Map,
+            MapScale,
+            _world.ControlPoints.Values
+                .Select(point => (point.Position, point.RadiusMm, point.OwnerCivilizationId))
+                .ToList());
+    }
+
+    private void DrawPresentationNetworks()
+    {
+        var frontier = _world.Regions["frontier"];
+        var coreSnapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
+        NetworkVisual.Draw(
+            this,
+            Map,
+            MapScale,
+            _world.ControlPoints.Values
+                .Select(point => (point.Position, point.OwnerCivilizationId))
+                .ToList(),
+            frontier.GetEnergy("A") > 0 || coreSnapshot.EnergyReserve > 0,
+            frontier.GetEnergy("B") > 0,
+            _world.Tick,
+            _tacticalVisible);
+    }
+
     private void DrawPresentationEntities()
     {
         var snapshots = _visibleEntities;
@@ -125,7 +165,10 @@ public partial class Main
                 Map(entity.Position),
                 FacingFor(entity.EntityId),
                 _debugVisible,
-                _debugVisible);
+                _debugVisible,
+                _world.Tick,
+                MovingFor(entity.EntityId),
+                HitFlashFor(entity.EntityId));
         }
 
         if (_tacticalVisible)
@@ -171,11 +214,12 @@ public partial class Main
 
         var corePosition = origin + new Vector2(78, 136);
         var exit = Map(new Vec2(2_000, 4_000));
-        DrawLine(
+        NetworkVisual.DrawCoreExit(
+            this,
             origin + new Vector2(150, 136),
             exit,
-            new Color(0.95f, 0.78f, 0.40f, 0.55f),
-            1.4f);
+            CoreRecoveryDiagnosticsBuilder.Build(_world, "A").EnergyReserve > 0,
+            _world.Tick);
         DrawString(
             ThemeDB.FallbackFont,
             origin + new Vector2(154, 130),
@@ -207,6 +251,15 @@ public partial class Main
             string.Equals(bootstrapped.CivilizationId, "A", StringComparison.Ordinal))
         {
             _bootstrapUntilTick = bootstrapped.Tick + 12;
+        }
+
+        if (simulationEvent is ShotFired shot)
+        {
+            _hitUntil[shot.TargetId.Value] = shot.Tick + 6;
+        }
+        else if (simulationEvent is EntityDestroyed destroyed)
+        {
+            _hitUntil.Remove(destroyed.EntityId.Value);
         }
     }
 

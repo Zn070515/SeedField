@@ -8,7 +8,7 @@ namespace SeedField.Game;
 /// </summary>
 public sealed class EntityVisual
 {
-    public const float ScreenScale = 0.22f;
+    public const float ScreenScale = 0.26f;
 
     private readonly VisualAssetCatalog _catalog;
 
@@ -23,7 +23,10 @@ public sealed class EntityVisual
         Vector2 position,
         int direction,
         bool showId,
-        bool debug)
+        bool debug,
+        long tick,
+        bool moving,
+        bool hitFlash)
     {
         var frame = _catalog.Get(entity.VisualAssetName, direction);
         if (frame is null)
@@ -59,13 +62,16 @@ public sealed class EntityVisual
             3f,
             healthFraction,
             new Color(0.35f, 0.95f, 0.50f));
-        DrawBar(
-            canvas,
-            position + new Vector2(-15f, size * 0.40f),
-            30f,
-            2.5f,
-            energyFraction,
-            new Color(0.35f, 0.75f, 1f));
+        if (entity.EnergyCapacity > 0)
+        {
+            DrawBar(
+                canvas,
+                position + new Vector2(-15f, size * 0.40f),
+                30f,
+                2.5f,
+                energyFraction,
+                new Color(0.35f, 0.75f, 1f));
+        }
 
         if (showId)
         {
@@ -77,6 +83,18 @@ public sealed class EntityVisual
                 -1,
                 11,
                 new Color(0.82f, 0.90f, 0.96f));
+        }
+
+        if (hitFlash)
+        {
+            canvas.DrawArc(
+                position,
+                size * 0.34f,
+                0,
+                Mathf.Tau,
+                40,
+                new Color(1f, 0.30f, 0.22f, 0.9f),
+                2.2f);
         }
 
         if (debug)

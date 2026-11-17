@@ -50,6 +50,13 @@ public sealed class CoreVisual
             64,
             new Color(color, pulse),
             2.4f);
+        for (var index = 0; index < 5; index++)
+        {
+            var angle = tick * 0.015f + index * Mathf.Tau / 5f;
+            var socket = position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) *
+                size * 0.55f;
+            canvas.DrawCircle(socket, 3.2f, new Color(color, 0.85f));
+        }
         canvas.DrawString(
             ThemeDB.FallbackFont,
             position + new Vector2(-52f, size * 0.62f + 16f),

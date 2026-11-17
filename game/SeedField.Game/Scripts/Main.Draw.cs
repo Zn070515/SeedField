@@ -9,10 +9,19 @@ public partial class Main : Node2D
     public override void _Draw()
     {
         DrawRect(new Rect2(0, 0, ViewWidth, ViewHeight), Background);
+        if (!_classicVisuals)
+        {
+            DrawWorldBackdrop();
+        }
 
         DrawGrid();
         DrawStagingZones();
         DrawControlPoint();
+        if (!_classicVisuals)
+        {
+            DrawPresentationNetworks();
+        }
+
         if (_classicVisuals)
         {
             DrawRanges();
@@ -282,7 +291,7 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 62),
-            "Gate 2 visual slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
+            "Gate 3 world slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
             HorizontalAlignment.Left,
             -1,
             12,
