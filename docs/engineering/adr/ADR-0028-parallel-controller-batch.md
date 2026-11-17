@@ -114,13 +114,17 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
 ## 后果
 
 - 控制器阶段会占用多个核心；默认 `Environment.ProcessorCount`，可用
-  `--parallel-dof` 覆盖。CI 门禁使用 100 台 `--budget-ms 40`。
+  `--parallel-dof` 覆盖。CI 门禁用 100 台 `--budget-ms 60` 并断言
+  `gcServer=True`，既防时间回退也防 Server GC 配置丢失。
 - 脚本若依赖真实墙钟或跨设备共享可变全局，本来就不满足确定性契约；并行不改变
   这一点，也不提供跨设备共享状态。
 - WorkerController 走独立进程/IPC，不进入此批处理；其隔离边界保持不变。
 - Jint 的 `Timeout` 是墙钟安全阀，不是结算规则。并行负载下同一脚本可能更早触发
   超时；`MaxStatements` 仍是确定性的语句上限。超时只产生 Fault，不改变世界规则。
 - 不要在已有的并行区域里再调用批处理；嵌套并行会放大线程争用。
+- 若调用方本身是线程池线程，批处理与并行观测自动回退串行，避免
+  `Parallel.For` 阻塞造成线程池饥饿（xUnit 在小型 CI runner 上最容易触发）。
+  游戏主线程与 Headless 主线程不受影响。
 - 性能门禁使用宽松阈值吸收 CI 共享 runner 噪声；开发机基线记录在证据文件。
 
 ## 回滚

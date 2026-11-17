@@ -37,7 +37,13 @@ public sealed class ControllerBatchRunner
         }
 
         var degree = Math.Min(_options.MaxDegreeOfParallelism, items.Count);
-        var parallel = items.Count >= _options.MinBatchSize && degree > 1;
+        // Blocking a thread-pool thread on Parallel.For can starve the pool when
+        // many callers do it at once (xUnit with a small CI runner is the usual
+        // case). The game loop runs on the main thread, so it keeps parallelism;
+        // pool callers degrade to the sequential path instead of deadlocking.
+        var parallel = items.Count >= _options.MinBatchSize &&
+                       degree > 1 &&
+                       !Thread.CurrentThread.IsThreadPoolThread;
         LastUsedDegreeOfParallelism = parallel ? degree : 1;
 
         if (parallel)

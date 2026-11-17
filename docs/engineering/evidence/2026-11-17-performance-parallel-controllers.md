@@ -113,8 +113,12 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark
 # BUDGET_EXCEEDED ... ; exit code 2
 ```
 
-CI 使用 `--parallel-dof 8 --budget-ms 120`，阈值远高于开发机基线，吸收共享
-runner 的噪声；开发机基线以上表为准。
+CI 使用 100 台 `--budget-ms 60` 并断言 `gcServer=True`：阈值吸收共享 runner
+的噪声，`gcServer` 断言防止 Server GC 配置丢失；开发机基线以上表为准。
+夜间/本地可用 `--parallel-dof` 覆盖并行度做进一步实验。
+
+线程池调用方会自动回退串行：xUnit 在 4 核 runner 上并发跑测试时，
+`Parallel.For` 阻塞测试线程会造成线程池饥饿；守护后 CI 测试不再挂起。
 
 ## 6. 未验证与风险
 

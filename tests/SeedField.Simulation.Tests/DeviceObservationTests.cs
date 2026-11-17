@@ -87,7 +87,8 @@ public sealed class DeviceObservationTests
         var serial = ids
             .Select(id => engine.BuildControllerObservation(id))
             .ToList();
-        var parallel = engine.BuildControllerObservations(ids, maxDegreeOfParallelism: 4);
+        var parallel = RunOnDedicatedThread(
+            () => engine.BuildControllerObservations(ids, maxDegreeOfParallelism: 4));
 
         Assert.Equal(serial.Count, parallel.Length);
         for (var index = 0; index < serial.Count; index++)
@@ -163,6 +164,31 @@ public sealed class DeviceObservationTests
         Assert.Empty(engine.BuildDeviceObservation(new EntityId(1)).Messages);
         var remote = engine.BuildDeviceObservation(new EntityId(2));
         Assert.Equal("contact", Assert.Single(remote.Messages).Topic);
+    }
+
+    private static T RunOnDedicatedThread<T>(Func<T> action)
+    {
+        T result = default!;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                result = action();
+            }
+            catch (Exception exception)
+            {
+                error = exception;
+            }
+        });
+        thread.Start();
+        thread.Join();
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return result;
     }
 
     private static EntityDefinition Unit(

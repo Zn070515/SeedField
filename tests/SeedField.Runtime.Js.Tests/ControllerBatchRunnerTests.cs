@@ -81,7 +81,7 @@ public sealed class ControllerBatchRunnerTests
                 engine.BuildControllerObservation(controller.EntityId)))
             .ToList();
 
-        var decisions = runner.Run(items);
+        var decisions = RunOnDedicatedThread(() => runner.Run(items));
 
         Assert.Equal(8, runner.LastUsedDegreeOfParallelism);
         for (var index = 0; index < decisions.Length; index++)
@@ -107,10 +107,49 @@ public sealed class ControllerBatchRunnerTests
     }
 
     [Fact]
+    public void PoolThreadFallsBackToSequentialToAvoidStarvation()
+    {
+        var builder = new WorldBuilder().AddRegion("r0", 10_000, 10_000);
+        for (var id = 1L; id <= 8; id++)
+        {
+            builder.AddEntity(Unit(id, "A"));
+        }
+
+        var world = builder.Build();
+        var engine = new SimulationEngine(world);
+        var controllers = Enumerable.Range(1, 8)
+            .Select(id => Device(new EntityId(id), "A"))
+            .ToList();
+        var runner = new ControllerBatchRunner(new ControllerExecutionOptions
+        {
+            MinBatchSize = 1,
+            MaxDegreeOfParallelism = 4,
+        });
+        var items = controllers
+            .Select((controller, index) => new ControllerBatchItem(
+                index,
+                controller,
+                engine.BuildControllerObservation(controller.EntityId)))
+            .ToList();
+
+        var degree = Task.Run(() =>
+        {
+            runner.Run(items);
+            return runner.LastUsedDegreeOfParallelism;
+        }).GetAwaiter().GetResult();
+
+        Assert.Equal(1, degree);
+        foreach (var controller in controllers)
+        {
+            controller.Dispose();
+        }
+    }
+
+    [Fact]
     public void ParallelBatchMatchesSequentialOnScriptedCombat()
     {
-        var sequential = RunScenario(parallel: false);
-        var parallel = RunScenario(parallel: true);
+        var sequential = RunOnDedicatedThread(() => RunScenario(parallel: false));
+        var parallel = RunOnDedicatedThread(() => RunScenario(parallel: true));
 
         Assert.Equal(sequential.Hash, parallel.Hash);
         Assert.Equal(sequential.Events, parallel.Events);
@@ -189,6 +228,31 @@ public sealed class ControllerBatchRunnerTests
             Weapon: new WeaponModule(RangeMm: 5_000, Damage: 7, EnergyCost: 1, CooldownTicks: 1),
             Drive: new DriveModule(SpeedMmPerTick: 100, EnergyCostPerMove: 1),
             Comm: new CommModule(LatencyTicks: 1, EnergyCostPerMessage: 1));
+
+    private static T RunOnDedicatedThread<T>(Func<T> action)
+    {
+        T result = default!;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                result = action();
+            }
+            catch (Exception exception)
+            {
+                error = exception;
+            }
+        });
+        thread.Start();
+        thread.Join();
+        if (error is not null)
+        {
+            throw error;
+        }
+
+        return result;
+    }
 
     private static DeviceControllerSlot Device(EntityId id, string civilizationId) =>
         new(
