@@ -280,7 +280,7 @@ public partial class Main : Node2D
         QueueRedraw();
     }
 
-    private void ResetScenario()
+    private void ResetScenario(bool peaceful = false, bool preRun = true)
     {
         _slotA?.Dispose();
         _slotB?.Dispose();
@@ -292,7 +292,7 @@ public partial class Main : Node2D
 
         _opponentDiplomacy = OpponentDiplomacyProfiles.ForPackage(
             _opponent.Manifest.PackageId);
-        _world = Scenarios.BuildWorld();
+        _world = Scenarios.BuildWorld(peaceful);
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
         _slotB = new ControllerSlot("B", _opponent.ProgramSource);
@@ -302,8 +302,20 @@ public partial class Main : Node2D
         _faultCount = 0;
         _tickAccumulator = 0;
         _workshopSpawnIndex = 0;
+        _facing.Clear();
+        _bootstrapUntilTick = 0;
 
-        PreRunToCombat();
+        if (preRun)
+        {
+            PreRunToCombat();
+        }
+        else
+        {
+            _status = peaceful ? "peaceful scenario · ready" : "scenario · ready";
+            PruneHistory();
+        }
+
+        UpdateFacing();
         RefreshDiplomacyIfReady();
         RefreshPowerIfReady();
         RefreshRecoveryIfReady();
@@ -343,6 +355,7 @@ public partial class Main : Node2D
         foreach (var simulationEvent in result.Events)
         {
             _history.Add(new TimedEvent(result.Tick, simulationEvent));
+            TrackPresentationEvent(simulationEvent);
 
             if (simulationEvent is EntityDeployed deployedEvent &&
                 _world.FindEntity(deployedEvent.EntityId) is { } deployedEntity &&
@@ -353,6 +366,7 @@ public partial class Main : Node2D
         }
 
         RunOpponentDiplomacy();
+        UpdateFacing();
         PruneHistory();
         RefreshRecoveryIfReady();
     }

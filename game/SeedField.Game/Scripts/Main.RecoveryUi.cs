@@ -109,6 +109,7 @@ public partial class Main : Node2D
         if (result.Event is not null)
         {
             _history.Add(new TimedEvent(result.Event.Tick, result.Event));
+            TrackPresentationEvent(result.Event);
         }
 
         _recovery.SetStatus(
