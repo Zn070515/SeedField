@@ -9,3 +9,7 @@ shape/material references only.
 - Final assets are procedural Blender sources under `art/blender/`; see
   `art/README.md`.
 - Do not use these images to claim the visual slice is complete.
+- FLUX.1-dev's model license includes non-commercial terms; generated outputs are
+  used here only as internal shape/material reference. Before any commercial
+  production use of generated output, verify Black Forest Labs' current license
+  and record the conclusion in `docs/art/SOURCE.md`.

@@ -60,24 +60,32 @@ assets/
 
 ```json
 {
-  "schemaVersion": 1,
-  "assetId": "seed_core.v1",
-  "kind": "structure",
-  "source": "assets/source/core/seed_core.blend",
-  "diffuse": "assets/runtime/core/seed_core.png",
-  "renderProfile": "orthographic-angled-test-a",
-  "camera": "ART_CAMERA",
-  "canvasSizePx": [512, 512],
-  "pivotPx": [256, 360],
-  "logicalFootprintMm": [1800, 1800],
-  "directions": 1,
+  "schemaVersion": 2,
+  "assetId": "seed_core.oblique.v0",
+  "kind": "style-test",
+  "route": "oblique",
+  "source": "art/blender/render_style_assets.py",
+  "resolutionPx": [512, 512],
+  "footprintPx": 420,
+  "pivot": [0.5, 0.84],
+  "directions": 2,
+  "status": "style-test-not-final",
+  "files": [
+    {
+      "path": "style_oblique/seed_core_oblique_000.png",
+      "sha256": "...",
+      "alphaBBox": [62, 138, 450, 431]
+    }
+  ],
   "states": ["idle", "regenerating", "bootstrap", "besieged"],
-  "license": "original-procedural-source",
-  "attribution": "internal SeedField asset pipeline"
+  "license": "original-procedural-source"
 }
 ```
 
-`pivotPx`、尺寸和状态需与实际导出一致；不要让 Agent 随机指定参考图片像素当实际资产坐标。
+`pivot` 是归一化锚点：斜俯视取正面帧 alpha 底边中心，严格俯视取画布中心。
+`alphaBBox`、尺寸、方向帧与状态必须和实际导出一致，由
+`ArtAssetTests` 解码 PNG 校验；不要让 Agent 随机指定参考图片像素当实际资产坐标。
+清单由 `python tools/build_art_manifest.py` 生成，不手工抄哈希。
 
 ## 5. 首批三资产要满足
 
