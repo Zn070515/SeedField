@@ -33,6 +33,44 @@
   自定义转义/字段顺序的风险高于收益。
 - 共享观察 DTO 快照：观测仅占 1000 台的约 7 ms，收益有限，暂不做。
 
+## 0b. 硬件与运行时实验（Ryzen 9 9950X / Zen 5 / 双 CCD）
+
+采样：`dotnet-trace collect --profile dotnet-sampled-thread-time`，1000 台、
+3000 Tick。worker 侧热点（inclusive）：
+
+| 方法 | inclusive |
+|---|---:|
+| `JsController.RunJson` | 50.8% |
+| `DeviceControllerSlot.Decide` | 58.7% |
+| `JsonParser.ParseJsonObject` | 28.4% |
+| `ArrayInstance.Filter`（脚本） | 7.5% |
+| `ObservationBuilder.BuildForEntity` | 5.2% |
+| `JsonSerializer.Serialize` | 1.8% |
+
+原始采样里 `Thread.PollGC` 与信号量等待占多数，是 Server GC 后台线程的空闲
+等待，不是 worker 成本。结论：worker 侧由 **Jint JSON.parse + 解释执行** 主导，
+观测与序列化已不是瓶颈。
+
+稳态（1000 台，3000 Tick）：**15.7 ms/tick（63.8 ticks/s）**，峰值 424 MiB；
+10 Tick 的 50–60 ms 包含 JIT/GC 预热，游戏长时间运行应看稳态值。
+
+| 实验 | 结果 | 决定 |
+|---|---|---|
+| Server GC | 1000 台 10 Tick ~104→60 ms；稳态 15.7 ms | 保留 |
+| DOF=逻辑核数 | 1000 台 32 线程优于 16 | 保留 |
+| 绑定单 CCD（0xFFFF / 0xFFFF0000） | 26.5 ms vs 未绑定 22.3 ms | 放弃（更慢） |
+| 偶数/奇数逻辑核绑定 | 与未绑定持平 | 放弃 |
+| 结果数组 64B 填充（伪共享） | 差异在噪声内 | 放弃 |
+| `TieredCompilation=0` | 300 Tick 18.9 vs 20.8，但 3000 Tick 21.2 vs 15.7 | 放弃（PGO 长期胜出） |
+| `GCgen0size=32MB` / 8MB | 26–28 / 20–21 ms | 放弃 |
+| `GCHeapCount=16 + NoAffinitize` | 39 ms 但 735 MiB | 放弃（内存代价） |
+| `gcConcurrent=0` | 方差大、暂停风险 | 放弃 |
+| 大页 `GCLargePages=1` | 进程未正常启动（权限） | 未验证 |
+
+Zen 5 的 CCD 绑定没有收益；AVX-512 对 Jint 的标量解释器没有可接入的热点。
+硬件层面的有效杠杆是 **Server GC + 默认分层 PGO + 逻辑核并行度**；进一步
+提升需要改脚本模型或换成原生 JS 引擎，属于独立 ADR。
+
 ## 1. 探针结论（仓库外，Jint 4.18.0）
 
 在 `%TEMP%` 的独立探针中复现 100 个独立 `Engine` 与真实观测尺寸：
