@@ -44,7 +44,9 @@ public sealed record PowerPolicySaveData(
     long ReserveEnergy,
     int HighPriorityThreshold = 0,
     long PriorityReserveEnergy = 0,
-    bool AutoReconnect = true);
+    bool AutoReconnect = true,
+    int BreakerTripLimit = 0,
+    long BreakerMaintenanceMaterialCost = 0);
 
 public sealed record GridCapacitySaveData(
     string RegionId,
@@ -55,7 +57,9 @@ public sealed record PowerGridStateSaveData(
     string RegionId,
     string CivilizationId,
     bool BreakerOpen,
-    bool ManualHold);
+    bool ManualHold,
+    int TripCount = 0,
+    bool MaintenanceRequired = false);
 
 public sealed record TreatyProposalSaveData(
     long Id,

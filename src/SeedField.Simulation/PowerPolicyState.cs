@@ -11,13 +11,17 @@ public sealed class PowerPolicyState
         long reserveEnergy,
         int highPriorityThreshold,
         long priorityReserveEnergy,
-        bool autoReconnect)
+        bool autoReconnect,
+        int breakerTripLimit = 0,
+        long breakerMaintenanceMaterialCost = 0)
     {
         CivilizationId = civilizationId;
         ReserveEnergy = reserveEnergy;
         HighPriorityThreshold = highPriorityThreshold;
         PriorityReserveEnergy = priorityReserveEnergy;
         AutoReconnect = autoReconnect;
+        BreakerTripLimit = breakerTripLimit;
+        BreakerMaintenanceMaterialCost = breakerMaintenanceMaterialCost;
     }
 
     public string CivilizationId { get; }
@@ -31,4 +35,12 @@ public sealed class PowerPolicyState
     public long PriorityReserveEnergy { get; internal set; }
 
     public bool AutoReconnect { get; internal set; }
+
+    /// <summary>
+    /// Fault trips before the breaker locks out for maintenance. Zero disables lockout.
+    /// </summary>
+    public int BreakerTripLimit { get; internal set; }
+
+    /// <summary>Material charged when the host performs breaker maintenance.</summary>
+    public long BreakerMaintenanceMaterialCost { get; internal set; }
 }

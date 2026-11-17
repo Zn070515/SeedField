@@ -15,6 +15,8 @@ public partial class PowerPanel : PanelContainer
 
     public event Action<string>? CloseBreakerRequested;
 
+    public event Action<string>? MaintainBreakerRequested;
+
     private Label _summary = null!;
     private ItemList _regions = null!;
     private ItemList _links = null!;
@@ -67,9 +69,10 @@ public partial class PowerPanel : PanelContainer
         breakerRow.AddThemeConstantOverride("separation", 8);
         breakerRow.AddChild(ActionButton("OPEN BREAKER", OnOpenBreaker));
         breakerRow.AddChild(ActionButton("CLOSE BREAKER", OnCloseBreaker));
+        breakerRow.AddChild(ActionButton("MAINTAIN", OnMaintainBreaker));
         var breakerHint = new Label
         {
-            Text = "Manual open holds the breaker open until manually closed.",
+            Text = "Manual open holds until closed. MAINTAIN clears trip wear and lockout.",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         breakerHint.AddThemeFontSizeOverride("font_size", 11);
@@ -109,12 +112,17 @@ public partial class PowerPanel : PanelContainer
     public void Refresh(WorldState world, string civilizationId)
     {
         var diagnostics = PowerGridDiagnosticsBuilder.Build(world, civilizationId);
+        var tripLimit = diagnostics.BreakerTripLimit == 0
+            ? "∞"
+            : diagnostics.BreakerTripLimit.ToString();
         _summary.Text =
             $"gen {diagnostics.TotalGenerationPerTick}/t · " +
             $"grid {diagnostics.TotalGridEnergy} · " +
             $"local {diagnostics.TotalLocalEnergy}/{diagnostics.TotalCapacity} · " +
             $"res {diagnostics.ReserveEnergy}+{diagnostics.PriorityReserveEnergy} · " +
             $"pri≥{diagnostics.HighPriorityThreshold} · " +
+            $"trip≤{tripLimit} · " +
+            $"maint {diagnostics.BreakerMaintenanceMaterialCost}M · " +
             $"transit {diagnostics.TotalInTransitPower}";
 
         _regionIds.Clear();
@@ -129,13 +137,20 @@ public partial class PowerPanel : PanelContainer
             var capacity = region.GridCapacity == long.MaxValue
                 ? "∞"
                 : region.GridCapacity.ToString();
+            var breaker = region.BreakerMaintenanceRequired
+                ? "MAINT!"
+                : region.BreakerOpen
+                    ? "BREAKER"
+                    : region.IsBlackedOut
+                        ? "BLACKOUT"
+                        : region.IsLoadShed ? "SHED" : "OK";
             _regions.AddItem(
                 $"{region.RegionId} · G{region.GridEnergy}/{capacity} · " +
                 $"gen{region.GenerationPerTick}/t · " +
                 $"L{region.LocalEnergy}/{region.LocalCapacity} · " +
                 $"comp{region.ComponentRegionCount} · {connected} · " +
                 $"res{region.ReserveEnergy} · in{region.IncomingPower} · " +
-                $"{(region.BreakerOpen ? "BREAKER" : region.IsBlackedOut ? "BLACKOUT" : region.IsLoadShed ? "SHED" : "OK")}");
+                $"trips{region.BreakerTripCount} · {breaker}");
         }
 
         if (_regions.ItemCount > 0)
@@ -193,6 +208,18 @@ public partial class PowerPanel : PanelContainer
         }
 
         CloseBreakerRequested?.Invoke(_regionIds[index]);
+    }
+
+    private void OnMaintainBreaker()
+    {
+        var index = SelectedRegionIndex();
+        if (index < 0)
+        {
+            SetStatus("select a region first", true);
+            return;
+        }
+
+        MaintainBreakerRequested?.Invoke(_regionIds[index]);
     }
 
     private int SelectedRegionIndex()

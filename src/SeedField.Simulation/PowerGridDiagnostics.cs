@@ -17,7 +17,9 @@ public sealed record RegionPowerSnapshot(
     long OutgoingPower,
     long GridCapacity,
     long GridFree,
-    bool BreakerOpen);
+    bool BreakerOpen,
+    int BreakerTripCount,
+    bool BreakerMaintenanceRequired);
 
 public sealed record PowerGridDiagnostics(
     string CivilizationId,
@@ -30,7 +32,9 @@ public sealed record PowerGridDiagnostics(
     long TotalInTransitPower,
     int HighPriorityThreshold,
     long PriorityReserveEnergy,
-    bool AutoReconnect);
+    bool AutoReconnect,
+    int BreakerTripLimit,
+    long BreakerMaintenanceMaterialCost);
 
 /// <summary>
 /// Derived diagnostics only. It never mutates the world and does not change simulation
@@ -50,6 +54,10 @@ public static class PowerGridDiagnosticsBuilder
         var highPriorityThreshold = hasPolicy ? policy!.HighPriorityThreshold : 0;
         var priorityReserveEnergy = hasPolicy ? policy!.PriorityReserveEnergy : 0;
         var autoReconnect = !hasPolicy || policy!.AutoReconnect;
+        var breakerTripLimit = hasPolicy ? policy!.BreakerTripLimit : 0;
+        var breakerMaintenanceMaterialCost = hasPolicy
+            ? policy!.BreakerMaintenanceMaterialCost
+            : 0;
 
         var components = PowerGridTopology.BuildComponents(world);
         var componentByRegion = new Dictionary<string, IReadOnlyList<string>>(
@@ -114,10 +122,13 @@ public static class PowerGridDiagnosticsBuilder
             var gridEnergy = region.GetEnergy(civilizationId);
             var gridCapacity = region.GetGridCapacity(civilizationId);
             var gridFree = region.GetGridFree(civilizationId);
-            var breakerOpen = world.PowerGridStates.TryGetValue(
+            var hasGridState = world.PowerGridStates.TryGetValue(
                 (region.Id, civilizationId),
-                out var gridState) &&
-                gridState.BreakerOpen;
+                out var gridState);
+            var breakerOpen = hasGridState && gridState!.BreakerOpen;
+            var breakerTripCount = hasGridState ? gridState!.TripCount : 0;
+            var breakerMaintenanceRequired =
+                hasGridState && gridState!.MaintenanceRequired;
             var incomingPower = world.InTransitPower
                 .Where(shipment =>
                     string.Equals(
@@ -157,7 +168,9 @@ public static class PowerGridDiagnosticsBuilder
                 outgoingPower,
                 gridCapacity,
                 gridFree,
-                breakerOpen));
+                breakerOpen,
+                breakerTripCount,
+                breakerMaintenanceRequired));
 
             totalGrid += region.GetEnergy(civilizationId);
             totalLocal += localEnergy;
@@ -181,6 +194,8 @@ public static class PowerGridDiagnosticsBuilder
                 .Sum(shipment => shipment.Amount),
             highPriorityThreshold,
             priorityReserveEnergy,
-            autoReconnect);
+            autoReconnect,
+            breakerTripLimit,
+            breakerMaintenanceMaterialCost);
     }
 }

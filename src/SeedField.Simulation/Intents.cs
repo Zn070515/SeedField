@@ -115,6 +115,7 @@ public enum SimulationErrorCode
     TradeNotFound,
     NegotiationExhausted,
     GridFull,
+    BreakerMaintenanceRequired,
 }
 
 public sealed record IntentResult(

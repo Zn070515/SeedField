@@ -91,6 +91,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-recovery
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-limits
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-breaker
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-maintenance
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交，F4 电网
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -142,6 +143,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`power grid`](docs/engineering/evidence/2026-11-17-power-grid.md) | 自动潮流、断供诊断、F4 面板与存档 v9 证据 |
 | [`power recovery`](docs/engineering/evidence/2026-11-17-power-recovery.md) | 溢出入网、自动取电/储备、潮流延迟损耗与 v10 证据 |
 | [`power limits & breaker`](docs/engineering/evidence/2026-11-17-power-limits-breaker.md) | 容量、优先级、净额补偿、持久断路器与 v11 证据 |
+| [`power maintenance`](docs/engineering/evidence/2026-11-17-power-maintenance.md) | 抢占式取电、跳闸维护锁定、F4 MAINTAIN 与 v12 证据 |
 
 ## 工程原则
 
@@ -153,7 +155,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | 核心区不可毁 | 外部全毁后必须能在有限步骤内复建最低实体 |
 | 不可信脚本 | Jint 限制不是 OS 沙箱；未完成进程隔离前不开放第三方包执行 |
 | 证据导向 | 不把未执行的测试、未验证的画面或演示数值写成已确认结论 |
+| 篇幅受控 | 单个 `.cs` / `.md` ≤ 600 行；`SeedField.Repository.Tests` 自动失败超限文件 |
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；电网已有溢出入网、自动取电/储备、容量上限、优先级取电、延迟/损耗净额补偿与持久断路器，但断路器无维护成本/故障概率，优先级不是抢占式重排，也没有多电压/潮流方程；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器与维护锁定，但断路器无随机故障概率/维护时长，也没有多电压/潮流方程；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

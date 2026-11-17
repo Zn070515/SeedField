@@ -329,22 +329,29 @@ public static class WorldStateHasher
         }
 
         Append(ref hash, world.PowerPolicies.Count);
-        foreach (var policy in world.PowerPolicies.Values)
+        foreach (var policy in world.PowerPolicies.Values
+                     .OrderBy(policy => policy.CivilizationId, StringComparer.Ordinal))
         {
             Append(ref hash, policy.CivilizationId);
             Append(ref hash, policy.ReserveEnergy);
             Append(ref hash, policy.HighPriorityThreshold);
             Append(ref hash, policy.PriorityReserveEnergy);
             Append(ref hash, policy.AutoReconnect);
+            Append(ref hash, policy.BreakerTripLimit);
+            Append(ref hash, policy.BreakerMaintenanceMaterialCost);
         }
 
         Append(ref hash, world.PowerGridStates.Count);
-        foreach (var state in world.PowerGridStates.Values)
+        foreach (var state in world.PowerGridStates.Values
+                     .OrderBy(state => state.RegionId, StringComparer.Ordinal)
+                     .ThenBy(state => state.CivilizationId, StringComparer.Ordinal))
         {
             Append(ref hash, state.RegionId);
             Append(ref hash, state.CivilizationId);
             Append(ref hash, state.BreakerOpen);
             Append(ref hash, state.ManualHold);
+            Append(ref hash, state.TripCount);
+            Append(ref hash, state.MaintenanceRequired);
         }
 
         Append(ref hash, world.Cores.Count);

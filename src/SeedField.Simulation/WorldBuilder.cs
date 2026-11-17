@@ -146,7 +146,9 @@ public sealed class WorldBuilder
         long reserveEnergy,
         int highPriorityThreshold = 0,
         long priorityReserveEnergy = 0,
-        bool autoReconnect = true)
+        bool autoReconnect = true,
+        int breakerTripLimit = 0,
+        long breakerMaintenanceMaterialCost = 0)
     {
         if (string.IsNullOrWhiteSpace(civilizationId))
         {
@@ -155,7 +157,9 @@ public sealed class WorldBuilder
 
         if (reserveEnergy < 0 ||
             highPriorityThreshold < 0 ||
-            priorityReserveEnergy < 0)
+            priorityReserveEnergy < 0 ||
+            breakerTripLimit < 0 ||
+            breakerMaintenanceMaterialCost < 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(reserveEnergy),
@@ -175,7 +179,9 @@ public sealed class WorldBuilder
                 reserveEnergy,
                 highPriorityThreshold,
                 priorityReserveEnergy,
-                autoReconnect));
+                autoReconnect,
+                breakerTripLimit,
+                breakerMaintenanceMaterialCost));
         return this;
     }
 

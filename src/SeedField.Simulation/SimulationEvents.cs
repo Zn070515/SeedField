@@ -289,6 +289,19 @@ public sealed record PowerRestored(
     string RegionId,
     long GridEnergy) : SimulationEvent(Tick);
 
+/// <summary>The breaker reached its trip limit and stays open until maintained.</summary>
+public sealed record BreakerLockedOut(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    int TripCount) : SimulationEvent(Tick);
+
+public sealed record BreakerMaintained(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long MaterialSpent) : SimulationEvent(Tick);
+
 public sealed record PowerShipped(
     long Tick,
     long PowerShipmentId,

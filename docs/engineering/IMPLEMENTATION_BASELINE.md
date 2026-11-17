@@ -89,12 +89,14 @@ tests/SeedField.Runtime.Js.Tests/
 - 自动电力潮流：`RegionLink.PowerPerTick` 定义自动潮流通量；按文明/连通分量把电网库存从盈余区经确定性 BFS 移到缺口区，受共享链路容量限制；非活动区也参与；`PowerFlowed`/`PowerShortfall`、停电诊断、F4 面板、存档 v9（ADR-0010）。
 - 电力恢复与网络细化：本地满电后的发电溢出入网；设备移动/攻击/发信自动从电网取电，受每文明 `ReserveEnergy` 恢复储备约束；`PowerLatencyTicks`/`PowerLossPercent` 支持在途电力与损耗；诊断显示储备/负载抑制/在途；存档 v10（ADR-0011）。
 - 电网容量与断路器：每区域/文明 `GridCapacity` 限制入网与到账，溢出/到账超限浪费；`PowerModule.Priority` + 策略阈值实现优先级取电；损耗按净额反推毛额；区域/文明持久 `BreakerOpen`/`ManualHold`，电网归零跳闸、储备恢复自动合闸或宿主手动合闸；F4 面板可开关断路器；存档 v11（ADR-0012）。
+- 抢占式优先级与断路器维护：同一 Tick 按 `PowerModule.Priority` 降序处理意图，结果仍按输入顺序返回；`TripCount`/`MaintenanceRequired` 持久化，达到 `BreakerTripLimit` 后锁定所有合闸路径；`MaintainBreakerCommand` 扣材料并清除锁定；F4 显示 trips/MAINT 并提供 MAINTAIN；存档 v12（ADR-0013）。
+- 工程约束 Lint：`tests/SeedField.Repository.Tests` 校验 `.cs`/`.md` 600 行上限、`net10.0`、仿真核心无 Godot、ADR 命名、设计基线 MANIFEST 完整性。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、断路器维护/故障、抢占式优先级重排、多电压/潮流方程。
+- 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、随机断路器故障/维护时长、多电压/潮流方程。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -357,7 +359,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
-3. 电网后续：断路器维护/故障、抢占式优先级、多电压/潮流方程与断路器自动化策略。
+3. 电网后续：随机断路器故障/维护时长、多电压/潮流方程与断路器自动化策略。
 4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。
 5. 存档迁移/回放与离线文明包。
 6. 可视切片：正式相机/缩放、核心区与网络表现、诊断面板。
