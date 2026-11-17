@@ -59,23 +59,23 @@ game/SeedField.Game/screenshots/art-main-near.png
 - 真实 Main 渲染路径（backdrop + 网络 + 精灵 + HUD）的视觉负载基准：
 
 ```text
-MAIN_BENCH devices=10  sprites=13  fps=610.6 processMs=3.85 drawCalls=312
-MAIN_BENCH devices=50  sprites=53  fps=479.2 processMs=4.34 drawCalls=432
-MAIN_BENCH devices=100 sprites=103 fps=373.7 processMs=4.52 drawCalls=582
+MAIN_BENCH devices=10  sprites=13  fps=601.4 processMs=4.50 drawCalls=315
+MAIN_BENCH devices=50  sprites=53  fps=468.0 processMs=4.99 drawCalls=435
+MAIN_BENCH devices=100 sprites=103 fps=367.3 processMs=5.01 drawCalls=585
 ```
 
 开发机 RTX 4090、vsync 关闭、1280×720。`MAIN_BENCH` 只含表现层 decoy；
 `MAIN_JINT_BENCH` 才是真实仿真 + Jint 控制器：
 
 ```text
-10 devices:  1.89 ms/tick   528.7 ticks/s   process 13.59 ms   faults 0
-50 devices: 22.73 ms/tick    44.0 ticks/s   process 51.48 ms   faults 0
-100 devices: 68.95 ms/tick   14.5 ticks/s   process 97.77 ms   faults 0
+10 devices:  1.89 ms/tick   529.1 ticks/s   process 13.97 ms   faults 0
+50 devices: 20.13 ms/tick    49.7 ticks/s   process 52.25 ms   faults 0
+100 devices: 47.40 ms/tick   21.1 ticks/s   process 106.80 ms  faults 0
 ```
 
-- 100 台 Jint 混合负载已明显低于目标 6 Tick/s 的余量，说明下一阶段应先优化控制器/观察构建，
-  而不是继续堆渲染。
-- 100 台表现层在 far/mid/near 分别约 404/377/373 FPS；GPU 不是当前瓶颈。
+- 100 台 Jint 混合负载约 21 Tick/s，高于 6 Tick/s 目标但 process 已达 ~107 ms；下一阶段应先优化
+  控制器/观察构建与批量执行，而不是继续堆渲染。
+- 100 台表现层在 far/mid/near 分别约 394/359/368 FPS；GPU 不是当前瓶颈。
 - **最低配置未验证**：当前只有 RTX 4090 / OpenGL compatibility；没有第二台低端 GPU 或
   OS 级 GPU 限制，不能把开发机数据写成最低配置结论。
 

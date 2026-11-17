@@ -49,6 +49,7 @@
 | `seed_core_regenerating/bootstrap/besieged` | 各 1 方向，共享 pivot/footprint |
 | `direction_probe` | drill 工体 16 方向，只用于对比 |
 | `ruin_block` / `pipe_junction` / `wreck_hauler` | topdown 世界道具，512px |
+| `terrain_concrete` / `terrain_road` | 可平铺工业地表/道路，512px + normal |
 
 - 模块切换走现有 `UpgradeCommand`：scout v1（sensor）→ Mk3（sensor+weapon），
   Main 精灵从 sensor 变为 weapon；`--module-swap-smoke` 断言。
