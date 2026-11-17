@@ -197,8 +197,13 @@ internal static partial class Program
         return 0;
     }
 
-    private static int RunParallelJintBenchmark(int devices, int dof, double budgetMs)
+    private static int RunParallelJintBenchmark(
+        int devices,
+        int dof,
+        double budgetMs,
+        int ticks = 10)
     {
+        ticks = Math.Max(1, ticks);
         var world = BuildPerfWorld(devices);
         var engine = new SimulationEngine(world);
         var options = new ControllerExecutionOptions
@@ -236,7 +241,7 @@ internal static partial class Program
         var decideMs = 0.0;
         var stepMs = 0.0;
         var total = Stopwatch.StartNew();
-        for (var tick = 0; tick < 10; tick++)
+        for (var tick = 0; tick < ticks; tick++)
         {
             var phase = Stopwatch.StartNew();
             var observations = engine.BuildControllerObservations(
@@ -273,7 +278,6 @@ internal static partial class Program
             controller.Dispose();
         }
 
-        const int ticks = 10;
         var avgTickMs = total.Elapsed.TotalMilliseconds / ticks;
         var peakMb = Process.GetCurrentProcess().PeakWorkingSet64 / (1024.0 * 1024.0);
         Console.WriteLine(

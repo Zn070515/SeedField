@@ -63,9 +63,10 @@ internal static partial class Program
         {
             var dof = ReadIntFlag(args, "--parallel-dof", 0);
             var budget = ReadDoubleFlag(args, "--budget-ms", 0);
+            var ticks = ReadIntFlag(args, "--ticks", 10);
             return parallelInvalid
                 ? 2
-                : RunParallelJintBenchmark(parallelDevices, dof, budget);
+                : RunParallelJintBenchmark(parallelDevices, dof, budget, ticks);
         }
 
         if (TryReadBenchmarkDevices(
