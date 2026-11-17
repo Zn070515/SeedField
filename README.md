@@ -96,6 +96,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --recovery-quota
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --core-siege
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --wrecks
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --combat-rng
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --package-check <dir> --allow-unsigned --confirm
