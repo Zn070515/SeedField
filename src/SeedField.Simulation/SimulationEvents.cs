@@ -289,12 +289,16 @@ public sealed record PowerRestored(
     string RegionId,
     long GridEnergy) : SimulationEvent(Tick);
 
-/// <summary>The breaker reached its trip limit and stays open until maintained.</summary>
+/// <summary>
+/// The breaker stays open until maintained. Reason is "fault" for a random fault or
+/// "trips" when the configured trip limit was reached.
+/// </summary>
 public sealed record BreakerLockedOut(
     long Tick,
     string CivilizationId,
     string RegionId,
-    int TripCount) : SimulationEvent(Tick);
+    int TripCount,
+    string Reason) : SimulationEvent(Tick);
 
 public sealed record BreakerMaintained(
     long Tick,

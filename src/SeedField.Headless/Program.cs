@@ -92,6 +92,11 @@ internal static partial class Program
             return RunPowerMaintenanceDemo();
         }
 
+        if (args.Contains("--power-fault"))
+        {
+            return RunPowerFaultDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 

@@ -20,6 +20,9 @@ logs/
 *.tmp
 *.log
 
+# Local agent worktrees
+.claude/worktrees/
+
 # OS
 Thumbs.db
 .DS_Store

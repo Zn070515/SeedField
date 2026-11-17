@@ -49,11 +49,12 @@ public static partial class WorldSaveSerializer
                 policyData.PriorityReserveEnergy < 0 ||
                 policyData.BreakerTripLimit < 0 ||
                 policyData.BreakerMaintenanceMaterialCost < 0 ||
+                policyData.BreakerFaultChancePercent is < 0 or > 100 ||
                 world.PowerPolicies.ContainsKey(policyData.CivilizationId))
             {
                 throw Invalid(
                     "INVALID_POWER_POLICY",
-                    "Power policy ids must be unique and non-empty; policy values must be non-negative.");
+                    "Power policy ids must be unique and non-empty; values must be non-negative and fault chance 0..100.");
             }
 
             world.PowerPolicies.Add(
@@ -65,7 +66,8 @@ public static partial class WorldSaveSerializer
                     policyData.PriorityReserveEnergy,
                     policyData.AutoReconnect,
                     policyData.BreakerTripLimit,
-                    policyData.BreakerMaintenanceMaterialCost));
+                    policyData.BreakerMaintenanceMaterialCost,
+                    policyData.BreakerFaultChancePercent));
         }
 
         foreach (var capacityData in data.GridCapacities ?? Array.Empty<GridCapacitySaveData>())

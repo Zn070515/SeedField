@@ -430,7 +430,8 @@ public partial class Main : Node2D
                 $"in {restored.RegionId} (grid {restored.GridEnergy})",
             BreakerLockedOut lockedOut =>
                 $"t{lockedOut.Tick,4}  {lockedOut.CivilizationId} breaker locked out " +
-                $"in {lockedOut.RegionId} after {lockedOut.TripCount} trips",
+                $"in {lockedOut.RegionId} after {lockedOut.TripCount} trips " +
+                $"({lockedOut.Reason})",
             BreakerMaintained maintained =>
                 $"t{maintained.Tick,4}  {maintained.CivilizationId} breaker maintained " +
                 $"in {maintained.RegionId} (−{maintained.MaterialSpent}M)",

@@ -123,6 +123,7 @@ public partial class PowerPanel : PanelContainer
             $"pri≥{diagnostics.HighPriorityThreshold} · " +
             $"trip≤{tripLimit} · " +
             $"maint {diagnostics.BreakerMaintenanceMaterialCost}M · " +
+            $"fault {diagnostics.BreakerFaultChancePercent}% · " +
             $"transit {diagnostics.TotalInTransitPower}";
 
         _regionIds.Clear();

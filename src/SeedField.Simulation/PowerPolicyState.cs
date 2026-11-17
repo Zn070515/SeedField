@@ -13,7 +13,8 @@ public sealed class PowerPolicyState
         long priorityReserveEnergy,
         bool autoReconnect,
         int breakerTripLimit = 0,
-        long breakerMaintenanceMaterialCost = 0)
+        long breakerMaintenanceMaterialCost = 0,
+        int breakerFaultChancePercent = 0)
     {
         CivilizationId = civilizationId;
         ReserveEnergy = reserveEnergy;
@@ -22,6 +23,7 @@ public sealed class PowerPolicyState
         AutoReconnect = autoReconnect;
         BreakerTripLimit = breakerTripLimit;
         BreakerMaintenanceMaterialCost = breakerMaintenanceMaterialCost;
+        BreakerFaultChancePercent = breakerFaultChancePercent;
     }
 
     public string CivilizationId { get; }
@@ -43,4 +45,10 @@ public sealed class PowerPolicyState
 
     /// <summary>Material charged when the host performs breaker maintenance.</summary>
     public long BreakerMaintenanceMaterialCost { get; internal set; }
+
+    /// <summary>
+    /// Chance per fault trip (0..100) that the breaker requires maintenance at once.
+    /// Zero consumes no random values.
+    /// </summary>
+    public int BreakerFaultChancePercent { get; internal set; }
 }

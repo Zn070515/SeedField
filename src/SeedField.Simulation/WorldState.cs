@@ -88,6 +88,9 @@ public sealed class WorldState
 
     public long NextPowerShipmentId { get; internal set; } = 1;
 
+    /// <summary>Authoritative reproducible randomness; seed and state are hashed/saved.</summary>
+    public DeterministicRandom Random { get; } = new();
+
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Explicit bidirectional region links.</summary>

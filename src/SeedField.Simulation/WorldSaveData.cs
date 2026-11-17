@@ -37,7 +37,9 @@ public sealed record WorldSaveData(
     PowerShipmentSaveData[]? PowerShipments = null,
     long NextPowerShipmentId = 0,
     GridCapacitySaveData[]? GridCapacities = null,
-    PowerGridStateSaveData[]? PowerGridStates = null);
+    PowerGridStateSaveData[]? PowerGridStates = null,
+    ulong RandomSeed = 0,
+    ulong RandomState = 0);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
@@ -46,7 +48,8 @@ public sealed record PowerPolicySaveData(
     long PriorityReserveEnergy = 0,
     bool AutoReconnect = true,
     int BreakerTripLimit = 0,
-    long BreakerMaintenanceMaterialCost = 0);
+    long BreakerMaintenanceMaterialCost = 0,
+    int BreakerFaultChancePercent = 0);
 
 public sealed record GridCapacitySaveData(
     string RegionId,

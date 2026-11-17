@@ -34,7 +34,8 @@ public sealed record PowerGridDiagnostics(
     long PriorityReserveEnergy,
     bool AutoReconnect,
     int BreakerTripLimit,
-    long BreakerMaintenanceMaterialCost);
+    long BreakerMaintenanceMaterialCost,
+    int BreakerFaultChancePercent);
 
 /// <summary>
 /// Derived diagnostics only. It never mutates the world and does not change simulation
@@ -57,6 +58,9 @@ public static class PowerGridDiagnosticsBuilder
         var breakerTripLimit = hasPolicy ? policy!.BreakerTripLimit : 0;
         var breakerMaintenanceMaterialCost = hasPolicy
             ? policy!.BreakerMaintenanceMaterialCost
+            : 0;
+        var breakerFaultChancePercent = hasPolicy
+            ? policy!.BreakerFaultChancePercent
             : 0;
 
         var components = PowerGridTopology.BuildComponents(world);
@@ -196,6 +200,7 @@ public static class PowerGridDiagnosticsBuilder
             priorityReserveEnergy,
             autoReconnect,
             breakerTripLimit,
-            breakerMaintenanceMaterialCost);
+            breakerMaintenanceMaterialCost,
+            breakerFaultChancePercent);
     }
 }

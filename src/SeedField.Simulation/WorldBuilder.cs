@@ -8,6 +8,12 @@ public sealed class WorldBuilder
 {
     private readonly WorldState _world = new();
 
+    public WorldBuilder SetRandomSeed(ulong seed)
+    {
+        _world.Random.Reset(seed);
+        return this;
+    }
+
     public WorldBuilder AddRegion(string id, int widthMm, int heightMm, bool isCoreRegion = false)
     {
         if (_world.Regions.ContainsKey(id))
@@ -148,7 +154,8 @@ public sealed class WorldBuilder
         long priorityReserveEnergy = 0,
         bool autoReconnect = true,
         int breakerTripLimit = 0,
-        long breakerMaintenanceMaterialCost = 0)
+        long breakerMaintenanceMaterialCost = 0,
+        int breakerFaultChancePercent = 0)
     {
         if (string.IsNullOrWhiteSpace(civilizationId))
         {
@@ -159,11 +166,12 @@ public sealed class WorldBuilder
             highPriorityThreshold < 0 ||
             priorityReserveEnergy < 0 ||
             breakerTripLimit < 0 ||
-            breakerMaintenanceMaterialCost < 0)
+            breakerMaintenanceMaterialCost < 0 ||
+            breakerFaultChancePercent is < 0 or > 100)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(reserveEnergy),
-                "Power policy values must be non-negative.");
+                "Power policy values must be non-negative; fault chance must be 0..100.");
         }
 
         if (_world.PowerPolicies.ContainsKey(civilizationId))
@@ -181,7 +189,8 @@ public sealed class WorldBuilder
                 priorityReserveEnergy,
                 autoReconnect,
                 breakerTripLimit,
-                breakerMaintenanceMaterialCost));
+                breakerMaintenanceMaterialCost,
+                breakerFaultChancePercent));
         return this;
     }
 

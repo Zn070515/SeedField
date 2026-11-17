@@ -27,6 +27,8 @@ public static class WorldStateHasher
         Append(ref hash, world.NextTreatyId);
         Append(ref hash, world.NextTradeOfferId);
         Append(ref hash, world.NextPowerShipmentId);
+        Append(ref hash, world.Random.Seed);
+        Append(ref hash, world.Random.State);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -339,6 +341,7 @@ public static class WorldStateHasher
             Append(ref hash, policy.AutoReconnect);
             Append(ref hash, policy.BreakerTripLimit);
             Append(ref hash, policy.BreakerMaintenanceMaterialCost);
+            Append(ref hash, policy.BreakerFaultChancePercent);
         }
 
         Append(ref hash, world.PowerGridStates.Count);
@@ -464,6 +467,9 @@ public static class WorldStateHasher
             hash *= Prime;
         }
     }
+
+    private static void Append(ref ulong hash, ulong value) =>
+        Append(ref hash, unchecked((long)value));
 
     private static void Append(ref ulong hash, int value) => Append(ref hash, (long)value);
 

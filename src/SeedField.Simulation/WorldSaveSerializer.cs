@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static partial class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 12;
+    public const int CurrentSchemaVersion = 13;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -74,6 +74,7 @@ public static partial class WorldSaveSerializer
             NextEntityId = data.NextEntityId,
             NextMessageId = data.NextMessageId,
         };
+        world.Random.Restore(data.RandomSeed, data.RandomState);
 
         LoadRegions(world, data);
         LoadLinks(world, data);

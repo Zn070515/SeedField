@@ -357,6 +357,41 @@ internal static partial class Program
         return ok ? 0 : 1;
     }
 
+    private static int RunPowerFaultDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetRandomSeed(42)
+            .SetPowerPolicy(
+                "A",
+                reserveEnergy: 0,
+                breakerFaultChancePercent: 100)
+            .AddEntity(PowerNode(1, "r0", energy: 0, capacity: 100, generation: 0))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var trip = engine.Step(Array.Empty<Intent>());
+        var state = world.PowerGridStates[("r0", "A")];
+        var lockedOut = trip.Events.OfType<BreakerLockedOut>().SingleOrDefault();
+        var fault = lockedOut is { Reason: "fault" } &&
+                    state.MaintenanceRequired &&
+                    world.Random.State != 42;
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+        var randomOk = loaded.Random.Seed == 42 &&
+                       loaded.Random.State == world.Random.State;
+        var hashOk = WorldStateHasher.Compute(world) == WorldStateHasher.Compute(loaded);
+
+        var ok = fault && randomOk && hashOk;
+        Console.WriteLine(
+            $"POWER_FAULT lockedOut={lockedOut is not null} " +
+            $"reason={lockedOut?.Reason} maintenance={state.MaintenanceRequired} " +
+            $"seed={world.Random.Seed} state={world.Random.State:x16} " +
+            $"randomOk={randomOk} hashOk={hashOk} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
     private static EntityDefinition PowerNode(
         long id,
         string regionId,

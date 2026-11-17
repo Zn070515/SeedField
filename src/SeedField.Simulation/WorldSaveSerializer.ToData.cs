@@ -178,7 +178,8 @@ public static partial class WorldSaveSerializer
                     policy.PriorityReserveEnergy,
                     policy.AutoReconnect,
                     policy.BreakerTripLimit,
-                    policy.BreakerMaintenanceMaterialCost))
+                    policy.BreakerMaintenanceMaterialCost,
+                    policy.BreakerFaultChancePercent))
                 .ToArray(),
             world.InTransitPower
                 .OrderBy(shipment => shipment.Id)
@@ -213,6 +214,8 @@ public static partial class WorldSaveSerializer
                     state.ManualHold,
                     state.TripCount,
                     state.MaintenanceRequired))
-                .ToArray());
+                .ToArray(),
+            world.Random.Seed,
+            world.Random.State);
     }
 }

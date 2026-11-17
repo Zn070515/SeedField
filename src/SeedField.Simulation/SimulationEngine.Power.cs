@@ -265,17 +265,30 @@ public sealed partial class SimulationEngine
                     load.CivilizationId,
                     load.RegionId));
 
-                var limit = BreakerTripLimit(load.CivilizationId);
-                if (limit > 0 &&
-                    state.TripCount >= limit &&
-                    !state.MaintenanceRequired)
+                if (!state.MaintenanceRequired)
                 {
-                    state.MaintenanceRequired = true;
-                    events.Add(new BreakerLockedOut(
-                        tick,
-                        load.CivilizationId,
-                        load.RegionId,
-                        state.TripCount));
+                    var faultChance = BreakerFaultChance(load.CivilizationId);
+                    var limit = BreakerTripLimit(load.CivilizationId);
+                    if (faultChance > 0 && World.Random.Percent(faultChance))
+                    {
+                        state.MaintenanceRequired = true;
+                        events.Add(new BreakerLockedOut(
+                            tick,
+                            load.CivilizationId,
+                            load.RegionId,
+                            state.TripCount,
+                            "fault"));
+                    }
+                    else if (limit > 0 && state.TripCount >= limit)
+                    {
+                        state.MaintenanceRequired = true;
+                        events.Add(new BreakerLockedOut(
+                            tick,
+                            load.CivilizationId,
+                            load.RegionId,
+                            state.TripCount,
+                            "trips"));
+                    }
                 }
             }
         }
@@ -294,6 +307,11 @@ public sealed partial class SimulationEngine
     private long BreakerMaintenanceCost(string civilizationId) =>
         World.PowerPolicies.TryGetValue(civilizationId, out var policy)
             ? policy.BreakerMaintenanceMaterialCost
+            : 0;
+
+    private int BreakerFaultChance(string civilizationId) =>
+        World.PowerPolicies.TryGetValue(civilizationId, out var policy)
+            ? policy.BreakerFaultChancePercent
             : 0;
 
     private long DrawFloor(EntityState entity)
