@@ -59,9 +59,9 @@ game/SeedField.Game/screenshots/art-main-near.png
 - 真实 Main 渲染路径（backdrop + 网络 + 精灵 + HUD）的视觉负载基准：
 
 ```text
-MAIN_BENCH devices=10  sprites=13  fps=644.0 processMs=3.53 drawCalls=296
-MAIN_BENCH devices=50  sprites=53  fps=497.6 processMs=3.88 drawCalls=416
-MAIN_BENCH devices=100 sprites=103 fps=384.7 processMs=4.19 drawCalls=566
+MAIN_BENCH devices=10  sprites=13  fps=610.6 processMs=3.85 drawCalls=312
+MAIN_BENCH devices=50  sprites=53  fps=479.2 processMs=4.34 drawCalls=432
+MAIN_BENCH devices=100 sprites=103 fps=373.7 processMs=4.52 drawCalls=582
 ```
 
 开发机 RTX 4090、vsync 关闭、1280×720；不含 Jint/完整文明仿真，不能当最低配置。
