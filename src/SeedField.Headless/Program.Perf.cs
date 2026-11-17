@@ -85,7 +85,7 @@ internal static partial class Program
         return 0;
     }
 
-    private static int RunJintBenchmark(int devices)
+    private static int RunJintBenchmark(int devices, bool compact = true)
     {
         var world = BuildPerfWorld(devices);
         var engine = new SimulationEngine(world);
@@ -124,7 +124,9 @@ internal static partial class Program
             for (var index = 0; index < aIds.Count; index++)
             {
                 var phase = Stopwatch.StartNew();
-                var observation = engine.BuildControllerObservation(aIds[index]);
+                var observation = compact
+                    ? engine.BuildControllerObservation(aIds[index])
+                    : engine.BuildDeviceObservation(aIds[index]);
                 phase.Stop();
                 observationMs += phase.Elapsed.TotalMilliseconds;
 
@@ -167,7 +169,7 @@ internal static partial class Program
             $"ticks={ticks} totalMs={milliseconds:0.00} avgTickMs={milliseconds / ticks:0.00} " +
             $"ticksPerSec={1000.0 / (milliseconds / ticks):0.0} " +
             $"obsMs={observationMs / ticks:0.00} serMs={serializeMs / ticks:0.00} " +
-            $"runMs={runMs / ticks:0.00}");
+            $"runMs={runMs / ticks:0.00} view={(compact ? "compact" : "full")}");
         return 0;
     }
 

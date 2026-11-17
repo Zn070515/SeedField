@@ -49,6 +49,17 @@ Headless Debug、20 Tick、每 Tick 对所有 A 设备构建观测：
 obsMs=2.25  serMs=2.53  runMs=26.14  avgTickMs=31.10
 ```
 
+同一 `PerfDeviceScript`、同一缓存下，100 台 full vs compact：
+
+```text
+full view:    avgTickMs=101.29  ticks/s=9.9   obs 2.56  ser 11.14  run 87.40
+compact view: avgTickMs=33.04   ticks/s=30.3  obs 1.26  ser 2.28   run 29.32
+```
+
+compact view 自身约 3.1×；再加上旧实现没有观测缓存，旧 `ScriptA + full observation`
+路径的 200.72 ms/tick 到 33.04 ms/tick 约 6.1×。两者都保留，避免把“缓存”和
+“视图裁剪”混成一个数字。
+
 Release 复测（100 台，当前设备作用域基准）：
 
 ```text

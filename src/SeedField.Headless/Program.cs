@@ -46,6 +46,15 @@ internal static partial class Program
             return jintInvalid ? 2 : RunJintBenchmark(jintDevices);
         }
 
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-jint-full",
+                out var jintFullDevices,
+                out var jintFullInvalid))
+        {
+            return jintFullInvalid ? 2 : RunJintBenchmark(jintFullDevices, compact: false);
+        }
+
         if (args.Contains("--multi-region"))
         {
             return RunMultiRegionDemo();
