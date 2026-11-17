@@ -20,6 +20,7 @@ public sealed class WorkerController : IController
     private WindowsJobObject? _job;
     private string? _temporaryDirectory;
     private string? _lastWorkerError;
+    private CancellationTokenSource? _diskWatchdog;
     private long _nextRequestId = 1;
     private bool _disposed;
 
@@ -236,6 +237,7 @@ public sealed class WorkerController : IController
         _job = WindowsJobObject.TryAssign(
             process,
             _options.JobMemoryLimitBytes,
+            _options.JobCpuLimitMs,
             _options.RequireJobObject,
             out var jobError);
         if (_job is null)
@@ -263,6 +265,8 @@ public sealed class WorkerController : IController
                     "WORKER_LOAD_FAILED",
                     ready.Message ?? $"Worker did not become ready (kind '{ready.Kind}').");
             }
+
+            StartDiskWatchdog();
         }
         catch (Exception exception)
         {
@@ -362,8 +366,74 @@ public sealed class WorkerController : IController
         }
     }
 
+    private void StartDiskWatchdog()
+    {
+        StopDiskWatchdog();
+        if (_temporaryDirectory is null)
+        {
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        _diskWatchdog = cancellation;
+        _ = Task.Run(async () =>
+        {
+            while (!cancellation.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(250, cancellation.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                var directory = _temporaryDirectory;
+                if (directory is null)
+                {
+                    return;
+                }
+
+                var bytes = DirectorySizeGuard.ComputeBytes(
+                    directory,
+                    _options.DiskLimitBytes + 1);
+                if (bytes <= _options.DiskLimitBytes)
+                {
+                    continue;
+                }
+
+                lock (_gate)
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
+                    lock (_stderrGate)
+                    {
+                        _lastWorkerError =
+                            $"DISK_LIMIT: {bytes} bytes in worker directory.";
+                    }
+
+                    KillNoLock();
+                }
+
+                return;
+            }
+        });
+    }
+
+    private void StopDiskWatchdog()
+    {
+        _diskWatchdog?.Cancel();
+        _diskWatchdog?.Dispose();
+        _diskWatchdog = null;
+    }
+
     private void KillNoLock()
     {
+        StopDiskWatchdog();
         try
         {
             _input?.Dispose();

@@ -1,4 +1,5 @@
-﻿using SeedField.Runtime.Js;
+﻿using SeedField.PackageHost;
+using SeedField.Runtime.Js;
 using SeedField.Runtime.Js.Worker;
 using SeedField.Simulation;
 
@@ -116,6 +117,12 @@ internal static partial class Program
         if (args.Contains("--worker-opponent"))
         {
             return RunWorkerOpponentDemo();
+        }
+
+        var packageCheckIndex = Array.IndexOf(args, "--package-check");
+        if (packageCheckIndex >= 0)
+        {
+            return RunPackageCheck(args, packageCheckIndex);
         }
 
         if (args.Contains("--ruins"))

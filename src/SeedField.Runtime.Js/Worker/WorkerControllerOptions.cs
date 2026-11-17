@@ -21,6 +21,10 @@ public sealed record WorkerControllerOptions
 
     public long JobMemoryLimitBytes { get; init; } = 128L * 1024 * 1024;
 
+    public int JobCpuLimitMs { get; init; } = 30_000;
+
+    public long DiskLimitBytes { get; init; } = 8L * 1024 * 1024;
+
     /// <summary>
     /// When true, a failed Job Object assignment aborts startup. Default false because
     /// nested-job support varies in development environments; Phase 1 is allowlist-only.
@@ -46,6 +50,16 @@ public sealed record WorkerControllerOptions
             throw new ArgumentOutOfRangeException(
                 nameof(JobMemoryLimitBytes),
                 "Worker memory limit must be greater than 1 MiB.");
+        }
+
+        if (JobCpuLimitMs <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(JobCpuLimitMs));
+        }
+
+        if (DiskLimitBytes <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(DiskLimitBytes));
         }
 
         ControllerOptions.Validate();

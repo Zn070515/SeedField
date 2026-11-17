@@ -11,6 +11,7 @@ namespace SeedField.Runtime.Js.Worker;
 public sealed class WindowsJobObject : IDisposable
 {
     private const int JobObjectExtendedLimitInformation = 9;
+    private const uint JobObjectLimitProcessTime = 0x00000002;
     private const uint JobObjectLimitActiveProcess = 0x00000008;
     private const uint JobObjectLimitProcessMemory = 0x00000100;
     private const uint JobObjectLimitJobMemory = 0x00000200;
@@ -29,6 +30,7 @@ public sealed class WindowsJobObject : IDisposable
     public static WindowsJobObject? TryAssign(
         Process process,
         long memoryLimitBytes,
+        int cpuLimitMs,
         bool require,
         out string? error)
     {
@@ -53,15 +55,24 @@ public sealed class WindowsJobObject : IDisposable
             return Fail(require, new Win32Exception(Marshal.GetLastWin32Error()), out error);
         }
 
+        var flags =
+            JobObjectLimitActiveProcess |
+            JobObjectLimitProcessMemory |
+            JobObjectLimitJobMemory |
+            JobObjectLimitKillOnJobClose;
+        if (cpuLimitMs > 0)
+        {
+            flags |= JobObjectLimitProcessTime;
+        }
+
         var information = new JobObjectExtendedLimitInformationData
         {
             BasicLimitInformation = new JobObjectBasicLimitInformation
             {
-                LimitFlags =
-                    JobObjectLimitActiveProcess |
-                    JobObjectLimitProcessMemory |
-                    JobObjectLimitJobMemory |
-                    JobObjectLimitKillOnJobClose,
+                PerProcessUserTimeLimit = cpuLimitMs > 0
+                    ? -(long)cpuLimitMs * 10_000L
+                    : 0,
+                LimitFlags = flags,
                 ActiveProcessLimit = 1,
             },
             ProcessMemoryLimit = (UIntPtr)(ulong)memoryLimitBytes,

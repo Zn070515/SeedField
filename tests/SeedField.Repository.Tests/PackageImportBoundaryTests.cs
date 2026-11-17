@@ -57,6 +57,45 @@ public sealed class PackageImportBoundaryTests
     }
 
     [Fact]
+    public void PackageHostHasNoNetworkOrProcessApi()
+    {
+        var directory = Path.Combine(
+            RepoRoot,
+            "src",
+            "SeedField.PackageHost");
+        Assert.True(Directory.Exists(directory), "Package host directory is missing.");
+
+        var forbidden = new[]
+        {
+            "HttpClient",
+            "WebClient",
+            "WebRequest",
+            "Socket(",
+            "Process.Start",
+            "Assembly.Load",
+            "DllImport",
+            "NativeLibrary.Load",
+        };
+        var violations = new List<string>();
+        foreach (var path in Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(path);
+            foreach (var marker in forbidden)
+            {
+                if (text.Contains(marker, StringComparison.Ordinal))
+                {
+                    violations.Add($"{Relative(path)} contains '{marker}'");
+                }
+            }
+        }
+
+        Assert.True(
+            violations.Count == 0,
+            "PackageHost must stay offline and must not launch processes:" +
+            Environment.NewLine + string.Join(Environment.NewLine, violations));
+    }
+
+    [Fact]
     public void ThirdPartyImportGateStaysClosedInSource()
     {
         var path = Path.Combine(

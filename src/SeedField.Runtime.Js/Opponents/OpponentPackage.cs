@@ -11,7 +11,9 @@ public sealed record OpponentPackageManifest(
     string EngineCompat,
     string[] EntryPoints,
     string[] RequiredCapabilities,
-    string ContentHash);
+    string ContentHash,
+    string SignerKeyId = "",
+    string Signature = "");
 
 public sealed class OpponentPackageValidationException : Exception
 {
@@ -157,7 +159,7 @@ public sealed class OpponentPackage
         return new OpponentPackage(validated, programs);
     }
 
-    private static bool IsSafeRelativePath(string path)
+    public static bool IsSafeRelativePath(string path)
     {
         if (string.IsNullOrWhiteSpace(path) ||
             path.StartsWith("/", StringComparison.Ordinal) ||
@@ -178,7 +180,7 @@ public sealed class OpponentPackage
         return true;
     }
 
-    private static string ComputeContentHash(IReadOnlyDictionary<string, string> programs)
+    public static string ComputeContentHash(IReadOnlyDictionary<string, string> programs)
     {
         var builder = new StringBuilder();
         foreach (var pair in programs.OrderBy(pair => pair.Key, StringComparer.Ordinal))

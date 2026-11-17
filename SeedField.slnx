@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/SeedField.Headless/SeedField.Headless.csproj" />
+    <Project Path="src/SeedField.PackageHost/SeedField.PackageHost.csproj" />
     <Project Path="src/SeedField.Runtime.Js/SeedField.Runtime.Js.csproj" />
     <Project Path="src/SeedField.Simulation/SeedField.Simulation.csproj" />
     <Project Path="src/SeedField.Worker/SeedField.Worker.csproj" />
