@@ -31,6 +31,10 @@ public static class WorldStateHasher
         Append(ref hash, world.Random.State);
         Append(ref hash, world.NextWreckId);
         Append(ref hash, world.WreckRecoveryPercent);
+        Append(ref hash, world.CombatHitChancePercent);
+        Append(ref hash, world.CombatDamageVariancePercent);
+        Append(ref hash, world.CombatLootChancePercent);
+        Append(ref hash, world.CombatLootMaterial);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -61,6 +65,8 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EnergyAutoDrawnTotal);
         Append(ref hash, world.Statistics.EnergyWastedTotal);
         Append(ref hash, world.Statistics.MaterialSalvagedTotal);
+        Append(ref hash, world.Statistics.ShotsMissed);
+        Append(ref hash, world.Statistics.MaterialLootedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)

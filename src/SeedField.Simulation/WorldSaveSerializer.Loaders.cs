@@ -130,6 +130,30 @@ public static partial class WorldSaveSerializer
         }
     }
 
+    private static void LoadCombatRules(WorldState world, WorldSaveData data)
+    {
+        if (data.CombatHitChancePercent is < 0 or > 100 ||
+            data.CombatDamageVariancePercent is < 0 or > 100 ||
+            data.CombatLootChancePercent is < 0 or > 100)
+        {
+            throw Invalid(
+                "INVALID_COMBAT_RULES",
+                "Combat percentages must be within 0..100.");
+        }
+
+        if (data.CombatLootMaterial < 0)
+        {
+            throw Invalid(
+                "INVALID_COMBAT_LOOT",
+                "Combat loot material must be non-negative.");
+        }
+
+        world.CombatHitChancePercent = data.CombatHitChancePercent;
+        world.CombatDamageVariancePercent = data.CombatDamageVariancePercent;
+        world.CombatLootChancePercent = data.CombatLootChancePercent;
+        world.CombatLootMaterial = data.CombatLootMaterial;
+    }
+
     private static void LoadLinks(WorldState world, WorldSaveData data)
     {
         foreach (var linkData in data.Links ?? Array.Empty<LinkSaveData>())

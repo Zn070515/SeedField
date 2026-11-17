@@ -14,6 +14,35 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder SetCombatRandomness(
+        int hitChancePercent = 100,
+        int damageVariancePercent = 0,
+        int lootChancePercent = 0,
+        long lootMaterial = 0)
+    {
+        if (hitChancePercent is < 0 or > 100 ||
+            damageVariancePercent is < 0 or > 100 ||
+            lootChancePercent is < 0 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(hitChancePercent),
+                "Combat percentages must be within 0..100.");
+        }
+
+        if (lootMaterial < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(lootMaterial),
+                "Loot material must be non-negative.");
+        }
+
+        _world.CombatHitChancePercent = hitChancePercent;
+        _world.CombatDamageVariancePercent = damageVariancePercent;
+        _world.CombatLootChancePercent = lootChancePercent;
+        _world.CombatLootMaterial = lootMaterial;
+        return this;
+    }
+
     public WorldBuilder SetWreckRecoveryPercent(int percent)
     {
         if (percent is < 0 or > 100)

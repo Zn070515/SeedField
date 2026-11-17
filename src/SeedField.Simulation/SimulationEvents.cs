@@ -22,6 +22,21 @@ public sealed record ShotFired(
     Vec2 Target,
     long EnergySpent) : SimulationEvent(Tick);
 
+public sealed record ShotMissed(
+    long Tick,
+    EntityId AttackerId,
+    EntityId TargetId,
+    Vec2 From,
+    Vec2 Target,
+    long EnergySpent) : SimulationEvent(Tick);
+
+public sealed record CombatLootGranted(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    EntityId SourceEntityId,
+    long Material) : SimulationEvent(Tick);
+
 public sealed record EntityDamaged(
     long Tick,
     EntityId EntityId,
