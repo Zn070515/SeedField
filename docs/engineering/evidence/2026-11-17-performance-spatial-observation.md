@@ -46,6 +46,13 @@ Headless Debug、20 Tick、每 Tick 对所有 A 设备构建观测：
 obsMs=1.31  serMs=3.11  runMs=21.74  avgTickMs=26.24
 ```
 
+Release 复测（100 台）：
+
+```text
+JINT_BENCH avgTickMs=21.42 ticksPerSec=46.7
+obsMs=1.13 serMs=2.93 runMs=17.29
+```
+
 说明：优化后 Jint 数字使用真实 Main 的 compact controller view；旧数字使用
 完整 device observation。对比的是实际游戏路径，而不是把两个不同 API 混在一起。
 
