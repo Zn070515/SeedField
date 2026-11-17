@@ -116,7 +116,8 @@ public sealed class ObservationJsonTests
                     payload: JSON.stringify(obs)
                 }];
             }
-            """);
+            """,
+            new JsControllerOptions { Timeout = TimeSpan.FromSeconds(5) });
         var run = controller.RunJson(JsController.SerializeObservation(observation));
         Assert.True(run.Success, run.FaultMessage);
         var decision = JsController.ParseDecisionJson(run.IntentsJson!, "A");
@@ -124,6 +125,13 @@ public sealed class ObservationJsonTests
         Assert.True(
             JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse(payload)),
             "Compact payload must expand to the full observation shape.");
+
+        var directDecision = controller.Decide(observation);
+        var directPayload = Assert.IsType<SendMessageIntent>(
+            Assert.Single(directDecision.Intents)).Payload;
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(json), JsonNode.Parse(directPayload)),
+            "Direct JS-object observation must match the full observation shape.");
     }
 
     [Fact]
