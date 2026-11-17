@@ -179,7 +179,12 @@ public sealed partial class SimulationEngine
         var degree = maxDegreeOfParallelism > 0
             ? Math.Min(maxDegreeOfParallelism, entityIds.Count)
             : Math.Min(Math.Clamp(Environment.ProcessorCount, 1, 16), entityIds.Count);
-        if (degree <= 1 || entityIds.Count < 8)
+        // A blocked thread-pool caller can starve the pool when many callers
+        // parallelize at once; the game/headless main threads keep the parallel
+        // path, pool callers stay sequential instead of deadlocking.
+        if (degree <= 1 ||
+            entityIds.Count < 8 ||
+            Thread.CurrentThread.IsThreadPoolThread)
         {
             for (var index = 0; index < entityIds.Count; index++)
             {

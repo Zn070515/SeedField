@@ -93,7 +93,9 @@ public partial class Main : Node2D
     public override void _Ready()
     {
         var arguments = OS.GetCmdlineArgs().Concat(OS.GetCmdlineUserArgs()).ToArray();
-        GD.Print($"SEEDFIELD_READY args={string.Join(' ', arguments)}");
+        GD.Print(
+            $"SEEDFIELD_READY args={string.Join(' ', arguments)} " +
+            $"gcServer={System.Runtime.GCSettings.IsServerGC}");
 
         _opponent = arguments.Contains("--opponent-turtle")
             ? BuiltInOpponents.Turtle

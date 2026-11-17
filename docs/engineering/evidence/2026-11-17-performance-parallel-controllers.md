@@ -6,6 +6,72 @@
 - 构建：`dotnet build SeedField.slnx -c Release`
 - 运行：`dotnet run --project src/SeedField.Headless -c Release --no-build`
 
+## 0. 第二轮结果（Server GC、默认 DOF、预编译脚本）
+
+在 PR #7 的并行批处理之上继续实验，全部保持脚本调用频率与 Intent 顺序不变：
+
+| 场景 | PR #7 | 本轮 | 提升 |
+|---|---:|---:|---:|
+| 100 台 | 7.73 ms | **4.12 ms** | 1.9× |
+| 1000 台 | 118.42 ms | **60.12 ms** | 2.0× |
+| 1000 台启动 | ~205 ms | **~127 ms** | 1.6× |
+| 1000 台启动内存 | ~77 MiB | **~50 MiB** | -35% |
+
+- **Server GC**：Headless 通过 csproj 启用；Godot 宿主忽略项目 runtimeconfig，
+  需 `DOTNET_gcServer=1`（smoke workflow 已设置，`gcServer=True` 已验证）。
+- **默认 DOF**：`Environment.ProcessorCount`；server GC 下 32 线程在 1000 台
+  优于 16 线程，100 台也从 ~5.9 降到 ~4.1 ms。
+- **预编译脚本**：`Engine.PrepareScript` 跨引擎共享，1000 台启动 205→127 ms，
+  内存 77→50 MiB。
+- 1000 台峰值工作集约 335 MiB（server GC 的代价；workstation 约 250 MiB）。
+
+### 未采用的实验
+
+- 直接读取 JS 返回值、跳过 `JSON.stringify` + `JsonDocument.Parse`：输出只有
+  1–2 个 intent，收益小于复杂度与契约风险。
+- 手写观察 JSON 序列化：序列化已随 decide 并行，wall-time 占比低；
+  自定义转义/字段顺序的风险高于收益。
+- 共享观察 DTO 快照：观测仅占 1000 台的约 7 ms，收益有限，暂不做。
+
+## 0b. 硬件与运行时实验（Ryzen 9 9950X / Zen 5 / 双 CCD）
+
+采样：`dotnet-trace collect --profile dotnet-sampled-thread-time`，1000 台、
+3000 Tick。worker 侧热点（inclusive）：
+
+| 方法 | inclusive |
+|---|---:|
+| `JsController.RunJson` | 50.8% |
+| `DeviceControllerSlot.Decide` | 58.7% |
+| `JsonParser.ParseJsonObject` | 28.4% |
+| `ArrayInstance.Filter`（脚本） | 7.5% |
+| `ObservationBuilder.BuildForEntity` | 5.2% |
+| `JsonSerializer.Serialize` | 1.8% |
+
+原始采样里 `Thread.PollGC` 与信号量等待占多数，是 Server GC 后台线程的空闲
+等待，不是 worker 成本。结论：worker 侧由 **Jint JSON.parse + 解释执行** 主导，
+观测与序列化已不是瓶颈。
+
+稳态（3000 Tick）：**100 台 1.77–2.01 ms/tick（约 560 ticks/s）、约 150 MiB；
+1000 台 15.7 ms/tick（约 64 ticks/s）、约 424 MiB**。10 Tick 的 4.1 / 50–60 ms
+包含 JIT/GC 预热，游戏长时间运行应看稳态值。
+
+| 实验 | 结果 | 决定 |
+|---|---|---|
+| Server GC | 1000 台 10 Tick ~104→60 ms；稳态 15.7 ms | 保留 |
+| DOF=逻辑核数 | 1000 台 32 线程优于 16 | 保留 |
+| 绑定单 CCD（0xFFFF / 0xFFFF0000） | 26.5 ms vs 未绑定 22.3 ms | 放弃（更慢） |
+| 偶数/奇数逻辑核绑定 | 与未绑定持平 | 放弃 |
+| 结果数组 64B 填充（伪共享） | 差异在噪声内 | 放弃 |
+| `TieredCompilation=0` | 300 Tick 18.9 vs 20.8，但 3000 Tick 21.2 vs 15.7 | 放弃（PGO 长期胜出） |
+| `GCgen0size=32MB` / 8MB | 26–28 / 20–21 ms | 放弃 |
+| `GCHeapCount=16 + NoAffinitize` | 39 ms 但 735 MiB | 放弃（内存代价） |
+| `gcConcurrent=0` | 方差大、暂停风险 | 放弃 |
+| 大页 `GCLargePages=1` | 进程未正常启动（权限） | 未验证 |
+
+Zen 5 的 CCD 绑定没有收益；AVX-512 对 Jint 的标量解释器没有可接入的热点。
+硬件层面的有效杠杆是 **Server GC + 默认分层 PGO + 逻辑核并行度**；进一步
+提升需要改脚本模型或换成原生 JS 引擎，属于独立 ADR。
+
 ## 1. 探针结论（仓库外，Jint 4.18.0）
 
 在 `%TEMP%` 的独立探针中复现 100 个独立 `Engine` 与真实观测尺寸：
@@ -86,8 +152,12 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark
 # BUDGET_EXCEEDED ... ; exit code 2
 ```
 
-CI 使用 `--parallel-dof 8 --budget-ms 120`，阈值远高于开发机基线，吸收共享
-runner 的噪声；开发机基线以上表为准。
+CI 使用 100 台 `--budget-ms 60` 并断言 `gcServer=True`：阈值吸收共享 runner
+的噪声，`gcServer` 断言防止 Server GC 配置丢失；开发机基线以上表为准。
+夜间/本地可用 `--parallel-dof` 覆盖并行度做进一步实验。
+
+线程池调用方会自动回退串行：xUnit 在 4 核 runner 上并发跑测试时，
+`Parallel.For` 阻塞测试线程会造成线程池饥饿；守护后 CI 测试不再挂起。
 
 ## 6. 未验证与风险
 

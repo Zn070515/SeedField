@@ -99,6 +99,9 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --wreck
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --package-check <dir> --allow-unsigned --confirm
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-jint 100
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-jint-parallel 100
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-startup 1000
 
 godot --path game/SeedField.Game                      # 实时；F1 程序，F2 工坊，F3 外交，F4 电网，F6 恢复
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -116,6 +119,9 @@ godot --path game/SeedField.Game -- --power-breaker-smoke # 面板断路器接�
 godot --path game/SeedField.Game -- --recovery-smoke  # 恢复面板 RECOVER/MAINTAIN 接线冒烟
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
+
+Godot 客户端建议以 `DOTNET_gcServer=1` 启动（多控制器并行时需要 Server GC）；
+Headless 已在项目文件中启用。
 
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
 

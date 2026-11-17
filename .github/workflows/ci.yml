@@ -90,7 +90,15 @@ jobs:
       - name: Parallel controller budget
         shell: pwsh
         run: |
-          dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -c Release --no-build -- --benchmark-jint-parallel 100 --parallel-dof 8 --budget-ms 120
+          $output = dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -c Release --no-build -- --benchmark-jint-parallel 100 --budget-ms 60
+          $code = $LASTEXITCODE
+          $output | Write-Output
+          $text = $output -join "`n"
+          if ($code -ne 0) { exit $code }
+          if ($text -notmatch 'gcServer=True') {
+            Write-Error 'Server GC is not active in the headless benchmark.'
+            exit 1
+          }
 
   commit-lint:
     name: commit messages

@@ -18,6 +18,14 @@ internal static partial class Program
     private static int Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-startup",
+                out var startupDevices,
+                out var startupInvalid))
+        {
+            return startupInvalid ? 2 : RunStartupBenchmark(startupDevices);
+        }
 
         if (TryReadBenchmarkDevices(
                 args,
@@ -54,9 +62,10 @@ internal static partial class Program
         {
             var dof = ReadIntFlag(args, "--parallel-dof", 0);
             var budget = ReadDoubleFlag(args, "--budget-ms", 0);
+            var ticks = ReadIntFlag(args, "--ticks", 10);
             return parallelInvalid
                 ? 2
-                : RunParallelJintBenchmark(parallelDevices, dof, budget);
+                : RunParallelJintBenchmark(parallelDevices, dof, budget, ticks);
         }
 
         if (TryReadBenchmarkDevices(

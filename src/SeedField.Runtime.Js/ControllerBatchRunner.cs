@@ -15,11 +15,22 @@ public sealed record ControllerBatchItem(
 public sealed class ControllerBatchRunner
 {
     private readonly ControllerExecutionOptions _options;
+    private readonly Action<int, int, Action<int>> _parallelFor;
+    private readonly bool _usesDefaultParallelFor;
 
-    public ControllerBatchRunner(ControllerExecutionOptions? options = null)
+    public ControllerBatchRunner(
+        ControllerExecutionOptions? options = null,
+        Action<int, int, Action<int>>? parallelFor = null)
     {
         _options = options ?? new ControllerExecutionOptions();
         _options.Validate();
+        _usesDefaultParallelFor = parallelFor is null;
+        _parallelFor = parallelFor ?? ((count, degree, body) =>
+            Parallel.For(
+                0,
+                count,
+                new ParallelOptions { MaxDegreeOfParallelism = degree },
+                body));
     }
 
     public int LastUsedDegreeOfParallelism { get; private set; } = 1;
@@ -37,15 +48,21 @@ public sealed class ControllerBatchRunner
         }
 
         var degree = Math.Min(_options.MaxDegreeOfParallelism, items.Count);
-        var parallel = items.Count >= _options.MinBatchSize && degree > 1;
+        // Blocking a thread-pool thread on Parallel.For can starve the pool when
+        // many callers do it at once (xUnit with a small CI runner is the usual
+        // case). The game loop runs on the main thread, so it keeps parallelism;
+        // pool callers degrade to the sequential path instead of deadlocking.
+        var parallel = items.Count >= _options.MinBatchSize &&
+                       degree > 1 &&
+                       (!_usesDefaultParallelFor ||
+                        !Thread.CurrentThread.IsThreadPoolThread);
         LastUsedDegreeOfParallelism = parallel ? degree : 1;
 
         if (parallel)
         {
-            Parallel.For(
-                0,
+            _parallelFor(
                 items.Count,
-                new ParallelOptions { MaxDegreeOfParallelism = degree },
+                degree,
                 index => decisions[items[index].Index] = Decide(items[index]));
         }
         else

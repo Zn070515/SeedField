@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DOTNET_gcServer: "1"
+
 jobs:
   save-smoke:
     name: headless save smoke

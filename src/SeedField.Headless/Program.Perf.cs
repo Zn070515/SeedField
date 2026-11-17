@@ -173,8 +173,37 @@ internal static partial class Program
         return 0;
     }
 
-    private static int RunParallelJintBenchmark(int devices, int dof, double budgetMs)
+    private static int RunStartupBenchmark(int devices)
     {
+        var stopwatch = Stopwatch.StartNew();
+        var controllers = new List<JsController>(devices);
+        for (var index = 0; index < devices; index++)
+        {
+            controllers.Add(new JsController("A", PerfDeviceScript));
+        }
+
+        stopwatch.Stop();
+        var totalMs = stopwatch.Elapsed.TotalMilliseconds;
+        var peakMb = Process.GetCurrentProcess().PeakWorkingSet64 / (1024.0 * 1024.0);
+        Console.WriteLine(
+            $"STARTUP devices={devices} totalMs={totalMs:0.00} " +
+            $"avgMs={totalMs / devices:0.000} peakWorkingSetMb={peakMb:0.0} " +
+            $"gcServer={System.Runtime.GCSettings.IsServerGC}");
+        foreach (var controller in controllers)
+        {
+            controller.Dispose();
+        }
+
+        return 0;
+    }
+
+    private static int RunParallelJintBenchmark(
+        int devices,
+        int dof,
+        double budgetMs,
+        int ticks = 10)
+    {
+        ticks = Math.Max(1, ticks);
         var world = BuildPerfWorld(devices);
         var engine = new SimulationEngine(world);
         var options = new ControllerExecutionOptions
@@ -212,7 +241,7 @@ internal static partial class Program
         var decideMs = 0.0;
         var stepMs = 0.0;
         var total = Stopwatch.StartNew();
-        for (var tick = 0; tick < 10; tick++)
+        for (var tick = 0; tick < ticks; tick++)
         {
             var phase = Stopwatch.StartNew();
             var observations = engine.BuildControllerObservations(
@@ -249,7 +278,6 @@ internal static partial class Program
             controller.Dispose();
         }
 
-        const int ticks = 10;
         var avgTickMs = total.Elapsed.TotalMilliseconds / ticks;
         var peakMb = Process.GetCurrentProcess().PeakWorkingSet64 / (1024.0 * 1024.0);
         Console.WriteLine(
@@ -257,7 +285,8 @@ internal static partial class Program
             $"ticks={ticks} avgTickMs={avgTickMs:0.00} " +
             $"ticksPerSec={1000.0 / avgTickMs:0.0} obsMs={observationMs / ticks:0.00} " +
             $"decideMs={decideMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
-            $"dof={runner.LastUsedDegreeOfParallelism} peakWorkingSetMb={peakMb:0.0}");
+            $"dof={runner.LastUsedDegreeOfParallelism} peakWorkingSetMb={peakMb:0.0} " +
+            $"gcServer={System.Runtime.GCSettings.IsServerGC}");
 
         if (budgetMs > 0 && avgTickMs > budgetMs)
         {
