@@ -29,6 +29,7 @@
   - 移动时按朝向绘制履带扬尘；
   - `ShotFired.TargetId` 命中后 6 Tick 闪红；`EntityDestroyed` 清理。
 - `CoreVisual`：四态环 + 5 个随 tick 旋转的分支指示点。
+- `VisualEffectFeed`：断电/恢复在 staging 画红/绿环；施工/部署/升级/摧毁在事件位置画短暂 tick 环。
 - 默认画面仍只画 A 方自己与 `Observation` 已感知敌人；F10 全知调试保留。
 - `PlayerEventFilter` 过滤 `ShotFired`/`MessageQueued`/`EntityDestroyed`/`DrawEventLog` 等
   事件流；未侦察敌人的弹道、通信线和日志不会出现。
@@ -44,9 +45,28 @@ game/SeedField.Game/screenshots/art-main-tactical.png
 game/SeedField.Game/screenshots/art-main-debug.png
 game/SeedField.Game/screenshots/art-main-omniscient.png
 game/SeedField.Game/screenshots/m0-workshop.png
+game/SeedField.Game/screenshots/art-main-far.png
+game/SeedField.Game/screenshots/art-main-mid.png
+game/SeedField.Game/screenshots/art-main-near.png
 ```
 
-## 5. 验证
+## 5. 镜头、细节层级与 Main 性能
+
+- Main 支持鼠标滚轮缩放（0.70–1.35）、中键拖拽平移；`--view=far|mid|near`
+  用于截图，`--capture-view` 输出 `art-main-{far,mid,near}.png`。
+- 细节层级：near 显示血/能量条；far 隐藏状态条；HUD 显示 `view 1.25 (near)`。
+- 默认 HUD 已去掉 LEGEND 与 EVENT LOG；F7/F8 才显示战术图例/事件日志。
+- 真实 Main 渲染路径（backdrop + 网络 + 精灵 + HUD）的视觉负载基准：
+
+```text
+MAIN_BENCH devices=10  sprites=13  fps=644.0 processMs=3.53 drawCalls=296
+MAIN_BENCH devices=50  sprites=53  fps=497.6 processMs=3.88 drawCalls=416
+MAIN_BENCH devices=100 sprites=103 fps=384.7 processMs=4.19 drawCalls=566
+```
+
+开发机 RTX 4090、vsync 关闭、1280×720；不含 Jint/完整文明仿真，不能当最低配置。
+
+## 6. 验证
 
 ```powershell
 dotnet build SeedField.slnx
@@ -75,7 +95,7 @@ Run 1 final hash: 34886c1bb93164a1
 Run 2 final hash: 34886c1bb93164a1
 ```
 
-## 6. 未完成
+## 7. 未完成
 
 - 正式地表材质、建筑/墙体与运输网络资产。
 - 工坊/程序编辑器大预览。

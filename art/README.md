@@ -162,6 +162,8 @@ godot --path game/SeedField.Game res://Scenes/VisualBench.tscn -- --devices=100 
 - `CoreVisual`：四态环 + 5 个随 tick 旋转的分支指示点。
 - 默认仍只画已感知敌人；事件流（弹道/通信/日志）同样过滤，F10 全知调试保留。
 - 网络脉冲同时要求电网库存与断路器闭合；断路器打开即熄灭。
+- 镜头：滚轮 0.70–1.35 缩放、中键平移；`art-main-far/mid/near.png`。
+- 默认 HUD 隐藏 LEGEND/EVENT LOG；F7/F8 才显示。
 - 截图：`art-main-combat/tactical/debug/omniscient.png`；工坊预览 `m0-workshop.png`。
 
 ## 10. 下一步 Gate
