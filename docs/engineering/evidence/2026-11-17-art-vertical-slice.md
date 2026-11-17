@@ -130,7 +130,9 @@ Blender 渲染、Godot 12 张截图、`tools/build_art_manifest.py --check` 均�
 ## 8. 未变更
 
 - 未改 `SeedField.Simulation`、世界/游戏存档 schema、Jint 安全边界、离线包导入。
-- Headless 哈希不受美术层影响；本次没有运行性能基准或最低配置测试。
+- `dotnet run --project src/SeedField.Headless -c Debug --no-build` 双跑哈希
+  `34886c1bb93164a1`，与美术改动前一致；仿真未受影响。
+- 本次没有运行性能基准或最低配置测试。
 
 ## 9. 下一步 Gate
 
