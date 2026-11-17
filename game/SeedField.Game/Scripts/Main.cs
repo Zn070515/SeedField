@@ -96,6 +96,10 @@ public partial class Main : Node2D
         GD.Print(
             $"SEEDFIELD_READY args={string.Join(' ', arguments)} " +
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
+        if (!System.Runtime.GCSettings.IsServerGC)
+        {
+            GD.PushWarning("Server GC is not active. Launch with DOTNET_gcServer=1 (Godot ignores the project runtimeconfig).");
+        }
 
         _opponent = arguments.Contains("--opponent-turtle")
             ? BuiltInOpponents.Turtle
@@ -384,14 +388,13 @@ public partial class Main : Node2D
     public override void _Process(double delta)
     {
         _frame++;
-
+        TrackMixedBenchmark();
         if (_benchmarkJint)
         {
             RunJintBenchmarkTick();
             QueueRedraw();
             return;
         }
-
         if (_benchmarkMain)
         {
             UpdateMainBenchmark(delta);

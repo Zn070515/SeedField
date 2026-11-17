@@ -243,12 +243,19 @@ internal static partial class Program
         var observationMs = 0.0;
         var decideMs = 0.0;
         var stepMs = 0.0;
+        var tickTimes = new double[ticks];
+        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        var gc0Before = GC.CollectionCount(0);
+        var gc1Before = GC.CollectionCount(1);
+        var gc2Before = GC.CollectionCount(2);
+        var pauseBefore = GC.GetTotalPauseDuration();
         var total = Stopwatch.StartNew();
         var chunk = chunkSize <= 0
             ? controllers.Count
             : Math.Min(chunkSize, controllers.Count);
         for (var tick = 0; tick < ticks; tick++)
         {
+            var tickWatch = Stopwatch.StartNew();
             var phase = Stopwatch.StartNew();
             var intents = new List<Intent>(controllers.Count);
             for (var start = 0; start < controllers.Count; start += chunk)
@@ -286,9 +293,17 @@ internal static partial class Program
             engine.Step(intents);
             phase.Stop();
             stepMs += phase.Elapsed.TotalMilliseconds;
+            tickWatch.Stop();
+            tickTimes[tick] = tickWatch.Elapsed.TotalMilliseconds;
         }
 
         total.Stop();
+        var allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+        var gc0 = GC.CollectionCount(0) - gc0Before;
+        var gc1 = GC.CollectionCount(1) - gc1Before;
+        var gc2 = GC.CollectionCount(2) - gc2Before;
+        var pauseMs = (GC.GetTotalPauseDuration() - pauseBefore).TotalMilliseconds;
+        Array.Sort(tickTimes);
         foreach (var controller in controllers)
         {
             controller.Dispose();
@@ -302,6 +317,11 @@ internal static partial class Program
             $"ticksPerSec={1000.0 / avgTickMs:0.0} obsMs={observationMs / ticks:0.00} " +
             $"decideMs={decideMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
             $"dof={runner.LastUsedDegreeOfParallelism} chunk={chunk} " +
+            $"p50Ms={Percentile(tickTimes, 0.50):0.00} " +
+            $"p95Ms={Percentile(tickTimes, 0.95):0.00} " +
+            $"p99Ms={Percentile(tickTimes, 0.99):0.00} " +
+            $"allocMBPerTick={allocated / (1024.0 * 1024.0) / ticks:0.00} " +
+            $"gc0={gc0} gc1={gc1} gc2={gc2} gcPauseMs={pauseMs:0.0} " +
             $"peakWorkingSetMb={peakMb:0.0} " +
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
 
@@ -342,6 +362,17 @@ internal static partial class Program
         }
 
         return 0;
+    }
+
+    private static double Percentile(double[] sorted, double percentile)
+    {
+        if (sorted.Length == 0)
+        {
+            return 0;
+        }
+
+        var index = (int)Math.Ceiling(percentile * sorted.Length) - 1;
+        return sorted[Math.Clamp(index, 0, sorted.Length - 1)];
     }
 
     private static int RunPreserializedJintBenchmark(int devices, int dof, int ticks)

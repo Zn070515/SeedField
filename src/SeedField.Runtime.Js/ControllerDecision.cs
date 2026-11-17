@@ -5,8 +5,17 @@ namespace SeedField.Runtime.Js;
 public static class ScriptFaultCodes
 {
     public const string LoadFailed = "SCRIPT_LOAD_FAILED";
+
+    /// <summary>
+    /// Wall-clock host safety valve. It is intentionally not a deterministic in-game
+    /// compute result: host load, scheduling and GC pauses can change when it fires.
+    /// </summary>
     public const string Timeout = "SCRIPT_TIMEOUT";
+
+    /// <summary>Deterministic Jint heap budget for the same script/input.</summary>
     public const string MemoryLimit = "SCRIPT_MEMORY_LIMIT";
+
+    /// <summary>Deterministic Jint statement budget for the same script/input.</summary>
     public const string StatementLimit = "SCRIPT_STATEMENT_LIMIT";
     public const string Fault = "SCRIPT_FAULT";
     public const string InvalidIntentSchema = "INVALID_INTENT_SCHEMA";

@@ -48,8 +48,10 @@ public static class ObservationBuilder
             }
         }
 
-        var messages = world.GetInbox(civilizationId)
+        var inbox = world.GetInbox(civilizationId);
+        var messages = inbox
             .OrderBy(message => message.Id)
+            .Skip(Math.Max(0, inbox.Count - ObservationLimits.MaxMessages))
             .Select(message => new ObservedMessage(
                 message.Id,
                 message.FromEntityId.Value,

@@ -99,12 +99,28 @@ public partial class Main
                 MapScale);
         }
 
+        var crowdLod = snapshots.Count >= 400 || _zoom < 0.9f;
+        var viewport = new Rect2(
+            Vector2.Zero,
+            new Vector2(ViewWidth, ViewHeight)).Grow(64f);
         foreach (var entity in snapshots)
         {
+            var position = Map(entity.Position);
+            if (!viewport.HasPoint(position))
+            {
+                continue;
+            }
+
+            if (crowdLod && !_debugVisible)
+            {
+                _entityVisual.DrawLod(this, entity, position, FacingFor(entity.EntityId));
+                continue;
+            }
+
             _entityVisual.Draw(
                 this,
                 entity,
-                Map(entity.Position),
+                position,
                 FacingFor(entity.EntityId),
                 _debugVisible,
                 _debugVisible,

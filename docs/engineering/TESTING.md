@@ -45,6 +45,11 @@
 
 当前基准：`0x77e84c31f71f63ba`（40 Tick，移动/等待/攻击/冷却；v18 战斗规则字段加入哈希）。
 
+性能基线：`docs/engineering/evidence/perf-baseline.json` + `tools/check_perf.py`
+用于固定机长窗口（avg/p95 +25%）回归；CI 只保留宽松 `--budget-ms` 门禁。
+完整方法、分档数据与发行 GC 要求见
+[`performance/PERFORMANCE_GUIDE.md`](performance/PERFORMANCE_GUIDE.md)。
+
 ## 4. 不变量 fuzz
 
 - 固定种子 `1..30`，每个场景 20 Tick，随机 move/draw/sendEnergy/transfer。
@@ -86,6 +91,7 @@ godot --headless --path game/SeedField.Game -- --save-smoke
 godot --headless --path game/SeedField.Game -- --recovery-smoke
 godot --headless --path game/SeedField.Game -- --power-breaker-smoke
 godot --path game/SeedField.Game -- --capture-recovery
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
 ```
 
 Godot 不在 CI 中运行；改 UI 后必须实机截图检查，不能只看代码。

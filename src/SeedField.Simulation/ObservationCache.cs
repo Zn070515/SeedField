@@ -108,23 +108,29 @@ internal sealed class ObservationCache
     }
 
     public IReadOnlyList<ObservedMessage> Messages(string regionId, string civilizationId) =>
-        Cached(_messages, Key(regionId, civilizationId), () => _world
-            .GetInbox(civilizationId)
-            .Where(message => string.Equals(
-                message.TargetRegionId,
-                regionId,
-                StringComparison.Ordinal))
-            .OrderBy(message => message.Id)
-            .Select(message => new ObservedMessage(
-                message.Id,
-                message.FromEntityId.Value,
-                message.FromCivilizationId,
-                message.TargetRegionId,
-                message.Topic,
-                message.Payload,
-                message.SentTick,
-                message.DeliveredTick))
-            .ToList());
+        Cached(_messages, Key(regionId, civilizationId), () =>
+        {
+            var messages = _world
+                .GetInbox(civilizationId)
+                .Where(message => string.Equals(
+                    message.TargetRegionId,
+                    regionId,
+                    StringComparison.Ordinal))
+                .OrderBy(message => message.Id)
+                .ToList();
+            return messages
+                .Skip(Math.Max(0, messages.Count - ObservationLimits.MaxMessages))
+                .Select(message => new ObservedMessage(
+                    message.Id,
+                    message.FromEntityId.Value,
+                    message.FromCivilizationId,
+                    message.TargetRegionId,
+                    message.Topic,
+                    message.Payload,
+                    message.SentTick,
+                    message.DeliveredTick))
+                .ToList();
+        });
 
     public IReadOnlyList<ObservedShipment> Shipments(
         string regionId,

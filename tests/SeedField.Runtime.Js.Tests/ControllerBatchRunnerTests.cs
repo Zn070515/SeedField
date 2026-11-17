@@ -109,6 +109,89 @@ public sealed class ControllerBatchRunnerTests
     }
 
     [Fact]
+    public void StatementLimitFaultIsDeterministicAcrossExecutors()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(Unit(1, "A"))
+            .Build();
+        var engine = new SimulationEngine(world);
+        var observation = engine.BuildControllerObservation(new EntityId(1));
+        using var sequentialDevice = new DeviceControllerSlot(
+            new EntityId(1),
+            "A",
+            "function decide(obs) { while (true) { } }",
+            new JsControllerOptions
+            {
+                MaxStatements = 1_000,
+                Timeout = TimeSpan.FromSeconds(10),
+            });
+        using var parallelDevice = new DeviceControllerSlot(
+            new EntityId(1),
+            "A",
+            "function decide(obs) { while (true) { } }",
+            new JsControllerOptions
+            {
+                MaxStatements = 1_000,
+                Timeout = TimeSpan.FromSeconds(10),
+            });
+        var sequential = new ControllerBatchRunner(new ControllerExecutionOptions
+        {
+            MinBatchSize = 1,
+            MaxDegreeOfParallelism = 1,
+        });
+        var parallel = new ControllerBatchRunner(
+            new ControllerExecutionOptions
+            {
+                MinBatchSize = 1,
+                MaxDegreeOfParallelism = 4,
+            },
+            RunInReverse);
+
+        var first = Assert.Single(sequential.Run(new[]
+        {
+            new ControllerBatchItem(0, sequentialDevice, observation),
+        }));
+        var second = Assert.Single(parallel.Run(new[]
+        {
+            new ControllerBatchItem(0, parallelDevice, observation),
+        }));
+
+        Assert.Contains(
+            first.Faults,
+            fault => fault.Code == ScriptFaultCodes.StatementLimit);
+        Assert.Equal(
+            first.Faults.Select(fault => fault.Code),
+            second.Faults.Select(fault => fault.Code));
+    }
+
+    [Fact]
+    public void TimeoutFaultIsHostSafetyValve()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(Unit(1, "A"))
+            .Build();
+        var engine = new SimulationEngine(world);
+        using var device = new DeviceControllerSlot(
+            new EntityId(1),
+            "A",
+            "function decide(obs) { var x = 0; while (true) { x++; } }",
+            new JsControllerOptions
+            {
+                MaxStatements = 10_000_000,
+                Timeout = TimeSpan.FromMilliseconds(1),
+            });
+
+        var decision = device.Decide(
+            engine.BuildControllerObservation(new EntityId(1)));
+
+        Assert.Contains(
+            decision.Faults,
+            fault => fault.Code == ScriptFaultCodes.Timeout);
+    }
+
+    [Fact]
     public async Task PoolThreadFallsBackToSequentialToAvoidStarvation()
     {
         var builder = new WorldBuilder().AddRegion("r0", 10_000, 10_000);
