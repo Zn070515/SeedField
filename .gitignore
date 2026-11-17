@@ -10,7 +10,7 @@ TestResults/
 .godot/
 game/.godot/
 *.translation
-game/SeedField.Game/screenshots/art-*.png.import
+game/SeedField.Game/screenshots/*.png.import
 
 # IDE
 .idea/
