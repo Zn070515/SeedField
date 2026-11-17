@@ -85,12 +85,12 @@ public partial class Main : Node2D
 
     private void DrawStagingZones()
     {
-        DrawArc(Map(new Vec2(2_000, 4_000)), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Cyan, 0.22f), 2f, true);
-        DrawArc(Map(new Vec2(13_000, 4_000)), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Orange, 0.22f), 2f, true);
+        DrawArc(Map(Scenarios.AStagingPosition), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Cyan, 0.22f), 2f, true);
+        DrawArc(Map(Scenarios.BStagingPosition), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Orange, 0.22f), 2f, true);
 
         DrawString(
             HudFont,
-            Map(new Vec2(2_000, 4_000)) + new Vector2(-62, 74),
+            Map(Scenarios.AStagingPosition) + new Vector2(-62, 74),
             "A · STAGING",
             HorizontalAlignment.Left,
             -1,
@@ -98,7 +98,7 @@ public partial class Main : Node2D
             new Color(Cyan, 0.75f));
         DrawString(
             HudFont,
-            Map(new Vec2(13_000, 4_000)) + new Vector2(-62, 74),
+            Map(Scenarios.BStagingPosition) + new Vector2(-62, 74),
             "B · STAGING",
             HorizontalAlignment.Left,
             -1,

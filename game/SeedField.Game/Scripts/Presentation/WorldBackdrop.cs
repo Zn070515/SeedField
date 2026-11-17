@@ -9,8 +9,13 @@ namespace SeedField.Game;
 /// </summary>
 public static class WorldBackdrop
 {
-    public const int WidthMm = 16_000;
-    public const int HeightMm = 8_000;
+    public const int WidthMm = Scenarios.WidthMm;
+    public const int HeightMm = Scenarios.HeightMm;
+
+    // Seeded once; each draw resets the seed so the backdrop stays deterministic
+    // without allocating a Godot object per frame.
+    private static readonly RandomNumberGenerator PlateRandom = new();
+    private static readonly RandomNumberGenerator RuinRandom = new();
 
     public static void Draw(
         CanvasItem canvas,
@@ -43,7 +48,8 @@ public static class WorldBackdrop
         Func<Vec2, Vector2> map,
         float mapScale)
     {
-        var random = new RandomNumberGenerator { Seed = 23 };
+        PlateRandom.Seed = 23;
+        var random = PlateRandom;
         const int columns = 8;
         const int rows = 4;
         for (var row = 0; row < rows; row++)
@@ -127,7 +133,8 @@ public static class WorldBackdrop
         Func<Vec2, Vector2> map,
         float mapScale)
     {
-        var random = new RandomNumberGenerator { Seed = 41 };
+        RuinRandom.Seed = 41;
+        var random = RuinRandom;
         for (var index = 0; index < 26; index++)
         {
             var x = random.RandfRange(400f, WidthMm - 900f);

@@ -15,21 +15,19 @@ public static class NetworkVisual
     public static void Draw(
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
-        float mapScale,
         IReadOnlyList<(Vec2 Position, string? Owner)> points,
         bool aPowered,
         bool bPowered,
         long tick,
         bool tactical)
     {
-        var aHub = map(new Vec2(2_000, 4_000));
-        var bHub = map(new Vec2(13_000, 4_000));
+        var aHub = map(Scenarios.AStagingPosition);
+        var bHub = map(Scenarios.BStagingPosition);
         var index = 0;
         foreach (var point in points)
         {
             var target = map(point.Position);
-            var aLink = string.Equals(point.Owner, "A", StringComparison.Ordinal) ||
-                        point.Owner is null;
+            var aLink = string.Equals(point.Owner, "A", StringComparison.Ordinal);
             var bLink = string.Equals(point.Owner, "B", StringComparison.Ordinal);
             if (aLink)
             {
@@ -59,8 +57,6 @@ public static class NetworkVisual
 
             index++;
         }
-
-        _ = mapScale;
     }
 
     public static void DrawCoreExit(

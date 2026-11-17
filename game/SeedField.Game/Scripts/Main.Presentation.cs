@@ -57,6 +57,14 @@ public partial class Main
             _facing.Remove(stale);
             _hitUntil.Remove(stale);
         }
+
+        foreach (var expired in _hitUntil
+                     .Where(entry => _world.Tick >= entry.Value)
+                     .Select(entry => entry.Key)
+                     .ToList())
+        {
+            _hitUntil.Remove(expired);
+        }
     }
 
     private void RefreshVisibleEntities()
@@ -127,15 +135,13 @@ public partial class Main
     private void DrawPresentationNetworks()
     {
         var frontier = _world.Regions["frontier"];
-        var coreSnapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
         NetworkVisual.Draw(
             this,
             Map,
-            MapScale,
             _world.ControlPoints.Values
                 .Select(point => (point.Position, point.OwnerCivilizationId))
                 .ToList(),
-            frontier.GetEnergy("A") > 0 || coreSnapshot.EnergyReserve > 0,
+            frontier.GetEnergy("A") > 0,
             frontier.GetEnergy("B") > 0,
             _world.Tick,
             _tacticalVisible);
@@ -213,12 +219,12 @@ public partial class Main
             new Color(0.55f, 0.66f, 0.74f));
 
         var corePosition = origin + new Vector2(78, 136);
-        var exit = Map(new Vec2(2_000, 4_000));
+        var exit = Map(Scenarios.AStagingPosition);
         NetworkVisual.DrawCoreExit(
             this,
             origin + new Vector2(150, 136),
             exit,
-            CoreRecoveryDiagnosticsBuilder.Build(_world, "A").EnergyReserve > 0,
+            snapshot.EnergyReserve > 0,
             _world.Tick);
         DrawString(
             ThemeDB.FallbackFont,

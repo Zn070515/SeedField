@@ -47,6 +47,11 @@ public sealed class EntityVisual
             size * 0.28f,
             size * 0.10f,
             new Color(0f, 0f, 0f, 0.24f));
+        if (moving)
+        {
+            DrawTrackDust(canvas, position, size, direction, tick);
+        }
+
         canvas.DrawTextureRect(frame.Diffuse, rect, false);
 
         var healthFraction = entity.MaxHealth <= 0
@@ -118,6 +123,27 @@ public sealed class EntityVisual
                 -1,
                 10,
                 new Color(0.90f, 0.72f, 0.40f));
+        }
+    }
+
+    private static void DrawTrackDust(
+        CanvasItem canvas,
+        Vector2 position,
+        float size,
+        int direction,
+        long tick)
+    {
+        var backAngle = (direction + 4) * Mathf.Tau / 8f;
+        var back = new Vector2(Mathf.Cos(backAngle), Mathf.Sin(backAngle));
+        for (var puff = 0; puff < 2; puff++)
+        {
+            var phase = Mathf.PosMod((float)tick + puff * 2f, 4f) / 4f;
+            VisualDraw.Ellipse(
+                canvas,
+                position + back * size * (0.34f + phase * 0.22f),
+                size * (0.07f + phase * 0.03f),
+                size * (0.035f + phase * 0.015f),
+                new Color(0.58f, 0.52f, 0.40f, 0.18f * (1f - phase)));
         }
     }
 

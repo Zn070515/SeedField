@@ -3,7 +3,7 @@
 > 状态：`[PROPOSED]` Gate 2 样片完成，Gate 3 世界切片进行中。Gate 1 已选 **A 斜俯视 35°**；
 > B 严格俯视保留为对照证据；仍不是正式美术验收。
 > 不改 SimulationCore / 存档 / Jint / 离线包安全契约。
-> 工作分支：`art/visual-slice`；决策见 ADR-0024、ADR-0025。
+> 工作分支：`art/gate3-world`；决策见 ADR-0024、ADR-0025、ADR-0026。
 
 ## 1. 本轮交付
 
