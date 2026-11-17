@@ -66,7 +66,7 @@ Gate 2 以 **A 斜俯视 35°** 为主要推进方向，B 资产与截图保留�
 - SHA-256、尺寸、路径、未登记 PNG 继续校验；
 - `RepositoryHygieneTests` 禁止跟踪 `__pycache__/`、`*.pyc`、`*.pyo`。
 
-`tools/build_art_manifest.py` 从渲染元数据与运行时 PNG 重新生成清单，避免手工
+`tools/build_art_manifest.py` 从运行时 PNG 与固定的 source/license 重新生成清单，避免手工
 抄哈希/锚点。
 
 ## 非目标

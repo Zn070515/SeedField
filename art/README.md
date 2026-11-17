@@ -50,6 +50,8 @@
 
 - 模块切换走现有 `UpgradeCommand`：scout v1（sensor）→ Mk3（sensor+weapon），
   Main 精灵从 sensor 变为 drill；`--module-swap-smoke` 断言。
+  `screenshots/art-module-swap.png` 是升级后的 Main 截图；三种模块剪影见
+  `art/renders/module-swap.png`。
 - 核心四态由 `CoreVisualStateRules` 分类：Besieged > Bootstrap > Regenerating > Idle。
 - 默认 PvE 场景真实处于 besieged；idle/regenerating/bootstrap 截图使用 peaceful 场景。
 

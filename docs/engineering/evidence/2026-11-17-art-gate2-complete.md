@@ -54,7 +54,7 @@ CORE_STATE_SMOKE idle=Idle bootstrap=Bootstrap regenerating=Regenerating besiege
   `worker_frame_sensor`（桅杆/阵列），各 8 方向。
 - 场景新增 `scout` Mk3 `Breacher`（Sensor + Weapon），走现有 `UpgradeCommand`。
 - `VisualEntitySnapshot.VisualAssetName`：Weapon→drill，Sensor→sensor，否则 base。
-- 模块对比表：`art/renders/module-swap.png`；Main 截图
+- 模块对比表：`art/renders/module-swap.png`（空插槽/drill/sensor）；Main 升级后截图
   `screenshots/art-module-swap.png`。
 - smoke：
 
