@@ -77,6 +77,14 @@ public partial class StyleTestWorld : Node2D
 
             var assetId = entry["assetId"].AsString();
             var name = assetId.Split('.')[0];
+            // The style test compares the three canonical objects. State variants
+            // and module variants would stack on the same anchor and hide each
+            // other, so they are reviewed on their own sheets instead.
+            if (name is not ("power_node" or "seed_core" or "worker_frame"))
+            {
+                continue;
+            }
+
             var files = entry["files"].AsGodotArray();
             if (files.Count == 0)
             {

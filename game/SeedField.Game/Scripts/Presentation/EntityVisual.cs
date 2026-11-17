@@ -38,7 +38,7 @@ public sealed class EntityVisual
         var size = frame.Footprint * ScreenScale;
         var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
 
-        DrawEllipse(
+        VisualDraw.Ellipse(
             canvas,
             position + new Vector2(-size * 0.12f, size * 0.03f),
             size * 0.28f,
@@ -120,23 +120,4 @@ public sealed class EntityVisual
             color);
     }
 
-    private static void DrawEllipse(
-        CanvasItem canvas,
-        Vector2 center,
-        float radiusX,
-        float radiusY,
-        Color color)
-    {
-        const int segments = 28;
-        var points = new Vector2[segments];
-        for (var index = 0; index < segments; index++)
-        {
-            var angle = Mathf.Tau * index / segments;
-            points[index] = center + new Vector2(
-                Mathf.Cos(angle) * radiusX,
-                Mathf.Sin(angle) * radiusY);
-        }
-
-        canvas.DrawColoredPolygon(points, color);
-    }
 }

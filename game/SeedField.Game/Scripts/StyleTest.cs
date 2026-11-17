@@ -69,6 +69,7 @@ public partial class StyleTest : Node2D
 
         var path = ProjectSettings.GlobalizePath(
             $"res://screenshots/art-{_route}-{_zoom}-{_overlay}.png");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var exitCode = 0;
         var image = GetViewport().GetTexture().GetImage();
         if (image is null)

@@ -70,7 +70,7 @@ public static class TacticalOverlay
 
     public static void DrawControlPointRadii(
         CanvasItem canvas,
-        IEnumerable<(Vec2 Position, int RadiusMm, string Label)> points,
+        IEnumerable<(Vec2 Position, int RadiusMm)> points,
         Func<Vec2, Vector2> map,
         float mapScale)
     {

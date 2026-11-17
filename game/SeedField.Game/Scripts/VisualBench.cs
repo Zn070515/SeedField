@@ -14,7 +14,6 @@ public partial class VisualBench : Node2D
     private const int ViewHeight = 720;
     private const float BenchScale = 0.15f;
 
-    private readonly List<Sprite2D> _sprites = new();
     private int _devices = 10;
     private bool _masks = true;
     private float _seconds = 5f;
@@ -178,7 +177,6 @@ public partial class VisualBench : Node2D
                 cellX * (column + 0.5f),
                 70f + cellY * (row + 0.5f));
             AddChild(sprite);
-            _sprites.Add(sprite);
 
             if (_masks && frame.Emissive is not null)
             {

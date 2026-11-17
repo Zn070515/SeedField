@@ -152,12 +152,16 @@ def zoom_sheet() -> None:
 
 
 def direction_sheet() -> None:
-    report = json.loads(
-        (ROOT / "art/generated/style_oblique/render-report-oblique.json").read_text(
-            encoding="utf-8"
+    report_path = ROOT / "art/generated/style_oblique/render-report-oblique.json"
+    seconds = None
+    if report_path.exists():
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        probe = next(
+            (asset for asset in report["assets"] if asset["name"] == "direction_probe"),
+            None,
         )
-    )
-    probe = next(asset for asset in report["assets"] if asset["name"] == "direction_probe")
+        seconds = probe["seconds"] if probe else None
+
     frames = sorted(
         (path for path in (ART / "style_oblique").glob("direction_probe_oblique_*.png")),
         key=lambda path: path.name,
@@ -173,7 +177,8 @@ def direction_sheet() -> None:
     label(
         draw,
         (padding, 56),
-        f"asymmetric drill frame · 512px · {probe['seconds']}s for 16 frames",
+        "asymmetric drill frame · 512px"
+        + (f" · {seconds}s for 16 frames" if seconds is not None else ""),
         13,
         MUTED,
     )

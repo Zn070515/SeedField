@@ -34,7 +34,7 @@ public sealed class CoreVisual
         var color = StateColor(state);
         var pulse = 0.55f + 0.20f * Mathf.Sin(tick * 0.22f);
 
-        DrawEllipse(
+        VisualDraw.Ellipse(
             canvas,
             position + new Vector2(-size * 0.10f, size * 0.02f),
             size * 0.36f,
@@ -82,23 +82,4 @@ public sealed class CoreVisual
         _ => new Color(0.95f, 0.78f, 0.40f),
     };
 
-    private static void DrawEllipse(
-        CanvasItem canvas,
-        Vector2 center,
-        float radiusX,
-        float radiusY,
-        Color color)
-    {
-        const int segments = 28;
-        var points = new Vector2[segments];
-        for (var index = 0; index < segments; index++)
-        {
-            var angle = Mathf.Tau * index / segments;
-            points[index] = center + new Vector2(
-                Mathf.Cos(angle) * radiusX,
-                Mathf.Sin(angle) * radiusY);
-        }
-
-        canvas.DrawColoredPolygon(points, color);
-    }
 }

@@ -98,6 +98,7 @@ public sealed class VisualAssetCatalog
 
     public VisualAssetFrame? GetCore(CoreVisualState state) => state switch
     {
+        CoreVisualState.Absent => null,
         CoreVisualState.Regenerating => Get("seed_core_regenerating"),
         CoreVisualState.Bootstrap => Get("seed_core_bootstrap"),
         CoreVisualState.Besieged => Get("seed_core_besieged"),

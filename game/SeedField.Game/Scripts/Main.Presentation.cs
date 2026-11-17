@@ -84,8 +84,7 @@ public partial class Main
                 this,
                 _world.ControlPoints.Values.Select(point => (
                     point.Position,
-                    point.RadiusMm,
-                    point.Id.Replace("relay-", string.Empty).ToUpperInvariant())),
+                    point.RadiusMm)),
                 Map,
                 MapScale);
         }
@@ -264,9 +263,16 @@ public partial class Main
     private void ConfigureModuleSwapCapture()
     {
         ResetScenario(peaceful: true, preRun: false);
-        _ = _world.EnumerateEntities().First(entity =>
+        var scout = _world.EnumerateEntities().FirstOrDefault(entity =>
             entity.CivilizationId == "A" &&
             string.Equals(entity.BlueprintId, "scout", StringComparison.Ordinal));
+        if (scout is not null)
+        {
+            var latest = _world.Workshop.GetVersions("scout").Last();
+            _engine.ExecuteDeploymentCommand(new UpgradeCommand("A", scout.Id, latest));
+            UpdateFacing();
+        }
+
         _capturePath = "res://screenshots/art-module-swap.png";
         _paused = true;
         _captureRequested = true;
