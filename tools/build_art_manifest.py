@@ -28,6 +28,7 @@ ASSETS = (
     "worker_frame",
     "worker_frame_drill",
     "worker_frame_sensor",
+    "worker_frame_weapon",
     "direction_probe",
 )
 TOPDOWN_ASSETS = {"power_node", "seed_core", "worker_frame"}
@@ -41,6 +42,7 @@ FOOTPRINTS = {
     "worker_frame": 260,
     "worker_frame_drill": 260,
     "worker_frame_sensor": 260,
+    "worker_frame_weapon": 260,
     "direction_probe": 260,
 }
 STATES = {

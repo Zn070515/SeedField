@@ -237,6 +237,7 @@ def module_sheet() -> None:
         ("worker_frame", "EMPTY SOCKET"),
         ("worker_frame_drill", "DRILL MODULE"),
         ("worker_frame_sensor", "SENSOR MODULE"),
+        ("worker_frame_weapon", "WEAPON MODULE"),
     )
     cell = 280
     padding = 28

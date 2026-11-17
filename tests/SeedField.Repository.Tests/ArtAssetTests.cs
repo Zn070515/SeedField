@@ -27,6 +27,7 @@ public sealed class ArtAssetTests
         ["worker_frame"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
         ["worker_frame_drill"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
         ["worker_frame_sensor"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
+        ["worker_frame_weapon"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
         ["direction_probe"] = new[]
         {
             0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338,
@@ -389,6 +390,7 @@ public sealed class ArtAssetTests
                      "worker_frame.oblique.v0",
                      "worker_frame_drill.oblique.v0",
                      "worker_frame_sensor.oblique.v0",
+                     "worker_frame_weapon.oblique.v0",
                      "direction_probe.oblique.v0",
                      "power_node.topdown.v0",
                      "seed_core.topdown.v0",

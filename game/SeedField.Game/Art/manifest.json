@@ -639,6 +639,106 @@
       ]
     },
     {
+      "assetId": "worker_frame_weapon.oblique.v0",
+      "kind": "style-test",
+      "route": "oblique",
+      "directions": 8,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 260,
+      "pivot": [
+        0.5,
+        0.664
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_000.png",
+          "sha256": "1e9839ce4ca402fc0e6e1d5c6ad06525fd0cb61ae231434197cb54208e0c34c1",
+          "alphaBBox": [
+            132,
+            210,
+            359,
+            339
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_045.png",
+          "sha256": "7d5e90b5eed8d95c5f6a4e01986f994bd4e18030b58ea46c2f71f0da6884c8da",
+          "alphaBBox": [
+            137,
+            182,
+            374,
+            368
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_090.png",
+          "sha256": "046feb4f5f264c3e0b8c5af257a0aae24861a2e0e981561829eabe9370b4b70c",
+          "alphaBBox": [
+            190,
+            163,
+            321,
+            360
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_135.png",
+          "sha256": "8cf8a6488ba1efb63dfa9cef6292e6794a3a56206f4c578d434e0b3ad783dfec",
+          "alphaBBox": [
+            137,
+            158,
+            374,
+            368
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_180.png",
+          "sha256": "ada99af4f9f7023ae000a0587de4dd2f7c758be26eb01014cbf8d458429922c1",
+          "alphaBBox": [
+            152,
+            177,
+            379,
+            339
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_225.png",
+          "sha256": "99892be0fbbd605916cd3e60345605751c873ff6134e1934d50b55e7e5d97444",
+          "alphaBBox": [
+            137,
+            206,
+            374,
+            368
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_270.png",
+          "sha256": "6b678201f8fc5ddb317cf4d4b846084c67be10e6003e17939a6ccbc6172005b1",
+          "alphaBBox": [
+            190,
+            196,
+            321,
+            360
+          ]
+        },
+        {
+          "path": "style_oblique/worker_frame_weapon_oblique_315.png",
+          "sha256": "ff5f8d2d965dab9710efcb07458776f8754ed4115788d96be838c8335bddf4c2",
+          "alphaBBox": [
+            137,
+            206,
+            374,
+            368
+          ]
+        }
+      ]
+    },
+    {
       "assetId": "direction_probe.oblique.v0",
       "kind": "style-test",
       "route": "oblique",

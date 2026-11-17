@@ -316,6 +316,16 @@ def build_worker_sensor(m: dict) -> None:
     build_worker(m, "sensor")
 
 
+def build_worker_weapon(m: dict) -> None:
+    """Armed frame: turret/barrel silhouette, distinct from the drill module."""
+    build_worker(m, "none")
+    art.box("WeaponModule", (0.86, 0.50, 0.55), (-0.90, 0.48, 0.94), mat=m["steel"])
+    art.cylinder("Turret", 0.48, 0.34, (0, 0, 0.78), 6, m["dark"])
+    art.box("Barrel", (1.15, 0.15, 0.15), (0.78, 0, 0.84), mat=m["copper"])
+    art.box("BarrelTip", (0.22, 0.20, 0.20), (1.38, 0, 0.84), mat=m["steel"])
+    art.box("WeaponStripe", (0.55, 0.08, 0.06), (-0.55, 0.84, 0.62), mat=m["cyan"])
+
+
 def build_direction_probe(m: dict) -> None:
     build_worker(m, "drill")
 
@@ -415,6 +425,15 @@ ASSETS = {
         "angles": WORKER_ANGLES,
         "topdown": False,
         "masks": True,
+    },
+    "worker_frame_weapon": {
+        "build": build_worker_weapon,
+        "oblique_scale": 7.6,
+        "topdown_scale": 7.2,
+        "target_z": 0.9,
+        "angles": WORKER_ANGLES,
+        "topdown": False,
+        "masks": False,
     },
     "direction_probe": {
         "build": build_direction_probe,
