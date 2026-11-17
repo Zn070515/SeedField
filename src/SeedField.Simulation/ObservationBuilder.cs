@@ -180,62 +180,15 @@ public static class ObservationBuilder
             visible.Sort((left, right) => left.EntityId.CompareTo(right.EntityId));
         }
 
-        var messages = world.GetInbox(viewer.CivilizationId)
-            .Where(message => string.Equals(
-                message.TargetRegionId,
-                viewer.RegionId,
-                StringComparison.Ordinal))
-            .OrderBy(message => message.Id)
-            .Select(message => new ObservedMessage(
-                message.Id,
-                message.FromEntityId.Value,
-                message.FromCivilizationId,
-                message.TargetRegionId,
-                message.Topic,
-                message.Payload,
-                message.SentTick,
-                message.DeliveredTick))
-            .ToList();
-
-        var shipments = world.InTransitMaterial
-            .Where(shipment =>
-                string.Equals(shipment.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
-                (string.Equals(shipment.FromRegionId, viewer.RegionId, StringComparison.Ordinal) ||
-                 string.Equals(shipment.ToRegionId, viewer.RegionId, StringComparison.Ordinal)))
-            .OrderBy(shipment => shipment.Id)
-            .Select(shipment => new ObservedShipment(
-                shipment.Id,
-                shipment.FromRegionId,
-                shipment.ToRegionId,
-                shipment.Amount,
-                shipment.SentTick,
-                shipment.ArriveTick,
-                shipment.Route))
-            .ToList();
-
-        var energyShipments = world.InTransitEnergy
-            .Where(shipment =>
-                string.Equals(shipment.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
-                (string.Equals(shipment.FromRegionId, viewer.RegionId, StringComparison.Ordinal) ||
-                 string.Equals(shipment.ToRegionId, viewer.RegionId, StringComparison.Ordinal)))
-            .OrderBy(shipment => shipment.Id)
-            .Select(shipment => new ObservedEnergyShipment(
-                shipment.Id,
-                shipment.FromRegionId,
-                shipment.ToRegionId,
-                shipment.Amount,
-                shipment.SentTick,
-                shipment.ArriveTick,
-                shipment.Route))
-            .ToList();
-
-        var controlPoints = world.ControlPoints.Values
-            .Where(point => string.Equals(
-                point.RegionId,
-                viewer.RegionId,
-                StringComparison.Ordinal))
-            .Select(ToObservedControlPoint)
-            .ToList();
+        var messages = cache.Messages(viewer.RegionId, viewer.CivilizationId);
+        var shipments = cache.Shipments(viewer.RegionId, viewer.CivilizationId);
+        var energyShipments = cache.EnergyShipments(
+            viewer.RegionId,
+            viewer.CivilizationId);
+        var controlPoints = cache.ControlPoints(viewer.RegionId);
+        var treaties = cache.Treaties(viewer.CivilizationId);
+        var proposals = cache.Proposals(viewer.CivilizationId);
+        var tradeOffers = cache.TradeOffers(viewer.RegionId, viewer.CivilizationId);
 
         return new Observation(
             world.Tick,
@@ -247,29 +200,12 @@ public static class ObservationBuilder
             viewer.Id.Value,
             controlPoints,
             ToObservedMatch(world.Match),
-            Treaties: world.Treaties.Values
-                .Where(treaty => treaty.Involves(viewer.CivilizationId))
-                .OrderBy(treaty => treaty.Id)
-                .Select(treaty => ToObservedTreaty(treaty, viewer.CivilizationId))
-                .ToList(),
-            TreatyProposals: world.TreatyProposals.Values
-                .Where(proposal => proposal.Involves(viewer.CivilizationId))
-                .OrderBy(proposal => proposal.Id)
-                .Select(ToObservedTreatyProposal)
-                .ToList(),
-            TradeOffers: world.TradeOffers.Values
-                .Where(offer =>
-                    offer.Involves(viewer.CivilizationId) &&
-                    string.Equals(
-                        offer.RegionId,
-                        viewer.RegionId,
-                        StringComparison.Ordinal))
-                .OrderBy(offer => offer.Id)
-                .Select(ToObservedTradeOffer)
-                .ToList());
+            Treaties: treaties,
+            TreatyProposals: proposals,
+            TradeOffers: tradeOffers);
     }
 
-    private static ObservedControlPoint ToObservedControlPoint(ControlPointState point) =>
+    internal static ObservedControlPoint ToObservedControlPoint(ControlPointState point) =>
         new(
             point.Id,
             point.RegionId,
@@ -280,14 +216,16 @@ public static class ObservationBuilder
             point.HoldTicks,
             point.OwnerCivilizationId);
 
-    private static ObservedTreaty ToObservedTreaty(TreatyState treaty, string civilizationId) =>
+    internal static ObservedTreaty ToObservedTreaty(
+        TreatyState treaty,
+        string civilizationId) =>
         new(
             treaty.Id,
             treaty.Kind,
             treaty.Other(civilizationId),
             treaty.SignedTick);
 
-    private static ObservedTreatyProposal ToObservedTreatyProposal(
+    internal static ObservedTreatyProposal ToObservedTreatyProposal(
         TreatyProposalState proposal) =>
         new(
             proposal.Id,
@@ -297,7 +235,7 @@ public static class ObservationBuilder
             proposal.ProposedTick,
             proposal.ExpiresTick);
 
-    private static ObservedTradeOffer ToObservedTradeOffer(TradeOfferState offer) =>
+    internal static ObservedTradeOffer ToObservedTradeOffer(TradeOfferState offer) =>
         new(
             offer.Id,
             offer.ProposerCivilizationId,
