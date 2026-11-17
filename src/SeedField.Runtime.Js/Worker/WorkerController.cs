@@ -72,7 +72,10 @@ public sealed class WorkerController : IController
                 "Observation belongs to a different civilization.");
         }
 
-        var observationJson = JsController.SerializeObservation(observation);
+        // Cross-process payloads stay object-shaped: an older worker (or a worker
+        // built from a different revision) can still parse them, and the current
+        // harness passes them through unchanged.
+        var observationJson = JsController.SerializeFullObservation(observation);
         lock (_gate)
         {
             if (_disposed)

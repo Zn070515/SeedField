@@ -103,8 +103,9 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
   `JsObjectLayout` 直接构造观测对象，没有 JSON 字符串、`JSON.parse` 或展开器。
   隔离测试 1000 台 decide 约 2.46 ms（DOF 32），每次调用分配约 23.8 KiB，
   低于 JSON 路径的约 49 KiB；
-- **worker/IPC**：仍走紧凑 JSON（位置数组 + 字符串表），可信 harness 用
-  `__seedfield_expand` 还原对象；跨进程不传 CLR 对象；
+- **worker/IPC**：走完整对象 JSON（跨版本兼容，旧 worker 也能解析）；当前
+  harness 的展开器看到完整对象会原样返回。紧凑格式（位置数组 + 字符串表）
+  保留给带宽敏感路径/测试，不作为跨进程默认；跨进程不传 CLR 对象；
 - **脚本契约**：两条路径都提供同一对象形状；`ObservationJsonTests` 用脚本
   `JSON.stringify(obs)` 与 `SerializeFullObservation` 做语义对比；
   worker 双跑哈希 `34886c1bb93164a1` 一致；Godot `--save-smoke` 通过；

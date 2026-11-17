@@ -87,7 +87,7 @@ Zen 5 的 CCD 绑定没有收益；AVX-512 对 Jint 的标量解释器没有可�
 | 峰值工作集 1000 / 100 台 | 424 / 150 MiB | 650 / 200 MiB | **450 / 145 MiB** |
 
 - 进程内 `Decide` 用 `JsObject.Create` + 共享 `JsObjectLayout` 直接构造对象；
-  worker/IPC 仍用紧凑 JSON + 可信展开器。
+  worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试。
 - 契约验证：脚本 `JSON.stringify(obs)` 与 `SerializeFullObservation` 语义相等；
   worker 双跑哈希 `34886c1bb93164a1` 一致；Godot `--save-smoke` 通过。
 - 10 Tick 短窗口 1000 台约 24–33 ms（JIT/GC 预热）；长跑才体现收益。
