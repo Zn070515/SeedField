@@ -142,8 +142,35 @@ public sealed partial class SimulationEngine
     public Observation BuildObservation(string civilizationId) =>
         ObservationBuilder.Build(World, civilizationId);
 
-    public Observation BuildDeviceObservation(EntityId entityId) =>
-        ObservationBuilder.BuildForEntity(World, entityId);
+    private ObservationCache? _observationCache;
+
+    public Observation BuildDeviceObservation(EntityId entityId)
+    {
+        if (_observationCache is null || _observationCache.Tick != World.Tick)
+        {
+            _observationCache = ObservationCache.Build(World);
+        }
+
+        return ObservationBuilder.BuildForEntity(World, entityId, _observationCache);
+    }
+
+    /// <summary>
+    /// Device-scoped view for controller execution: self plus sensed enemies.
+    /// The civilization observation still includes all own entities.
+    /// </summary>
+    public Observation BuildControllerObservation(EntityId entityId)
+    {
+        if (_observationCache is null || _observationCache.Tick != World.Tick)
+        {
+            _observationCache = ObservationCache.Build(World);
+        }
+
+        return ObservationBuilder.BuildForEntity(
+            World,
+            entityId,
+            _observationCache,
+            includeAllies: false);
+    }
 
     public TickResult Step(IReadOnlyList<Intent>? intents = null)
     {

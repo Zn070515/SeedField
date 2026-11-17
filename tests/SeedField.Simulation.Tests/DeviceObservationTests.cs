@@ -29,6 +29,28 @@ public sealed class DeviceObservationTests
     }
 
     [Fact]
+    public void ControllerViewOmitsAlliesButKeepsSensedEnemies()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(Unit(1, "A", new Vec2(100, 100), sensor: 1_000))
+            .AddEntity(Unit(2, "A", new Vec2(200, 100), sensor: null))
+            .AddEntity(Unit(3, "B", new Vec2(500, 100), sensor: null))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var controller = engine.BuildControllerObservation(new EntityId(1));
+
+        Assert.Equal(new long[] { 1, 3 }, controller.Entities.Select(entity => entity.EntityId));
+        Assert.True(controller.Entities.Single(entity => entity.EntityId == 1).IsSelf);
+        Assert.False(controller.Entities.Single(entity => entity.EntityId == 3).IsSelf);
+        Assert.Equal(
+            new long[] { 1, 2, 3 },
+            engine.BuildDeviceObservation(new EntityId(1))
+                .Entities.Select(entity => entity.EntityId));
+    }
+
+    [Fact]
     public void DeviceMessagesAreFilteredToItsRegion()
     {
         var world = new WorldBuilder()
