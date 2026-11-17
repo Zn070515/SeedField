@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -150,9 +151,144 @@ def zoom_sheet() -> None:
     print(f"SHEET {OUT / 'camera-ab-zoom.png'} {sheet.width}x{sheet.height}")
 
 
+def direction_sheet() -> None:
+    report = json.loads(
+        (ROOT / "art/generated/style_oblique/render-report-oblique.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    probe = next(asset for asset in report["assets"] if asset["name"] == "direction_probe")
+    frames = sorted(
+        (path for path in (ART / "style_oblique").glob("direction_probe_oblique_*.png")),
+        key=lambda path: path.name,
+    )
+    subsets = (("4 directions", frames[::4]), ("8 directions", frames[::2]), ("16 directions", frames))
+    thumb = 74
+    padding = 28
+    width = padding * 2 + 16 * (thumb + 6)
+    height = 112 + len(subsets) * 126 + padding
+    sheet = Image.new("RGBA", (width, height), BACKGROUND)
+    draw = ImageDraw.Draw(sheet)
+    label(draw, (padding, 22), "SEEDFIELD / DIRECTION PROBE / 4 vs 8 vs 16", 24)
+    label(
+        draw,
+        (padding, 56),
+        f"asymmetric drill frame · 512px · {probe['seconds']}s for 16 frames",
+        13,
+        MUTED,
+    )
+    for row, (title, chosen) in enumerate(subsets):
+        y = 112 + row * 126
+        label(draw, (padding, y), f"{title} · {len(chosen)} frames", 13, TEXT)
+        total_bytes = sum(path.stat().st_size for path in chosen)
+        label(
+            draw,
+            (padding + 260, y),
+            f"{total_bytes / 1024:.0f} KB",
+            12,
+            MUTED,
+        )
+        for index, path in enumerate(chosen):
+            image = fitted(Image.open(path), thumb)
+            x = padding + index * (thumb + 6)
+            sheet.alpha_composite(image, (x, y + 22))
+            label(draw, (x, y + 100), path.stem.split("_")[-1], 9, MUTED)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    sheet.convert("RGB").save(OUT / "direction-4-8-16.png")
+    print(f"SHEET {OUT / 'direction-4-8-16.png'} {sheet.width}x{sheet.height}")
+
+
+def core_states_sheet() -> None:
+    states = (
+        ("seed_core", "IDLE"),
+        ("seed_core_regenerating", "REGENERATING"),
+        ("seed_core_bootstrap", "BOOTSTRAP"),
+        ("seed_core_besieged", "BESIEGED"),
+    )
+    cell = 300
+    padding = 28
+    width = padding * 2 + len(states) * 320
+    height = 112 + cell + 70
+    sheet = Image.new("RGBA", (width, height), BACKGROUND)
+    draw = ImageDraw.Draw(sheet)
+    label(draw, (padding, 22), "SEEDFIELD / CORE STATES / RUNTIME SPRITES", 24)
+    label(draw, (padding, 56), "idle · regenerating · bootstrap · besieged", 13, MUTED)
+    for index, (name, title) in enumerate(states):
+        x = padding + index * 320
+        image = Image.open(asset_path("oblique", name))
+        sheet.alpha_composite(fitted(image, cell), (x, 120))
+        sheet.alpha_composite(silhouette(image, 70), (x + 220, 350))
+        label(draw, (x, 96), title, 14, TEXT)
+        label(draw, (x, 430), name, 10, MUTED)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    sheet.convert("RGB").save(OUT / "core-states.png")
+    print(f"SHEET {OUT / 'core-states.png'} {sheet.width}x{sheet.height}")
+
+
+def module_sheet() -> None:
+    modules = (
+        ("worker_frame", "EMPTY SOCKET"),
+        ("worker_frame_drill", "DRILL MODULE"),
+        ("worker_frame_sensor", "SENSOR MODULE"),
+    )
+    cell = 280
+    padding = 28
+    width = padding * 2 + len(modules) * 300
+    height = 112 + cell + 70
+    sheet = Image.new("RGBA", (width, height), BACKGROUND)
+    draw = ImageDraw.Draw(sheet)
+    label(draw, (padding, 22), "SEEDFIELD / MODULE SWAP / RUNTIME SPRITES", 24)
+    label(draw, (padding, 56), "same frame, different module silhouette", 13, MUTED)
+    for index, (name, title) in enumerate(modules):
+        x = padding + index * 300
+        image = Image.open(asset_path("oblique", name))
+        sheet.alpha_composite(fitted(image, cell), (x, 120))
+        sheet.alpha_composite(silhouette(image, 64), (x + 206, 350))
+        label(draw, (x, 96), title, 14, TEXT)
+        label(draw, (x, 410), name, 10, MUTED)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    sheet.convert("RGB").save(OUT / "module-swap.png")
+    print(f"SHEET {OUT / 'module-swap.png'} {sheet.width}x{sheet.height}")
+
+
+def mask_sheet() -> None:
+    assets = (
+        ("worker_frame_sensor", "SENSOR"),
+        ("seed_core", "CORE"),
+    )
+    channels = (("", "DIFFUSE"), ("_normal", "NORMAL"), ("_emissive", "EMISSIVE"))
+    cell = 240
+    padding = 28
+    width = padding * 2 + len(channels) * 260
+    height = 112 + len(assets) * 300
+    sheet = Image.new("RGBA", (width, height), BACKGROUND)
+    draw = ImageDraw.Draw(sheet)
+    label(draw, (padding, 22), "SEEDFIELD / MASK PASSES / BLENDER 5.2", 24)
+    label(draw, (padding, 56), "camera-space normal + emissive only", 13, MUTED)
+    for row, (name, title) in enumerate(assets):
+        y = 112 + row * 300
+        label(draw, (padding, y), title, 13, TEXT)
+        for column, (suffix, channel) in enumerate(channels):
+            x = padding + column * 260
+            path = ART / "style_oblique" / f"{name}_oblique_000{suffix}.png"
+            sheet.alpha_composite(fitted(Image.open(path), cell), (x, y + 28))
+            label(draw, (x, y + 276), channel, 10, MUTED)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    sheet.convert("RGB").save(OUT / "mask-sheet.png")
+    print(f"SHEET {OUT / 'mask-sheet.png'} {sheet.width}x{sheet.height}")
+
+
 def main() -> None:
     layers_sheet()
     zoom_sheet()
+    direction_sheet()
+    core_states_sheet()
+    module_sheet()
+    mask_sheet()
 
 
 if __name__ == "__main__":

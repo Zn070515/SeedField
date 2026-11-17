@@ -1,8 +1,9 @@
-"""Rebuild game/SeedField.Game/Art/manifest.json from rendered style assets.
+"""Rebuild game/SeedField.Game/Art/manifest.json from runtime art.
 
 The runtime PNGs under Art/style_<route>/ are the source of truth for file names,
 directions, hashes and alpha bounds. Pivots are derived from the alpha bounding
-box so sprites sit on their world anchor.
+box so sprites sit on their world anchor. Normal/emissive passes are optional
+siblings named <frame>_normal.png and <frame>_emissive.png.
 
 Usage:
   python tools/build_art_manifest.py
@@ -13,16 +14,46 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import struct
 import zlib
 from pathlib import Path
 
-ASSETS = ("power_node", "seed_core", "worker_frame")
+ASSETS = (
+    "power_node",
+    "seed_core",
+    "seed_core_regenerating",
+    "seed_core_bootstrap",
+    "seed_core_besieged",
+    "worker_frame",
+    "worker_frame_drill",
+    "worker_frame_sensor",
+    "direction_probe",
+)
+TOPDOWN_ASSETS = {"power_node", "seed_core", "worker_frame"}
 ROUTES = ("oblique", "topdown")
 FOOTPRINTS = {
     "power_node": 300,
     "seed_core": 420,
+    "seed_core_regenerating": 420,
+    "seed_core_bootstrap": 420,
+    "seed_core_besieged": 420,
     "worker_frame": 260,
+    "worker_frame_drill": 260,
+    "worker_frame_sensor": 260,
+    "direction_probe": 260,
+}
+STATES = {
+    "seed_core": "idle",
+    "seed_core_regenerating": "regenerating",
+    "seed_core_bootstrap": "bootstrap",
+    "seed_core_besieged": "besieged",
+}
+PIVOT_OVERRIDES = {
+    "seed_core": [0.5, 0.84],
+    "seed_core_regenerating": [0.5, 0.84],
+    "seed_core_bootstrap": [0.5, 0.84],
+    "seed_core_besieged": [0.5, 0.84],
 }
 
 
@@ -123,12 +154,18 @@ def build_manifest(repo: Path) -> dict:
     for route in ROUTES:
         folder = art_root / f"style_{route}"
         for name in ASSETS:
-            asset_id = f"{name}.{route}.v0"
+            frame_pattern = re.compile(rf"^{re.escape(name)}_{route}_(\d{{3}})\.png$")
             runtime_files = sorted(
-                folder.glob(f"{name}_{route}_*.png"),
+                (
+                    path
+                    for path in folder.glob(f"{name}_{route}_*.png")
+                    if frame_pattern.match(path.name)
+                ),
                 key=lambda path: path.name,
             )
             if not runtime_files:
+                if route == "topdown" and name not in TOPDOWN_ASSETS:
+                    continue
                 raise FileNotFoundError(
                     f"missing runtime assets: {folder}/{name}_{route}_*.png"
                 )
@@ -145,42 +182,66 @@ def build_manifest(repo: Path) -> dict:
                     raise ValueError(
                         f"{runtime}: {coverage:.1%} opaque pixels; alpha likely broken"
                     )
-                if bbox[0] < 2 or bbox[1] < 2 or bbox[2] > width - 3 or bbox[3] > height - 3:
+                if (
+                    bbox[0] < 2
+                    or bbox[1] < 2
+                    or bbox[2] > width - 3
+                    or bbox[3] > height - 3
+                ):
                     raise ValueError(f"{runtime}: sprite touches the frame edge {bbox}")
                 if front_bottom is None:
                     front_bottom = bbox[3]
                     front_height = height
-                files.append(
-                    {
-                        "path": f"style_{route}/{runtime.name}",
-                        "sha256": sha256(runtime),
-                        "alphaBBox": list(bbox),
+
+                entry = {
+                    "path": f"style_{route}/{runtime.name}",
+                    "sha256": sha256(runtime),
+                    "alphaBBox": list(bbox),
+                }
+                for pass_name in ("normal", "emissive"):
+                    pass_path = runtime.with_name(f"{runtime.stem}_{pass_name}.png")
+                    if not pass_path.exists():
+                        continue
+                    pass_box, _, pass_width, pass_height = decode_alpha(pass_path)
+                    if pass_width != width or pass_height != height:
+                        raise ValueError(
+                            f"{pass_path}: pass size {pass_width}x{pass_height} "
+                            f"does not match diffuse {width}x{height}"
+                        )
+                    entry[pass_name] = {
+                        "path": f"style_{route}/{pass_path.name}",
+                        "sha256": sha256(pass_path),
+                        "alphaBBox": list(pass_box),
                     }
-                )
+                files.append(entry)
 
             if route == "topdown":
                 pivot = [0.5, 0.5]
             else:
-                pivot = [0.5, round((front_bottom + 1) / float(front_height), 3)]
+                pivot = PIVOT_OVERRIDES.get(
+                    name,
+                    [0.5, round((front_bottom + 1) / float(front_height), 3)],
+                )
 
-            entries.append(
-                {
-                    "assetId": asset_id,
-                    "kind": "style-test",
-                    "route": route,
-                    "directions": len(files),
-                    "resolutionPx": [width, height],
-                    "footprintPx": FOOTPRINTS[name],
-                    "pivot": pivot,
-                    "source": source,
-                    "license": license_name,
-                    "status": "style-test-not-final",
-                    "files": files,
-                }
-            )
+            asset = {
+                "assetId": f"{name}.{route}.v0",
+                "kind": "style-test",
+                "route": route,
+                "directions": len(files),
+                "resolutionPx": [width, height],
+                "footprintPx": FOOTPRINTS[name],
+                "pivot": pivot,
+                "source": source,
+                "license": license_name,
+                "status": "style-test-not-final",
+                "files": files,
+            }
+            if name in STATES:
+                asset["state"] = STATES[name]
+            entries.append(asset)
 
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "kind": "style-test-assets",
         "status": "not-final-art",
         "notice": "Static style sample. Not gameplay art; see docs/art and art/reference.",

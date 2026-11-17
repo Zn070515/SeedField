@@ -21,7 +21,24 @@ public sealed class ArtAssetTests
     {
         ["power_node"] = new[] { 0, 90, 180, 270 },
         ["seed_core"] = new[] { 0, 36 },
-        ["worker_frame"] = new[] { 0, 90, 180, 270 },
+        ["seed_core_regenerating"] = new[] { 0 },
+        ["seed_core_bootstrap"] = new[] { 0 },
+        ["seed_core_besieged"] = new[] { 0 },
+        ["worker_frame"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
+        ["worker_frame_drill"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
+        ["worker_frame_sensor"] = new[] { 0, 45, 90, 135, 180, 225, 270, 315 },
+        ["direction_probe"] = new[]
+        {
+            0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338,
+        },
+    };
+
+    private static readonly Dictionary<string, string> ExpectedStates = new(StringComparer.Ordinal)
+    {
+        ["seed_core"] = "idle",
+        ["seed_core_regenerating"] = "regenerating",
+        ["seed_core_bootstrap"] = "bootstrap",
+        ["seed_core_besieged"] = "besieged",
     };
 
     [Fact]
@@ -34,8 +51,8 @@ public sealed class ArtAssetTests
 
         using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
         Assert.True(
-            manifest.RootElement.GetProperty("schemaVersion").GetInt32() >= 2,
-            "Art manifest schemaVersion must be at least 2.");
+            manifest.RootElement.GetProperty("schemaVersion").GetInt32() >= 3,
+            "Art manifest schemaVersion must be at least 3.");
 
         var assets = manifest.RootElement.GetProperty("assets");
         var listed = new HashSet<string>(StringComparer.Ordinal);
@@ -85,6 +102,17 @@ public sealed class ArtAssetTests
             }
 
             var name = assetId.Split('.')[0];
+            if (ExpectedStates.TryGetValue(name, out var expectedState))
+            {
+                var actualState = asset.TryGetProperty("state", out var stateElement)
+                    ? stateElement.GetString()
+                    : null;
+                if (actualState != expectedState)
+                {
+                    problems.Add($"{assetId}: state must be '{expectedState}', got '{actualState}'");
+                }
+            }
+
             int[] expectedAngles;
             if (route == "topdown")
             {
@@ -203,6 +231,77 @@ public sealed class ArtAssetTests
                     problems.Add($"{assetId}: alphaBBox is stale for '{relative}'");
                 }
 
+                foreach (var passName in new[] { "normal", "emissive" })
+                {
+                    if (!file.TryGetProperty(passName, out var pass))
+                    {
+                        continue;
+                    }
+
+                    var passRelative = pass.GetProperty("path").GetString() ?? "<missing>";
+                    if (passRelative.Contains("..", StringComparison.Ordinal) ||
+                        Path.IsPathRooted(passRelative))
+                    {
+                        problems.Add($"{assetId}: unsafe {passName} path '{passRelative}'");
+                        continue;
+                    }
+
+                    var passFull = Path.GetFullPath(Path.Combine(artRoot, passRelative));
+                    if (!passFull.StartsWith(
+                            Path.GetFullPath(artRoot) + Path.DirectorySeparatorChar,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        problems.Add($"{assetId}: {passName} path escapes Art root");
+                        continue;
+                    }
+
+                    if (!File.Exists(passFull))
+                    {
+                        problems.Add($"{assetId}: missing {passName} file '{passRelative}'");
+                        continue;
+                    }
+
+                    listed.Add(passRelative);
+                    var passBytes = File.ReadAllBytes(passFull);
+                    var passHash = Convert.ToHexString(SHA256.HashData(passBytes))
+                        .ToLowerInvariant();
+                    if (!string.Equals(
+                            pass.GetProperty("sha256").GetString(),
+                            passHash,
+                            StringComparison.Ordinal))
+                    {
+                        problems.Add($"{assetId}: {passName} sha256 mismatch");
+                    }
+
+                    AlphaInfo passAlpha;
+                    try
+                    {
+                        passAlpha = DecodeAlpha(passBytes);
+                    }
+                    catch (Exception exception) when (
+                        exception is InvalidDataException or IOException)
+                    {
+                        problems.Add(
+                            $"{assetId}: cannot decode {passName} '{passRelative}': " +
+                            exception.Message);
+                        continue;
+                    }
+
+                    if (passAlpha.Width != 512 || passAlpha.Height != 512)
+                    {
+                        problems.Add($"{assetId}: {passName} must be 512x512");
+                    }
+
+                    var passBox = pass.GetProperty("alphaBBox");
+                    if (passBox[0].GetInt32() != passAlpha.MinX ||
+                        passBox[1].GetInt32() != passAlpha.MinY ||
+                        passBox[2].GetInt32() != passAlpha.MaxX ||
+                        passBox[3].GetInt32() != passAlpha.MaxY)
+                    {
+                        problems.Add($"{assetId}: {passName} alphaBBox is stale");
+                    }
+                }
+
                 if (index == 0)
                 {
                     frontFrame = alpha;
@@ -244,6 +343,31 @@ public sealed class ArtAssetTests
             }
         }
 
+        var coreFrames = assets.EnumerateArray()
+            .Where(asset => asset.TryGetProperty("state", out _) &&
+                            asset.GetProperty("route").GetString() == "oblique")
+            .ToList();
+        if (coreFrames.Count > 0)
+        {
+            var firstPivot = coreFrames[0].GetProperty("pivot");
+            var firstFootprint = coreFrames[0].GetProperty("footprintPx").GetInt32();
+            foreach (var coreFrame in coreFrames.Skip(1))
+            {
+                var pivot = coreFrame.GetProperty("pivot");
+                var assetId = coreFrame.GetProperty("assetId").GetString();
+                if (Math.Abs(pivot[0].GetDouble() - firstPivot[0].GetDouble()) > 0.001 ||
+                    Math.Abs(pivot[1].GetDouble() - firstPivot[1].GetDouble()) > 0.001)
+                {
+                    problems.Add($"{assetId}: core state pivot differs from idle");
+                }
+
+                if (coreFrame.GetProperty("footprintPx").GetInt32() != firstFootprint)
+                {
+                    problems.Add($"{assetId}: core state footprint differs from idle");
+                }
+            }
+        }
+
         var unlisted = Directory
             .EnumerateFiles(artRoot, "*.png", SearchOption.AllDirectories)
             .Select(path => Path.GetRelativePath(artRoot, path).Replace('\\', '/'))
@@ -259,7 +383,13 @@ public sealed class ArtAssetTests
                  {
                      "power_node.oblique.v0",
                      "seed_core.oblique.v0",
+                     "seed_core_regenerating.oblique.v0",
+                     "seed_core_bootstrap.oblique.v0",
+                     "seed_core_besieged.oblique.v0",
                      "worker_frame.oblique.v0",
+                     "worker_frame_drill.oblique.v0",
+                     "worker_frame_sensor.oblique.v0",
+                     "direction_probe.oblique.v0",
                      "power_node.topdown.v0",
                      "seed_core.topdown.v0",
                      "worker_frame.topdown.v0",
