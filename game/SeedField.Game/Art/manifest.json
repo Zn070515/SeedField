@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "kind": "style-test-assets",
+  "status": "not-final-art",
+  "assets": [
+    {
+      "assetId": "power_node.oblique.v0",
+      "kind": "style-test",
+      "route": "oblique",
+      "directions": 4,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_oblique/power_node_oblique_000.png",
+          "sha256": "71c5587ac19dd963b807c1f37c36a52fcb3820360d143e2110cd5a6dc46a5891"
+        },
+        {
+          "path": "style_oblique/power_node_oblique_090.png",
+          "sha256": "d4b9664251380d246766ca34019fb0669759ed715a4dc3f40769ad42290ca124"
+        },
+        {
+          "path": "style_oblique/power_node_oblique_180.png",
+          "sha256": "e039fbce3d8ea059a551e5f3237a05ea5d41aaded7df075e5321d4bc8004e80a"
+        },
+        {
+          "path": "style_oblique/power_node_oblique_270.png",
+          "sha256": "de70dc98199c1e1d07f627bc0932869ab99e9ced2fe9185e2b0efdfcbea6b29b"
+        }
+      ]
+    },
+    {
+      "assetId": "seed_core.oblique.v0",
+      "kind": "style-test",
+      "route": "oblique",
+      "directions": 2,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_oblique/seed_core_oblique_000.png",
+          "sha256": "e1affadc4c7a7ff22a6022a1a6181330b467e15019458be640ad68e79098caef"
+        },
+        {
+          "path": "style_oblique/seed_core_oblique_045.png",
+          "sha256": "47fb7b3e080e7d44de6b2e6fb98e037447095154f236b02578963805c8a961a4"
+        }
+      ]
+    },
+    {
+      "assetId": "worker_frame.oblique.v0",
+      "kind": "style-test",
+      "route": "oblique",
+      "directions": 4,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_oblique/worker_frame_oblique_000.png",
+          "sha256": "9d7fa6c1c68af203d74db8f0d24f25ac4abf236e4f9a48540fcb5bbe00285cbc"
+        },
+        {
+          "path": "style_oblique/worker_frame_oblique_090.png",
+          "sha256": "322aeeb7d3a34a4711f891c1515c9dba3765d6453a434054f44822990f84b5df"
+        },
+        {
+          "path": "style_oblique/worker_frame_oblique_180.png",
+          "sha256": "3d42ad5d680c685bebb2ae7a6ae3e14971c7f7e43c075b28284a0249aeeaa158"
+        },
+        {
+          "path": "style_oblique/worker_frame_oblique_270.png",
+          "sha256": "e4d9554afb1bc025843b2a23d33539a03aba6d5cc4c0c2c37bbca33a2bf5d6be"
+        }
+      ]
+    },
+    {
+      "assetId": "power_node.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/power_node_topdown_000.png",
+          "sha256": "cd57e9666cddeb164321362bc359e0b5802a75aa56f00c0c791f03ea60a88b11"
+        }
+      ]
+    },
+    {
+      "assetId": "seed_core.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/seed_core_topdown_000.png",
+          "sha256": "35b89450d83fbf717b592093a9beedf69b9d1a54d35ac00dc507b15cd4b81b8b"
+        }
+      ]
+    },
+    {
+      "assetId": "worker_frame.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/worker_frame_topdown_000.png",
+          "sha256": "865961991fd6f9bb6a89fb0f34eb561fa237123ec9ee4682a62b6b8f1169fbf8"
+        }
+      ]
+    }
+  ]
+}
