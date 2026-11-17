@@ -26,6 +26,44 @@ public sealed class JsControllerTests
     }
 
     [Fact]
+    public void ControllersWithTheSameScriptKeepSeparateGlobals()
+    {
+        const string script = """
+            var calls = 0;
+            function decide(obs) {
+                calls++;
+                return [{
+                    type: "send",
+                    entityId: 1,
+                    toCivilizationId: "B",
+                    topic: "count",
+                    payload: String(calls)
+                }];
+            }
+            """;
+        var observation = CreateObservation();
+        using var first = new JsController("A", script);
+        using var second = new JsController("A", script);
+
+        var firstRun = first.Decide(observation);
+        var secondRun = second.Decide(observation);
+        var firstAgain = first.Decide(observation);
+
+        Assert.True(
+            firstRun.Intents.Count == 1,
+            string.Join(" | ", firstRun.Faults.Select(fault => $"{fault.Code}:{fault.Message}")));
+        Assert.Equal(
+            "1",
+            Assert.IsType<SendMessageIntent>(Assert.Single(firstRun.Intents)).Payload);
+        Assert.Equal(
+            "1",
+            Assert.IsType<SendMessageIntent>(Assert.Single(secondRun.Intents)).Payload);
+        Assert.Equal(
+            "2",
+            Assert.IsType<SendMessageIntent>(Assert.Single(firstAgain.Intents)).Payload);
+    }
+
+    [Fact]
     public void RejectsObservationAboveByteLimitBeforeParsing()
     {
         using var controller = new JsController(

@@ -21,6 +21,15 @@ internal static partial class Program
 
         if (TryReadBenchmarkDevices(
                 args,
+                "--benchmark-startup",
+                out var startupDevices,
+                out var startupInvalid))
+        {
+            return startupInvalid ? 2 : RunStartupBenchmark(startupDevices);
+        }
+
+        if (TryReadBenchmarkDevices(
+                args,
                 "--benchmark-observation",
                 out var observationDevices,
                 out var observationInvalid))

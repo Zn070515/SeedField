@@ -9,11 +9,11 @@ public sealed record ControllerExecutionOptions
     public int MinBatchSize { get; init; } = 8;
 
     /// <summary>
-    /// Physical-core heuristic: SMT siblings do not speed up allocation-heavy Jint
-    /// work and made 1000-device ticks slower on the 32-thread dev machine.
+    /// With server GC enabled, using every logical processor is fastest: the GC
+    /// threads and controller workers overlap instead of contending for a subset.
     /// </summary>
     public int MaxDegreeOfParallelism { get; init; } =
-        Math.Clamp(Environment.ProcessorCount, 1, 16);
+        Math.Max(1, Environment.ProcessorCount);
 
     public void Validate()
     {

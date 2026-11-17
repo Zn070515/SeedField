@@ -32,6 +32,20 @@ public sealed partial class RepositoryConventionTests
     }
 
     [Fact]
+    public void HeadlessRuntimeEnablesServerGarbageCollection()
+    {
+        var path = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "SeedField.Headless",
+            "SeedField.Headless.csproj");
+
+        Assert.Contains(
+            "<ServerGarbageCollection>true</ServerGarbageCollection>",
+            File.ReadAllText(path));
+    }
+
+    [Fact]
     public void MarkdownFilesStayWithinTheLineLimit()
     {
         var violations = EnumerateFiles("*.md")

@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
+using Acornima.Ast;
 using Jint;
 using Jint.Native;
 using Jint.Runtime;
@@ -27,6 +29,9 @@ public sealed class JsController : IController
         }
         """;
 
+    private static readonly ConcurrentDictionary<(string Source, bool Strict), Prepared<Script>>
+        PreparedScripts = new();
+
     private readonly Engine _engine;
     private JsValue _runFunction = JsValue.Undefined;
 
@@ -51,8 +56,7 @@ public sealed class JsController : IController
 
         try
         {
-            _engine.Execute(script);
-            _engine.Execute(Harness);
+            _engine.Execute(GetPreparedScript(script + "\n" + Harness));
             _runFunction = _engine.Evaluate("__seedfield_run");
 
             var hasDecide = _engine.Evaluate("typeof decide === 'function'").AsBoolean();
@@ -152,6 +156,25 @@ public sealed class JsController : IController
         {
             return ControllerRunResult.Fault(ScriptFaultCodes.Fault, exception.Message);
         }
+    }
+
+    /// <summary>
+    /// Parses and analyzes a controller source once and shares the result across all
+    /// engines. Prepared scripts are thread-safe; the bound cache keeps repeated
+    /// hot deployments from growing without limit.
+    /// </summary>
+    private static Prepared<Script> GetPreparedScript(string source)
+    {
+        if (PreparedScripts.Count > 128)
+        {
+            PreparedScripts.Clear();
+        }
+
+        return PreparedScripts.GetOrAdd((source, true), key =>
+            Engine.PrepareScript(
+                key.Source,
+                source: "seedfield-controller.js",
+                strict: key.Strict));
     }
 
     private static ControllerDecision ParseDecision(string json, string civilizationId)
