@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -5,14 +6,22 @@ namespace SeedField.Repository.Tests;
 
 /// <summary>
 /// Art asset integrity gate: every runtime style-test PNG must be listed, hashed,
-/// 512x512 RGBA, and traceable to the Blender source script. This does not judge
-/// aesthetics; it prevents unlisted or broken assets from entering the project.
+/// 512x512 RGBA, have real transparent margins and alpha content, expose a pivot
+/// that matches its alpha bounds, and contain the expected direction frames.
+/// This does not judge aesthetics; it prevents broken or mis-anchored assets.
 /// </summary>
 public sealed class ArtAssetTests
 {
     private static readonly byte[] PngSignature =
     {
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+    };
+
+    private static readonly Dictionary<string, int[]> ExpectedDirections = new(StringComparer.Ordinal)
+    {
+        ["power_node"] = new[] { 0, 90, 180, 270 },
+        ["seed_core"] = new[] { 0, 36 },
+        ["worker_frame"] = new[] { 0, 90, 180, 270 },
     };
 
     [Fact]
@@ -24,6 +33,10 @@ public sealed class ArtAssetTests
         Assert.True(File.Exists(manifestPath), "Art manifest.json is missing.");
 
         using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        Assert.True(
+            manifest.RootElement.GetProperty("schemaVersion").GetInt32() >= 2,
+            "Art manifest schemaVersion must be at least 2.");
+
         var assets = manifest.RootElement.GetProperty("assets");
         var listed = new HashSet<string>(StringComparer.Ordinal);
         var problems = new List<string>();
@@ -49,8 +62,43 @@ public sealed class ArtAssetTests
                 problems.Add($"{assetId}: resolution must be 512x512");
             }
 
-            foreach (var file in asset.GetProperty("files").EnumerateArray())
+            var footprint = asset.GetProperty("footprintPx").GetInt32();
+            if (footprint is < 64 or > 768)
             {
+                problems.Add($"{assetId}: footprintPx {footprint} is outside 64..768");
+            }
+
+            var pivot = asset.GetProperty("pivot");
+            var pivotX = pivot[0].GetDouble();
+            var pivotY = pivot[1].GetDouble();
+            if (pivotX is < 0 or > 1 || pivotY is < 0 or > 1)
+            {
+                problems.Add($"{assetId}: pivot must be normalized 0..1");
+            }
+
+            var files = asset.GetProperty("files").EnumerateArray().ToList();
+            var declaredDirections = asset.GetProperty("directions").GetInt32();
+            if (declaredDirections != files.Count)
+            {
+                problems.Add(
+                    $"{assetId}: directions {declaredDirections} != file count {files.Count}");
+            }
+
+            var name = assetId.Split('.')[0];
+            var expectedAngles = route == "topdown"
+                ? new[] { 0 }
+                : ExpectedDirections[name];
+            if (declaredDirections != expectedAngles.Length)
+            {
+                problems.Add(
+                    $"{assetId}: expected {expectedAngles.Length} directions, got {declaredDirections}");
+            }
+
+            var angles = new List<int>();
+            AlphaInfo? frontFrame = null;
+            for (var index = 0; index < files.Count; index++)
+            {
+                var file = files[index];
                 var relative = file.GetProperty("path").GetString() ?? "<missing>";
                 if (relative.Contains("..", StringComparison.Ordinal) ||
                     Path.IsPathRooted(relative))
@@ -75,16 +123,111 @@ public sealed class ArtAssetTests
                 }
 
                 listed.Add(relative);
+                var bytes = File.ReadAllBytes(full);
                 var expectedHash = file.GetProperty("sha256").GetString();
-                var actualHash = Convert.ToHexString(
-                        SHA256.HashData(File.ReadAllBytes(full)))
-                    .ToLowerInvariant();
+                var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
                 if (!string.Equals(expectedHash, actualHash, StringComparison.Ordinal))
                 {
                     problems.Add($"{assetId}: sha256 mismatch for '{relative}'");
                 }
 
-                problems.AddRange(InspectPng(full, assetId, relative));
+                var angle = ParseAngle(relative);
+                if (angle is null)
+                {
+                    problems.Add($"{assetId}: file name lacks a direction angle '{relative}'");
+                }
+                else
+                {
+                    angles.Add(angle.Value);
+                    var expectedName = $"{name}_{route}_{angle.Value:000}.png";
+                    if (Path.GetFileName(relative) != expectedName)
+                    {
+                        problems.Add($"{assetId}: expected file name '{expectedName}'");
+                    }
+                }
+
+                AlphaInfo alpha;
+                try
+                {
+                    alpha = DecodeAlpha(bytes);
+                }
+                catch (Exception exception) when (
+                    exception is InvalidDataException or IOException)
+                {
+                    problems.Add($"{assetId}: cannot decode '{relative}': {exception.Message}");
+                    continue;
+                }
+
+                if (alpha.Width != 512 || alpha.Height != 512)
+                {
+                    problems.Add($"{assetId}: PNG is {alpha.Width}x{alpha.Height}, expected 512x512");
+                }
+
+                if (alpha.Coverage < 0.04)
+                {
+                    problems.Add($"{assetId}: '{relative}' is only {alpha.Coverage:P0} opaque");
+                }
+
+                if (alpha.Coverage > 0.80)
+                {
+                    problems.Add($"{assetId}: '{relative}' is {alpha.Coverage:P0} opaque; alpha likely broken");
+                }
+
+                if (alpha.MinX < 2 || alpha.MinY < 2 ||
+                    alpha.MaxX > alpha.Width - 3 || alpha.MaxY > alpha.Height - 3)
+                {
+                    problems.Add(
+                        $"{assetId}: sprite touches the frame edge " +
+                        $"({alpha.MinX},{alpha.MinY})-({alpha.MaxX},{alpha.MaxY})");
+                }
+
+                var recordedBox = file.GetProperty("alphaBBox");
+                if (recordedBox[0].GetInt32() != alpha.MinX ||
+                    recordedBox[1].GetInt32() != alpha.MinY ||
+                    recordedBox[2].GetInt32() != alpha.MaxX ||
+                    recordedBox[3].GetInt32() != alpha.MaxY)
+                {
+                    problems.Add($"{assetId}: alphaBBox is stale for '{relative}'");
+                }
+
+                if (index == 0)
+                {
+                    frontFrame = alpha;
+                }
+            }
+
+            angles.Sort();
+            if (!angles.SequenceEqual(expectedAngles))
+            {
+                problems.Add(
+                    $"{assetId}: direction angles [{string.Join(",", angles)}] != " +
+                    $"[{string.Join(",", expectedAngles)}]");
+            }
+
+            if (frontFrame is not null)
+            {
+                if (Math.Abs(pivotX - 0.5) > 0.001)
+                {
+                    problems.Add($"{assetId}: pivot X must be 0.5, got {pivotX}");
+                }
+
+                if (route == "topdown")
+                {
+                    if (Math.Abs(pivotY - 0.5) > 0.001)
+                    {
+                        problems.Add($"{assetId}: topdown pivot Y must be 0.5, got {pivotY}");
+                    }
+                }
+                else
+                {
+                    var expectedPivotY = (frontFrame.MaxY + 1) / (double)frontFrame.Height;
+                    if (Math.Abs(pivotY - expectedPivotY) > 0.01)
+                    {
+                        problems.Add(
+                            $"{assetId}: oblique pivot Y {pivotY:0.000} does not match " +
+                            $"front alpha bottom {expectedPivotY:0.000}");
+                    }
+                }
             }
         }
 
@@ -121,43 +264,147 @@ public sealed class ArtAssetTests
             Environment.NewLine + string.Join(Environment.NewLine, problems));
     }
 
-    private static IEnumerable<string> InspectPng(
-        string path,
-        string assetId,
-        string relative)
+    private static int? ParseAngle(string relative)
     {
-        var bytes = File.ReadAllBytes(path);
+        var name = Path.GetFileNameWithoutExtension(relative);
+        var underscore = name.LastIndexOf('_');
+        if (underscore < 0)
+        {
+            return null;
+        }
+
+        return int.TryParse(name[(underscore + 1)..], out var angle) ? angle : null;
+    }
+
+    private static AlphaInfo DecodeAlpha(byte[] bytes)
+    {
         if (bytes.Length < 33 ||
             !bytes.AsSpan(0, 8).SequenceEqual(PngSignature) ||
             !bytes.AsSpan(12, 4).SequenceEqual("IHDR"u8))
         {
-            yield return $"{assetId}: invalid PNG header '{relative}'";
-            yield break;
+            throw new InvalidDataException("invalid PNG header");
         }
 
         var width = ReadBigEndianInt32(bytes, 16);
         var height = ReadBigEndianInt32(bytes, 20);
         var bitDepth = bytes[24];
         var colorType = bytes[25];
-        if (width != 512 || height != 512)
+        var interlace = bytes[28];
+        if (bitDepth != 8 || colorType != 6 || interlace != 0)
         {
-            yield return $"{assetId}: PNG is {width}x{height}, expected 512x512";
+            throw new InvalidDataException(
+                $"expected 8-bit RGBA non-interlaced, got depth={bitDepth} " +
+                $"color={colorType} interlace={interlace}");
         }
 
-        if (bitDepth != 8)
+        using var idat = new MemoryStream();
+        var offset = 8;
+        while (offset + 12 <= bytes.Length)
         {
-            yield return $"{assetId}: PNG bit depth is {bitDepth}, expected 8";
+            var length = ReadBigEndianInt32(bytes, offset);
+            var kind = bytes.AsSpan(offset + 4, 4);
+            if (kind.SequenceEqual("IDAT"u8))
+            {
+                idat.Write(bytes, offset + 8, length);
+            }
+
+            if (kind.SequenceEqual("IEND"u8))
+            {
+                break;
+            }
+
+            offset += 12 + length;
         }
 
-        if (colorType != 6)
+        idat.Position = 0;
+        using var zlib = new ZLibStream(idat, CompressionMode.Decompress);
+        using var rawStream = new MemoryStream();
+        zlib.CopyTo(rawStream);
+        var raw = rawStream.ToArray();
+
+        var stride = width * 4;
+        if (raw.Length != height * (stride + 1))
         {
-            yield return $"{assetId}: PNG color type {colorType} lacks alpha (expected 6)";
+            throw new InvalidDataException(
+                $"unexpected decompressed size {raw.Length} for {width}x{height}");
         }
 
-        if (bytes.Length < 1_000)
+        var previous = new byte[stride];
+        var current = new byte[stride];
+        var minX = width;
+        var minY = height;
+        var maxX = -1;
+        var maxY = -1;
+        long opaque = 0;
+        var cursor = 0;
+
+        for (var y = 0; y < height; y++)
         {
-            yield return $"{assetId}: PNG '{relative}' looks empty ({bytes.Length} bytes)";
+            var filter = raw[cursor++];
+            Buffer.BlockCopy(raw, cursor, current, 0, stride);
+            cursor += stride;
+            Unfilter(current, previous, filter, 4);
+            for (var x = 0; x < width; x++)
+            {
+                if (current[x * 4 + 3] > 8)
+                {
+                    opaque++;
+                    minX = Math.Min(minX, x);
+                    maxX = Math.Max(maxX, x);
+                    minY = Math.Min(minY, y);
+                    maxY = Math.Max(maxY, y);
+                }
+            }
+
+            (previous, current) = (current, previous);
         }
+
+        if (maxX < 0)
+        {
+            throw new InvalidDataException("image is fully transparent");
+        }
+
+        return new AlphaInfo(
+            width,
+            height,
+            minX,
+            minY,
+            maxX,
+            maxY,
+            opaque / (double)(width * height));
+    }
+
+    private static void Unfilter(byte[] row, byte[] previous, int filter, int bpp)
+    {
+        for (var index = 0; index < row.Length; index++)
+        {
+            var left = index >= bpp ? row[index - bpp] : 0;
+            var up = previous[index];
+            var upLeft = index >= bpp ? previous[index - bpp] : 0;
+            row[index] = filter switch
+            {
+                0 => row[index],
+                1 => (byte)(row[index] + left),
+                2 => (byte)(row[index] + up),
+                3 => (byte)(row[index] + ((left + up) >> 1)),
+                4 => (byte)(row[index] + Paeth(left, up, upLeft)),
+                _ => throw new InvalidDataException($"unknown PNG filter {filter}"),
+            };
+        }
+    }
+
+    private static int Paeth(int left, int up, int upLeft)
+    {
+        var estimate = left + up - upLeft;
+        var leftDistance = Math.Abs(estimate - left);
+        var upDistance = Math.Abs(estimate - up);
+        var upLeftDistance = Math.Abs(estimate - upLeft);
+        if (leftDistance <= upDistance && leftDistance <= upLeftDistance)
+        {
+            return left;
+        }
+
+        return upDistance <= upLeftDistance ? up : upLeft;
     }
 
     private static int ReadBigEndianInt32(byte[] bytes, int offset) =>
@@ -181,4 +428,13 @@ public sealed class ArtAssetTests
 
         throw new InvalidOperationException("Repository root was not found.");
     }
+
+    private sealed record AlphaInfo(
+        int Width,
+        int Height,
+        int MinX,
+        int MinY,
+        int MaxX,
+        int MaxY,
+        double Coverage);
 }
