@@ -130,27 +130,54 @@ public static class ObservationBuilder
     public static Observation BuildForEntity(WorldState world, EntityId entityId)
     {
         ArgumentNullException.ThrowIfNull(world);
+        return BuildForEntity(world, entityId, ObservationCache.Build(world));
+    }
+
+    internal static Observation BuildForEntity(
+        WorldState world,
+        EntityId entityId,
+        ObservationCache cache,
+        bool includeAllies = true)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(cache);
 
         var viewer = world.FindEntity(entityId)
             ?? throw new ArgumentException($"Entity '{entityId}' does not exist.", nameof(entityId));
         var region = world.Regions[viewer.RegionId];
 
-        var visible = new SortedDictionary<long, ObservedEntity>();
-        foreach (var candidate in region.Entities.Values)
-        {
-            if (candidate.Id != viewer.Id &&
-                !string.Equals(candidate.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
-                !VisibilityRules.IsSensedBy(viewer, candidate))
+        // One visibility path: own entities come from the shared per-tick cache, and
+        // foreign entities are resolved through the region index. Keeping a second
+        // full-scan implementation here invited the two rules to drift apart.
+        var visible = includeAllies
+            ? new List<ObservedEntity>(cache.Own(region.Id, viewer.CivilizationId))
+            : new List<ObservedEntity>
             {
-                continue;
+                cache.Observe(viewer, viewer.CivilizationId, isSelf: true),
+            };
+        if (viewer.Sensor is { RangeMm: > 0 })
+        {
+            var candidates = new List<EntityState>();
+            cache.Index(region.Id).Query(viewer.Position, viewer.Sensor.RangeMm, candidates);
+            foreach (var candidate in candidates)
+            {
+                if (candidate.Id == viewer.Id ||
+                    string.Equals(
+                        candidate.CivilizationId,
+                        viewer.CivilizationId,
+                        StringComparison.Ordinal) ||
+                    !VisibilityRules.IsSensedBy(viewer, candidate))
+                {
+                    continue;
+                }
+
+                visible.Add(cache.Observe(
+                    candidate,
+                    viewer.CivilizationId,
+                    isSelf: false));
             }
 
-            visible[candidate.Id.Value] = ToObserved(
-                candidate,
-                isSelf: string.Equals(
-                    candidate.CivilizationId,
-                    viewer.CivilizationId,
-                    StringComparison.Ordinal));
+            visible.Sort((left, right) => left.EntityId.CompareTo(right.EntityId));
         }
 
         var messages = world.GetInbox(viewer.CivilizationId)
@@ -213,7 +240,7 @@ public static class ObservationBuilder
         return new Observation(
             world.Tick,
             viewer.CivilizationId,
-            visible.Values.ToList(),
+            visible,
             messages,
             shipments,
             energyShipments,
@@ -292,7 +319,7 @@ public static class ObservationBuilder
                 match.Rules.CapturedPointsToWin,
                 match.WinnerCivilizationId);
 
-    private static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>
+    internal static ObservedEntity ToObserved(EntityState entity, bool isSelf) =>
         new(
             entity.Id.Value,
             entity.CivilizationId,

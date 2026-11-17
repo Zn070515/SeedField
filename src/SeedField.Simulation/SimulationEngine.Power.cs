@@ -60,6 +60,7 @@ public sealed partial class SimulationEngine
     public PowerCommandResult ExecutePowerCommand(PowerCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        InvalidateObservationCache();
 
         var events = new List<SimulationEvent>();
         return command switch

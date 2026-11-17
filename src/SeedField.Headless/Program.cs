@@ -19,6 +19,42 @@ internal static partial class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-observation",
+                out var observationDevices,
+                out var observationInvalid))
+        {
+            return observationInvalid ? 2 : RunObservationBenchmark(observationDevices);
+        }
+
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-serialize",
+                out var serializeDevices,
+                out var serializeInvalid))
+        {
+            return serializeInvalid ? 2 : RunSerializeBenchmark(serializeDevices);
+        }
+
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-jint",
+                out var jintDevices,
+                out var jintInvalid))
+        {
+            return jintInvalid ? 2 : RunJintBenchmark(jintDevices);
+        }
+
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-jint-full",
+                out var jintFullDevices,
+                out var jintFullInvalid))
+        {
+            return jintFullInvalid ? 2 : RunJintBenchmark(jintFullDevices, compact: false);
+        }
+
         if (args.Contains("--multi-region"))
         {
             return RunMultiRegionDemo();
@@ -143,6 +179,37 @@ internal static partial class Program
             : "MISMATCH: state hashes differ.");
 
         return first.FinalHash == second.FinalHash ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Reads <c>&lt;flag&gt; &lt;positive device count&gt;</c>. A present-but-invalid flag
+    /// reports an error instead of silently falling through to the default demo, which
+    /// would look like a successful benchmark run.
+    /// </summary>
+    private static bool TryReadBenchmarkDevices(
+        string[] args,
+        string flag,
+        out int devices,
+        out bool invalid)
+    {
+        devices = 0;
+        invalid = false;
+
+        var index = Array.IndexOf(args, flag);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (index + 1 >= args.Length ||
+            !int.TryParse(args[index + 1], out devices) ||
+            devices <= 0)
+        {
+            Console.Error.WriteLine($"{flag} requires a positive device count.");
+            invalid = true;
+        }
+
+        return true;
     }
 
     private static void AdvanceToTick(

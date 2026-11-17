@@ -6,6 +6,7 @@ public sealed partial class SimulationEngine
     public WreckCommandResult ExecuteWreckCommand(WreckCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        InvalidateObservationCache();
 
         var events = new List<SimulationEvent>();
         return command switch
