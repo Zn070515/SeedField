@@ -9,6 +9,11 @@ public partial class Main
         {
             ShotFired shot =>
                 $"t{shot.Tick,4}  {shot.AttackerId} → {shot.TargetId}   hit {shot.Damage}   −{shot.EnergySpent}E",
+            ShotMissed missed =>
+                $"t{missed.Tick,4}  {missed.AttackerId} → {missed.TargetId}   miss   −{missed.EnergySpent}E",
+            CombatLootGranted loot =>
+                $"t{loot.Tick,4}  {loot.CivilizationId} looted {loot.Material}M " +
+                $"from {loot.SourceEntityId} in {loot.RegionId}",
             EntityDestroyed destroyed => $"t{destroyed.Tick,4}  {destroyed.EntityId} destroyed",
             MessageDelivered delivered =>
                 $"t{delivered.Tick,4}  message {delivered.MessageId} delivered to {delivered.ToCivilizationId}",

@@ -9,7 +9,9 @@ namespace SeedField.Simulation.Tests;
 public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
-    private const ulong ExpectedHash = 0x4624154b5bc8c8d6UL;
+    // v18 adds the combat randomness config and miss/loot statistics to the hash;
+    // defaults (100/0/0/0) leave this scenario's behavior unchanged.
+    private const ulong ExpectedHash = 0x77e84c31f71f63baUL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

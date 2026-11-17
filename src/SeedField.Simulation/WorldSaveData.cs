@@ -42,7 +42,11 @@ public sealed record WorldSaveData(
     ulong RandomState = 0,
     WreckSaveData[]? Wrecks = null,
     long NextWreckId = 0,
-    int WreckRecoveryPercent = 0);
+    int WreckRecoveryPercent = 0,
+    int CombatHitChancePercent = 100,
+    int CombatDamageVariancePercent = 0,
+    int CombatLootChancePercent = 0,
+    long CombatLootMaterial = 0);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
@@ -339,7 +343,9 @@ public sealed record StatisticsSaveData(
     long EnergyFlowLossTotal = 0,
     long EnergyAutoDrawnTotal = 0,
     long EnergyWastedTotal = 0,
-    long MaterialSalvagedTotal = 0);
+    long MaterialSalvagedTotal = 0,
+    long ShotsMissed = 0,
+    long MaterialLootedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

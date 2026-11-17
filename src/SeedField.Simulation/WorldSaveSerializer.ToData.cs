@@ -55,7 +55,9 @@ public static partial class WorldSaveSerializer
                 world.Statistics.EnergyFlowLossTotal,
                 world.Statistics.EnergyAutoDrawnTotal,
                 world.Statistics.EnergyWastedTotal,
-                world.Statistics.MaterialSalvagedTotal),
+                world.Statistics.MaterialSalvagedTotal,
+                world.Statistics.ShotsMissed,
+                world.Statistics.MaterialLootedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -233,6 +235,10 @@ public static partial class WorldSaveSerializer
                     wreck.CreatedTick))
                 .ToArray(),
             world.NextWreckId,
-            world.WreckRecoveryPercent);
+            world.WreckRecoveryPercent,
+            world.CombatHitChancePercent,
+            world.CombatDamageVariancePercent,
+            world.CombatLootChancePercent,
+            world.CombatLootMaterial);
     }
 }

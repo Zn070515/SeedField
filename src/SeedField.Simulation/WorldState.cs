@@ -62,6 +62,10 @@ public sealed class SimulationStatistics
     public long EnergyWastedTotal { get; internal set; }
 
     public long MaterialSalvagedTotal { get; internal set; }
+
+    public long ShotsMissed { get; internal set; }
+
+    public long MaterialLootedTotal { get; internal set; }
 }
 
 /// <summary>
@@ -94,6 +98,18 @@ public sealed class WorldState
 
     /// <summary>Scenario rule: percent of blueprint material left as a wreck.</summary>
     public int WreckRecoveryPercent { get; internal set; }
+
+    /// <summary>Scenario rule: chance an attack hits (0..100).</summary>
+    public int CombatHitChancePercent { get; internal set; } = 100;
+
+    /// <summary>Scenario rule: damage rolls within +/- this percent (0..100).</summary>
+    public int CombatDamageVariancePercent { get; internal set; }
+
+    /// <summary>Scenario rule: chance a kill grants loot (0..100).</summary>
+    public int CombatLootChancePercent { get; internal set; }
+
+    /// <summary>Scenario rule: material granted by a successful loot roll.</summary>
+    public long CombatLootMaterial { get; internal set; }
 
     /// <summary>Salvageable remains by stable wreck id.</summary>
     public SortedDictionary<long, WreckState> Wrecks { get; } = new();

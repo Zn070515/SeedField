@@ -118,6 +118,11 @@ internal static partial class Program
             return RunWreckDemo();
         }
 
+        if (args.Contains("--combat-rng"))
+        {
+            return RunCombatRandomnessDemo();
+        }
+
         if (args.Contains("--worker-opponent"))
         {
             return RunWorkerOpponentDemo();

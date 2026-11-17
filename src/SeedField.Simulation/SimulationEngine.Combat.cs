@@ -141,7 +141,24 @@ public sealed partial class SimulationEngine
 
         entity.NextWeaponReadyTick = tick + Math.Max(0, entity.Weapon.CooldownTicks);
 
-        var appliedDamage = Math.Min(entity.Weapon.Damage, target.Health);
+        // Draw order is part of the deterministic contract: hit, damage variance,
+        // loot. 0% never draws; 100% short-circuits without drawing.
+        if (!RollChance(World.CombatHitChancePercent))
+        {
+            World.Statistics.ShotsMissed += 1;
+            events.Add(new ShotMissed(
+                tick,
+                entity.Id,
+                target.Id,
+                entity.Position,
+                target.Position,
+                cost));
+            Accept(intent, $"Missed {target.Id}.", results);
+            return;
+        }
+
+        var rolledDamage = RollDamage(entity.Weapon.Damage);
+        var appliedDamage = Math.Min(rolledDamage, target.Health);
         target.Health -= appliedDamage;
         World.Statistics.DamageDealt += appliedDamage;
 
@@ -168,9 +185,49 @@ public sealed partial class SimulationEngine
                 target.Energy,
                 target.Material));
             CreateWreck(target, targetRegion, tick, events);
+            GrantCombatLoot(entity, region, target, tick, events);
         }
 
         Accept(intent, $"Hit {target.Id} for {appliedDamage}.", results);
+    }
+
+    private bool RollChance(int percent) =>
+        percent >= 100 || (percent > 0 && World.Random.Percent(percent));
+
+    private int RollDamage(int baseDamage)
+    {
+        var variance = Math.Clamp(World.CombatDamageVariancePercent, 0, 100);
+        if (variance <= 0 || baseDamage <= 0)
+        {
+            return baseDamage;
+        }
+
+        var offset = World.Random.NextInt(variance * 2 + 1) - variance;
+        var scaled = (int)((Int128)baseDamage * (100 + offset) / 100);
+        return Math.Max(1, scaled);
+    }
+
+    private void GrantCombatLoot(
+        EntityState attacker,
+        RegionState region,
+        EntityState target,
+        long tick,
+        List<SimulationEvent> events)
+    {
+        if (World.CombatLootMaterial <= 0 ||
+            !RollChance(World.CombatLootChancePercent))
+        {
+            return;
+        }
+
+        region.AddMaterial(attacker.CivilizationId, World.CombatLootMaterial);
+        World.Statistics.MaterialLootedTotal += World.CombatLootMaterial;
+        events.Add(new CombatLootGranted(
+            tick,
+            attacker.CivilizationId,
+            region.Id,
+            target.Id,
+            World.CombatLootMaterial));
     }
 
     private void CreateWreck(
