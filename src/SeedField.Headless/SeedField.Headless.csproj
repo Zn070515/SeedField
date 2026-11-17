@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SeedField.Simulation\SeedField.Simulation.csproj" />
     <ProjectReference Include="..\SeedField.Runtime.Js\SeedField.Runtime.Js.csproj" />
+    <ProjectReference Include="..\SeedField.Catalog\SeedField.Catalog.csproj" />
     <ProjectReference Include="..\SeedField.PackageHost\SeedField.PackageHost.csproj" />
   </ItemGroup>
 

@@ -70,6 +70,7 @@ internal static partial class Program
             var budget = ReadDoubleFlag(args, "--budget-ms", 0);
             var ticks = ReadIntFlag(args, "--ticks", 10);
             var chunkSize = ReadIntFlag(args, "--chunk-size", 0);
+            var catalogDb = ReadStringFlag(args, "--catalog-db");
             exitCode = parallelInvalid
                 ? 2
                 : RunParallelJintBenchmark(
@@ -77,7 +78,8 @@ internal static partial class Program
                     dof,
                     budget,
                     ticks,
-                    chunkSize);
+                    chunkSize,
+                    catalogDb);
             return true;
         }
 

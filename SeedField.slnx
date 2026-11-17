@@ -8,11 +8,13 @@
     <Project Path="src/SeedField.Headless/SeedField.Headless.csproj" />
     <Project Path="src/SeedField.PackageHost/SeedField.PackageHost.csproj" />
     <Project Path="src/SeedField.Runtime.Js/SeedField.Runtime.Js.csproj" />
+    <Project Path="src/SeedField.Catalog/SeedField.Catalog.csproj" />
     <Project Path="src/SeedField.SandboxLauncher/SeedField.SandboxLauncher.csproj" />
     <Project Path="src/SeedField.Simulation/SeedField.Simulation.csproj" />
     <Project Path="src/SeedField.Worker/SeedField.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/SeedField.Catalog.Tests/SeedField.Catalog.Tests.csproj" />
     <Project Path="tests/SeedField.Repository.Tests/SeedField.Repository.Tests.csproj" />
     <Project Path="tests/SeedField.Runtime.Js.Tests/SeedField.Runtime.Js.Tests.csproj" />
     <Project Path="tests/SeedField.Simulation.Tests/SeedField.Simulation.Tests.csproj" />

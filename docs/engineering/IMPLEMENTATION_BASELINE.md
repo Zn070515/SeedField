@@ -41,6 +41,7 @@
 ```text
 src/SeedField.Simulation/     C# 权威仿真核心
 src/SeedField.Runtime.Js/     Jint 4.18.0 适配
+src/SeedField.Catalog/        本地 SQLite 派生索引（回放/存档/基准）
 src/SeedField.Headless/       Headless 纵切片 Runner
 game/SeedField.Game/          Godot 4.7.2 Mono 可视切片（net10.0）
 tests/SeedField.Simulation.Tests/
@@ -101,6 +102,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
+- 本地 SQLite 派生目录：`SeedField.Catalog` 索引回放/存档/包/基准；schema 迁移、WAL/并发、完整性检查与损坏备份重建、缺失标记、SHA-256；`--catalog-rebuild`/`--catalog-list`/`--catalog-check`/`--benchmark-jint-parallel --catalog-db`；不进入 Tick/哈希（ADR-0035）。
 - Phase 2b AppContainer 沙箱：`SeedField.SandboxLauncher` 创建/复用 AppContainer profile、无 capability、worker 目录 RX、继承 stdio、启动器 Job Object；`UseAppContainer`/`--worker-opponent-appcontainer`/`--sandbox-check`；文件/网络/写入拒绝与 worker 哈希一致已实测（ADR-0034）。
 - 离屏控制器抑制：`SimulationEngine.IsEntityActive`；Main 只对 active 区域控制器构建观测/调用 decide；`--region-scale` 8 区域 × 50 台 active-only 1.19ms vs all 5.04ms；被动系统仍全局 Tick（ADR-0033）。
 - 残骸占领与锚点支持：`OccupyWreckCommand`（需在场、封锁他方回收）、`WreckOccupied`；`SeedCoreConfig.AnchorEnergyPerTick`/`AnchorMaterialPerTick`/`AnchorStorageBonus` 按存活锚点追加核心产出与仓储；存档 v19（ADR-0032）。
@@ -125,6 +127,7 @@ tests/SeedField.Runtime.Js.Tests/
 | .NET SDK | 10.0.404 |
 | .NET Runtime | 10.0.15 |
 | NuGet Jint | 4.18.0 可还原，net10.0 资产可用 |
+| NuGet Microsoft.Data.Sqlite | 11.0.0 可还原；本地派生目录，不参与 Tick |
 | `Options.TimeoutInterval` / `MaxStatements` / `LimitMemory` | 可用 |
 | `Options.Host.StringCompilationAllowed` | 可用；`eval` 被拒绝 |
 | `Engine.PrepareScript` / `Prepared<Script>` | 4.18.0 可用；可跨引擎共享，按源码缓存 |
@@ -413,6 +416,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0032](adr/ADR-0032-wreck-occupation-and-anchor-support.md) | 残骸占领与锚点仓储/产出加成 |
 | [ADR-0033](adr/ADR-0033-offscreen-controller-suppression.md) | 离屏控制器抑制与区域规模边界 |
 | [ADR-0034](adr/ADR-0034-appcontainer-worker-sandbox.md) | Phase 2b AppContainer 工作进程沙箱 |
+| [ADR-0035](adr/ADR-0035-local-sqlite-catalog.md) | 本地 SQLite 派生目录（回放/存档/基准） |
 
 ## 8. 下一步（按依赖顺序）
 
