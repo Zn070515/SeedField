@@ -23,6 +23,18 @@ internal static partial class Program
             return benchmarkExit;
         }
 
+        var replayRecord = ReadStringFlag(args, "--replay-record");
+        if (replayRecord is not null)
+        {
+            return RunReplayRecord(replayRecord);
+        }
+
+        var replayPlay = ReadStringFlag(args, "--replay-play");
+        if (replayPlay is not null)
+        {
+            return RunReplayPlay(replayPlay);
+        }
+
         if (args.Contains("--multi-region"))
         {
             return RunMultiRegionDemo();
