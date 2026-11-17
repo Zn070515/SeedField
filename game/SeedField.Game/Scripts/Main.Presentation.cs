@@ -51,6 +51,8 @@ public partial class Main
                 "ruin_block",
                 "pipe_junction",
                 "wreck_hauler",
+                "terrain_concrete",
+                "terrain_road",
             });
         _entityVisual = new EntityVisual(_visualCatalog);
         _coreVisual = new CoreVisual(_visualCatalog);

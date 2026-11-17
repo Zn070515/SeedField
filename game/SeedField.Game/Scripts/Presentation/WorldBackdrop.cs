@@ -21,13 +21,34 @@ public static class WorldBackdrop
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
         float mapScale,
-        IReadOnlyList<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints)
+        IReadOnlyList<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints,
+        Texture2D? ground = null,
+        Texture2D? road = null)
     {
         var origin = map(new Vec2(0, 0));
         var size = new Vector2(WidthMm * mapScale, HeightMm * mapScale);
         canvas.DrawRect(new Rect2(origin, size), new Color(0.055f, 0.075f, 0.100f, 1f));
+        if (ground is not null)
+        {
+            var tile = 140f * (mapScale / 0.055f);
+            for (var y = 0f; y < size.Y; y += tile)
+            {
+                for (var x = 0f; x < size.X; x += tile)
+                {
+                    var drawSize = new Vector2(
+                        Mathf.Min(tile, size.X - x),
+                        Mathf.Min(tile, size.Y - y));
+                    canvas.DrawTextureRect(
+                        ground,
+                        new Rect2(origin + new Vector2(x, y), drawSize),
+                        false,
+                        new Color(1f, 1f, 1f, 0.92f));
+                }
+            }
+        }
 
         DrawPlates(canvas, map, mapScale);
+        DrawRoadTexture(canvas, map, mapScale, road);
         DrawRoads(canvas, map, mapScale);
         DrawRuins(canvas, map, mapScale);
         DrawControlPads(canvas, map, mapScale, controlPoints);
@@ -70,7 +91,8 @@ public static class WorldBackdrop
                 var fill = new Color(
                     0.075f + tone * 0.020f,
                     0.095f + tone * 0.022f,
-                    0.115f + tone * 0.026f);
+                    0.115f + tone * 0.026f,
+                    0.32f);
                 canvas.DrawRect(plate, fill);
                 canvas.DrawRect(
                     plate,
@@ -84,6 +106,26 @@ public static class WorldBackdrop
                     1f);
             }
         }
+    }
+
+    private static void DrawRoadTexture(
+        CanvasItem canvas,
+        Func<Vec2, Vector2> map,
+        float mapScale,
+        Texture2D? road)
+    {
+        if (road is null)
+        {
+            return;
+        }
+
+        canvas.DrawTextureRect(
+            road,
+            new Rect2(
+                map(new Vec2(1_000, 3_850)),
+                new Vector2(14_000 * mapScale, 300 * mapScale)),
+            false,
+            new Color(0.78f, 0.82f, 0.88f, 0.82f));
     }
 
     private static void DrawRoads(

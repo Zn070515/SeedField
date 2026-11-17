@@ -59,7 +59,9 @@ public partial class Main
             MapScale,
             _world.ControlPoints.Values
                 .Select(point => (point.Position, point.RadiusMm, point.OwnerCivilizationId))
-                .ToList());
+                .ToList(),
+            _worldCatalog.Get("terrain_concrete")?.Diffuse,
+            _worldCatalog.Get("terrain_road")?.Diffuse);
     }
 
     private bool GridClosed(string civilizationId) =>
