@@ -16,9 +16,15 @@ public sealed class MessagePolicyState
 
     public bool AllowAllInbound { get; internal set; }
 
+    public bool AllowAllTopics { get; internal set; } = true;
+
     public SortedSet<string> BlockedCivilizations { get; } = new(StringComparer.Ordinal);
 
+    public SortedSet<string> AllowedCivilizations { get; } = new(StringComparer.Ordinal);
+
     public SortedSet<string> BlockedTopics { get; } = new(StringComparer.Ordinal);
+
+    public SortedSet<string> AllowedTopics { get; } = new(StringComparer.Ordinal);
 }
 
 public static class MessagePolicyRules
@@ -34,9 +40,24 @@ public static class MessagePolicyRules
             return true;
         }
 
-        if (!policy.AllowAllInbound ||
-            policy.BlockedCivilizations.Contains(senderCivilizationId) ||
-            policy.BlockedTopics.Contains(topic))
+        if (policy.BlockedCivilizations.Contains(senderCivilizationId))
+        {
+            return false;
+        }
+
+        if (!policy.AllowAllInbound &&
+            !policy.AllowedCivilizations.Contains(senderCivilizationId))
+        {
+            return false;
+        }
+
+        if (policy.BlockedTopics.Contains(topic))
+        {
+            return false;
+        }
+
+        if (!policy.AllowAllTopics &&
+            !policy.AllowedTopics.Contains(topic))
         {
             return false;
         }

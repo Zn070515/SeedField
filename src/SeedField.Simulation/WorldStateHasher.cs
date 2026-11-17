@@ -23,6 +23,12 @@ public static class WorldStateHasher
         Append(ref hash, world.NextShipmentId);
         Append(ref hash, world.NextEnergyShipmentId);
         Append(ref hash, world.NextConstructionOrderId);
+        Append(ref hash, world.NextTreatyProposalId);
+        Append(ref hash, world.NextTreatyId);
+        Append(ref hash, world.NextTradeOfferId);
+        Append(ref hash, world.NextPowerShipmentId);
+        Append(ref hash, world.Random.Seed);
+        Append(ref hash, world.Random.State);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -45,6 +51,13 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.ConstructionsStartedTotal);
         Append(ref hash, world.Statistics.ConstructionsCompletedTotal);
         Append(ref hash, world.Statistics.MaterialRefundedTotal);
+        Append(ref hash, world.Statistics.TradeMaterialSettledTotal);
+        Append(ref hash, world.Statistics.TradeEnergySettledTotal);
+        Append(ref hash, world.Statistics.EnergyFlowedTotal);
+        Append(ref hash, world.Statistics.EnergyOverflowedTotal);
+        Append(ref hash, world.Statistics.EnergyFlowLossTotal);
+        Append(ref hash, world.Statistics.EnergyAutoDrawnTotal);
+        Append(ref hash, world.Statistics.EnergyWastedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -59,6 +72,13 @@ public static class WorldStateHasher
                 Append(ref hash, stock.Key);
                 Append(ref hash, stock.Value.Material);
                 Append(ref hash, stock.Value.Energy);
+            }
+
+            Append(ref hash, region.GridCapacities.Count);
+            foreach (var capacity in region.GridCapacities)
+            {
+                Append(ref hash, capacity.Key);
+                Append(ref hash, capacity.Value);
             }
 
             Append(ref hash, region.Entities.Count);
@@ -90,6 +110,7 @@ public static class WorldStateHasher
                 {
                     Append(ref hash, entity.Power.EnergyPerTick);
                     Append(ref hash, entity.Power.StorageCapacity);
+                    Append(ref hash, entity.Power.Priority);
                 }
 
                 Append(ref hash, entity.State is not null);
@@ -155,6 +176,60 @@ public static class WorldStateHasher
             Append(ref hash, order.MaterialPaid);
         }
 
+        Append(ref hash, world.TreatyProposals.Count);
+        foreach (var proposal in world.TreatyProposals.Values.OrderBy(p => p.Id))
+        {
+            Append(ref hash, proposal.Id);
+            Append(ref hash, (int)proposal.Kind);
+            Append(ref hash, proposal.ProposerCivilizationId);
+            Append(ref hash, proposal.TargetCivilizationId);
+            Append(ref hash, proposal.ProposedTick);
+            Append(ref hash, proposal.ExpiresTick);
+        }
+
+        Append(ref hash, world.Treaties.Count);
+        foreach (var treaty in world.Treaties.Values.OrderBy(t => t.Id))
+        {
+            Append(ref hash, treaty.Id);
+            Append(ref hash, (int)treaty.Kind);
+            Append(ref hash, treaty.CivilizationA);
+            Append(ref hash, treaty.CivilizationB);
+            Append(ref hash, treaty.ProposerCivilizationId);
+            Append(ref hash, treaty.SignedTick);
+        }
+
+        Append(ref hash, world.TradeOffers.Count);
+        foreach (var offer in world.TradeOffers.Values.OrderBy(o => o.Id))
+        {
+            Append(ref hash, offer.Id);
+            Append(ref hash, offer.ProposerCivilizationId);
+            Append(ref hash, offer.TargetCivilizationId);
+            Append(ref hash, offer.RegionId);
+            Append(ref hash, offer.GiveMaterial);
+            Append(ref hash, offer.GiveEnergy);
+            Append(ref hash, offer.WantMaterial);
+            Append(ref hash, offer.WantEnergy);
+            Append(ref hash, offer.NegotiationId);
+            Append(ref hash, offer.Round);
+            Append(ref hash, offer.ProposedTick);
+            Append(ref hash, offer.ExpiresTick);
+        }
+
+        var powerShipments = world.InTransitPower.OrderBy(shipment => shipment.Id).ToList();
+        Append(ref hash, powerShipments.Count);
+        foreach (var shipment in powerShipments)
+        {
+            Append(ref hash, shipment.Id);
+            Append(ref hash, shipment.CivilizationId);
+            Append(ref hash, shipment.FromRegionId);
+            Append(ref hash, shipment.ToRegionId);
+            Append(ref hash, shipment.Route);
+            Append(ref hash, shipment.Amount);
+            Append(ref hash, shipment.DeliveredAmount);
+            Append(ref hash, shipment.SentTick);
+            Append(ref hash, shipment.ArriveTick);
+        }
+
         var energyShipments = world.InTransitEnergy
             .OrderBy(shipment => shipment.Id)
             .ToList();
@@ -182,6 +257,9 @@ public static class WorldStateHasher
             Append(ref hash, link.MessagesPerTick);
             Append(ref hash, link.MaterialPerTick);
             Append(ref hash, link.EnergyPerTick);
+            Append(ref hash, link.PowerPerTick);
+            Append(ref hash, link.PowerLatencyTicks);
+            Append(ref hash, link.PowerLossPercent);
         }
 
         var blueprints = world.Workshop.GetAllVersions()
@@ -209,6 +287,7 @@ public static class WorldStateHasher
             {
                 Append(ref hash, blueprint.Power.EnergyPerTick);
                 Append(ref hash, blueprint.Power.StorageCapacity);
+                Append(ref hash, blueprint.Power.Priority);
             }
 
             Append(ref hash, blueprint.State is not null);
@@ -230,11 +309,52 @@ public static class WorldStateHasher
                 Append(ref hash, blocked);
             }
 
+            Append(ref hash, policy.AllowAllTopics);
+
             Append(ref hash, policy.BlockedTopics.Count);
             foreach (var blocked in policy.BlockedTopics)
             {
                 Append(ref hash, blocked);
             }
+
+            Append(ref hash, policy.AllowedCivilizations.Count);
+            foreach (var allowed in policy.AllowedCivilizations)
+            {
+                Append(ref hash, allowed);
+            }
+
+            Append(ref hash, policy.AllowedTopics.Count);
+            foreach (var allowed in policy.AllowedTopics)
+            {
+                Append(ref hash, allowed);
+            }
+        }
+
+        Append(ref hash, world.PowerPolicies.Count);
+        foreach (var policy in world.PowerPolicies.Values
+                     .OrderBy(policy => policy.CivilizationId, StringComparer.Ordinal))
+        {
+            Append(ref hash, policy.CivilizationId);
+            Append(ref hash, policy.ReserveEnergy);
+            Append(ref hash, policy.HighPriorityThreshold);
+            Append(ref hash, policy.PriorityReserveEnergy);
+            Append(ref hash, policy.AutoReconnect);
+            Append(ref hash, policy.BreakerTripLimit);
+            Append(ref hash, policy.BreakerMaintenanceMaterialCost);
+            Append(ref hash, policy.BreakerFaultChancePercent);
+        }
+
+        Append(ref hash, world.PowerGridStates.Count);
+        foreach (var state in world.PowerGridStates.Values
+                     .OrderBy(state => state.RegionId, StringComparer.Ordinal)
+                     .ThenBy(state => state.CivilizationId, StringComparer.Ordinal))
+        {
+            Append(ref hash, state.RegionId);
+            Append(ref hash, state.CivilizationId);
+            Append(ref hash, state.BreakerOpen);
+            Append(ref hash, state.ManualHold);
+            Append(ref hash, state.TripCount);
+            Append(ref hash, state.MaintenanceRequired);
         }
 
         Append(ref hash, world.Cores.Count);
@@ -347,6 +467,9 @@ public static class WorldStateHasher
             hash *= Prime;
         }
     }
+
+    private static void Append(ref ulong hash, ulong value) =>
+        Append(ref hash, unchecked((long)value));
 
     private static void Append(ref ulong hash, int value) => Append(ref hash, (long)value);
 

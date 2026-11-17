@@ -26,13 +26,82 @@ public sealed record WorldSaveData(
     MatchSaveData? Match = null,
     ConstructionOrderSaveData[]? ConstructionOrders = null,
     long NextConstructionOrderId = 0,
-    MessagePolicySaveData[]? MessagePolicies = null);
+    MessagePolicySaveData[]? MessagePolicies = null,
+    TreatyProposalSaveData[]? TreatyProposals = null,
+    TreatySaveData[]? Treaties = null,
+    TradeOfferSaveData[]? TradeOffers = null,
+    long NextTreatyProposalId = 0,
+    long NextTreatyId = 0,
+    long NextTradeOfferId = 0,
+    PowerPolicySaveData[]? PowerPolicies = null,
+    PowerShipmentSaveData[]? PowerShipments = null,
+    long NextPowerShipmentId = 0,
+    GridCapacitySaveData[]? GridCapacities = null,
+    PowerGridStateSaveData[]? PowerGridStates = null,
+    ulong RandomSeed = 0,
+    ulong RandomState = 0);
+
+public sealed record PowerPolicySaveData(
+    string CivilizationId,
+    long ReserveEnergy,
+    int HighPriorityThreshold = 0,
+    long PriorityReserveEnergy = 0,
+    bool AutoReconnect = true,
+    int BreakerTripLimit = 0,
+    long BreakerMaintenanceMaterialCost = 0,
+    int BreakerFaultChancePercent = 0);
+
+public sealed record GridCapacitySaveData(
+    string RegionId,
+    string CivilizationId,
+    long Capacity);
+
+public sealed record PowerGridStateSaveData(
+    string RegionId,
+    string CivilizationId,
+    bool BreakerOpen,
+    bool ManualHold,
+    int TripCount = 0,
+    bool MaintenanceRequired = false);
+
+public sealed record TreatyProposalSaveData(
+    long Id,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long ProposedTick,
+    long ExpiresTick);
+
+public sealed record TreatySaveData(
+    long Id,
+    TreatyKind Kind,
+    string CivilizationA,
+    string CivilizationB,
+    string ProposerCivilizationId,
+    long SignedTick);
+
+public sealed record TradeOfferSaveData(
+    long Id,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string RegionId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy,
+    long ProposedTick,
+    long ExpiresTick,
+    long NegotiationId = 0,
+    int Round = 1);
 
 public sealed record MessagePolicySaveData(
     string CivilizationId,
     bool AllowAllInbound,
     string[] BlockedCivilizations,
-    string[] BlockedTopics);
+    string[] BlockedTopics,
+    bool AllowAllTopics = true,
+    string[]? AllowedCivilizations = null,
+    string[]? AllowedTopics = null);
 
 public sealed record ConstructionOrderSaveData(
     long Id,
@@ -68,7 +137,21 @@ public sealed record LinkSaveData(
     int LatencyTicks,
     int MessagesPerTick,
     int MaterialPerTick = 0,
-    int EnergyPerTick = 0);
+    int EnergyPerTick = 0,
+    int PowerPerTick = 0,
+    int PowerLatencyTicks = 0,
+    int PowerLossPercent = 0);
+
+public sealed record PowerShipmentSaveData(
+    long Id,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    string Route,
+    long Amount,
+    long DeliveredAmount,
+    long SentTick,
+    long ArriveTick);
 
 public sealed record EnergyShipmentSaveData(
     long Id,
@@ -135,7 +218,10 @@ public sealed record CommSaveData(
     long EnergyCostPerMessage,
     int BandwidthPerTick = 0);
 
-public sealed record PowerSaveData(int EnergyPerTick, long StorageCapacity);
+public sealed record PowerSaveData(
+    int EnergyPerTick,
+    long StorageCapacity,
+    int Priority = 0);
 
 public sealed record StateSaveData(int ComputePerTick, int StorageCapacity);
 
@@ -215,7 +301,14 @@ public sealed record StatisticsSaveData(
     long MaterialLostTotal = 0,
     long ConstructionsStartedTotal = 0,
     long ConstructionsCompletedTotal = 0,
-    long MaterialRefundedTotal = 0);
+    long MaterialRefundedTotal = 0,
+    long TradeMaterialSettledTotal = 0,
+    long TradeEnergySettledTotal = 0,
+    long EnergyFlowedTotal = 0,
+    long EnergyOverflowedTotal = 0,
+    long EnergyFlowLossTotal = 0,
+    long EnergyAutoDrawnTotal = 0,
+    long EnergyWastedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

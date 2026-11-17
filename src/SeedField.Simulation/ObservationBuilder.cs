@@ -103,7 +103,22 @@ public static class ObservationBuilder
             ControlPoints: world.ControlPoints.Values
                 .Select(ToObservedControlPoint)
                 .ToList(),
-            Match: ToObservedMatch(world.Match));
+            Match: ToObservedMatch(world.Match),
+            Treaties: world.Treaties.Values
+                .Where(treaty => treaty.Involves(civilizationId))
+                .OrderBy(treaty => treaty.Id)
+                .Select(treaty => ToObservedTreaty(treaty, civilizationId))
+                .ToList(),
+            TreatyProposals: world.TreatyProposals.Values
+                .Where(proposal => proposal.Involves(civilizationId))
+                .OrderBy(proposal => proposal.Id)
+                .Select(ToObservedTreatyProposal)
+                .ToList(),
+            TradeOffers: world.TradeOffers.Values
+                .Where(offer => offer.Involves(civilizationId))
+                .OrderBy(offer => offer.Id)
+                .Select(ToObservedTradeOffer)
+                .ToList());
     }
 
     /// <summary>
@@ -204,7 +219,27 @@ public static class ObservationBuilder
             energyShipments,
             viewer.Id.Value,
             controlPoints,
-            ToObservedMatch(world.Match));
+            ToObservedMatch(world.Match),
+            Treaties: world.Treaties.Values
+                .Where(treaty => treaty.Involves(viewer.CivilizationId))
+                .OrderBy(treaty => treaty.Id)
+                .Select(treaty => ToObservedTreaty(treaty, viewer.CivilizationId))
+                .ToList(),
+            TreatyProposals: world.TreatyProposals.Values
+                .Where(proposal => proposal.Involves(viewer.CivilizationId))
+                .OrderBy(proposal => proposal.Id)
+                .Select(ToObservedTreatyProposal)
+                .ToList(),
+            TradeOffers: world.TradeOffers.Values
+                .Where(offer =>
+                    offer.Involves(viewer.CivilizationId) &&
+                    string.Equals(
+                        offer.RegionId,
+                        viewer.RegionId,
+                        StringComparison.Ordinal))
+                .OrderBy(offer => offer.Id)
+                .Select(ToObservedTradeOffer)
+                .ToList());
     }
 
     private static ObservedControlPoint ToObservedControlPoint(ControlPointState point) =>
@@ -217,6 +252,38 @@ public static class ObservationBuilder
             point.HoldingCivilizationId,
             point.HoldTicks,
             point.OwnerCivilizationId);
+
+    private static ObservedTreaty ToObservedTreaty(TreatyState treaty, string civilizationId) =>
+        new(
+            treaty.Id,
+            treaty.Kind,
+            treaty.Other(civilizationId),
+            treaty.SignedTick);
+
+    private static ObservedTreatyProposal ToObservedTreatyProposal(
+        TreatyProposalState proposal) =>
+        new(
+            proposal.Id,
+            proposal.Kind,
+            proposal.ProposerCivilizationId,
+            proposal.TargetCivilizationId,
+            proposal.ProposedTick,
+            proposal.ExpiresTick);
+
+    private static ObservedTradeOffer ToObservedTradeOffer(TradeOfferState offer) =>
+        new(
+            offer.Id,
+            offer.ProposerCivilizationId,
+            offer.TargetCivilizationId,
+            offer.RegionId,
+            offer.GiveMaterial,
+            offer.GiveEnergy,
+            offer.WantMaterial,
+            offer.WantEnergy,
+            offer.ProposedTick,
+            offer.ExpiresTick,
+            offer.NegotiationId,
+            offer.Round);
 
     private static ObservedMatch? ToObservedMatch(MatchState? match) =>
         match is null

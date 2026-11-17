@@ -178,3 +178,178 @@ public sealed record EntityBootstrapped(
     string BlueprintName,
     long EnergySpent,
     long MaterialSpent) : SimulationEvent(Tick);
+
+public sealed record TreatyProposed(
+    long Tick,
+    long ProposalId,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long ExpiresTick) : SimulationEvent(Tick);
+
+public sealed record TreatyAccepted(
+    long Tick,
+    long TreatyId,
+    TreatyKind Kind,
+    string CivilizationA,
+    string CivilizationB) : SimulationEvent(Tick);
+
+public sealed record TreatyRejected(
+    long Tick,
+    long ProposalId,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId) : SimulationEvent(Tick);
+
+public sealed record TreatyBroken(
+    long Tick,
+    long TreatyId,
+    TreatyKind Kind,
+    string CivilizationA,
+    string CivilizationB,
+    string BrokenByCivilizationId) : SimulationEvent(Tick);
+
+public sealed record TreatyProposalExpired(
+    long Tick,
+    long ProposalId,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId) : SimulationEvent(Tick);
+
+public sealed record TradeProposed(
+    long Tick,
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string RegionId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy,
+    long ExpiresTick) : SimulationEvent(Tick);
+
+public sealed record TradeAccepted(
+    long Tick,
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string RegionId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy) : SimulationEvent(Tick);
+
+public sealed record TradeRejected(
+    long Tick,
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long RefundedMaterial,
+    long RefundedEnergy) : SimulationEvent(Tick);
+
+public sealed record TradeCancelled(
+    long Tick,
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string CancelledByCivilizationId,
+    long RefundedMaterial,
+    long RefundedEnergy) : SimulationEvent(Tick);
+
+public sealed record TradeExpired(
+    long Tick,
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long RefundedMaterial,
+    long RefundedEnergy) : SimulationEvent(Tick);
+
+public sealed record PowerFlowed(
+    long Tick,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount) : SimulationEvent(Tick);
+
+public sealed record EnergyWasted(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long Amount,
+    string Source) : SimulationEvent(Tick);
+
+public sealed record PowerBlackout(
+    long Tick,
+    string CivilizationId,
+    string RegionId) : SimulationEvent(Tick);
+
+public sealed record PowerRestored(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long GridEnergy) : SimulationEvent(Tick);
+
+/// <summary>
+/// The breaker stays open until maintained. Reason is "fault" for a random fault or
+/// "trips" when the configured trip limit was reached.
+/// </summary>
+public sealed record BreakerLockedOut(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    int TripCount,
+    string Reason) : SimulationEvent(Tick);
+
+public sealed record BreakerMaintained(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long MaterialSpent) : SimulationEvent(Tick);
+
+public sealed record PowerShipped(
+    long Tick,
+    long PowerShipmentId,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount,
+    long DeliveredAmount,
+    long ArriveTick,
+    string Route) : SimulationEvent(Tick);
+
+public sealed record PowerArrived(
+    long Tick,
+    long PowerShipmentId,
+    string CivilizationId,
+    string ToRegionId,
+    long Amount,
+    long LostAmount) : SimulationEvent(Tick);
+
+public sealed record EnergyAutoDrawn(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount) : SimulationEvent(Tick);
+
+public sealed record PowerShortfall(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    EntityId EntityId,
+    long Requested,
+    long Available,
+    string Source) : SimulationEvent(Tick);
+
+public sealed record TradeCountered(
+    long Tick,
+    long OriginalTradeOfferId,
+    long NewTradeOfferId,
+    string CivilizationId,
+    long NegotiationId,
+    int Round,
+    long RefundedMaterial,
+    long RefundedEnergy,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy) : SimulationEvent(Tick);

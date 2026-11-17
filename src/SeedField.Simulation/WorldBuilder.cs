@@ -8,6 +8,12 @@ public sealed class WorldBuilder
 {
     private readonly WorldState _world = new();
 
+    public WorldBuilder SetRandomSeed(ulong seed)
+    {
+        _world.Random.Reset(seed);
+        return this;
+    }
+
     public WorldBuilder AddRegion(string id, int widthMm, int heightMm, bool isCoreRegion = false)
     {
         if (_world.Regions.ContainsKey(id))
@@ -47,7 +53,10 @@ public sealed class WorldBuilder
         int latencyTicks,
         int messagesPerTick = 0,
         int materialPerTick = 0,
-        int energyPerTick = 0)
+        int energyPerTick = 0,
+        int powerPerTick = 0,
+        int powerLatencyTicks = 0,
+        int powerLossPercent = 0)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -69,7 +78,13 @@ public sealed class WorldBuilder
             throw new InvalidOperationException("A region cannot link to itself.");
         }
 
-        if (latencyTicks < 0 || messagesPerTick < 0 || materialPerTick < 0 || energyPerTick < 0)
+        if (latencyTicks < 0 ||
+            messagesPerTick < 0 ||
+            materialPerTick < 0 ||
+            energyPerTick < 0 ||
+            powerPerTick < 0 ||
+            powerLatencyTicks < 0 ||
+            powerLossPercent is < 0 or > 100)
         {
             throw new ArgumentOutOfRangeException(nameof(latencyTicks), "Link values must be non-negative.");
         }
@@ -83,7 +98,10 @@ public sealed class WorldBuilder
                 latencyTicks,
                 messagesPerTick,
                 materialPerTick,
-                energyPerTick));
+                energyPerTick,
+                powerPerTick,
+                powerLatencyTicks,
+                powerLossPercent));
         return this;
     }
 
@@ -91,14 +109,20 @@ public sealed class WorldBuilder
         string civilizationId,
         bool allowAllInbound,
         IEnumerable<string>? blockedCivilizations = null,
-        IEnumerable<string>? blockedTopics = null)
+        IEnumerable<string>? blockedTopics = null,
+        IEnumerable<string>? allowedCivilizations = null,
+        bool allowAllTopics = true,
+        IEnumerable<string>? allowedTopics = null)
     {
         if (_world.MessagePolicies.ContainsKey(civilizationId))
         {
             throw new InvalidOperationException($"Message policy for '{civilizationId}' already exists.");
         }
 
-        var policy = new MessagePolicyState(civilizationId, allowAllInbound);
+        var policy = new MessagePolicyState(civilizationId, allowAllInbound)
+        {
+            AllowAllTopics = allowAllTopics,
+        };
         foreach (var blocked in blockedCivilizations ?? Array.Empty<string>())
         {
             policy.BlockedCivilizations.Add(blocked);
@@ -109,7 +133,98 @@ public sealed class WorldBuilder
             policy.BlockedTopics.Add(blocked);
         }
 
+        foreach (var allowed in allowedCivilizations ?? Array.Empty<string>())
+        {
+            policy.AllowedCivilizations.Add(allowed);
+        }
+
+        foreach (var allowed in allowedTopics ?? Array.Empty<string>())
+        {
+            policy.AllowedTopics.Add(allowed);
+        }
+
         _world.MessagePolicies.Add(civilizationId, policy);
+        return this;
+    }
+
+    public WorldBuilder SetPowerPolicy(
+        string civilizationId,
+        long reserveEnergy,
+        int highPriorityThreshold = 0,
+        long priorityReserveEnergy = 0,
+        bool autoReconnect = true,
+        int breakerTripLimit = 0,
+        long breakerMaintenanceMaterialCost = 0,
+        int breakerFaultChancePercent = 0)
+    {
+        if (string.IsNullOrWhiteSpace(civilizationId))
+        {
+            throw new ArgumentException("Civilization id is required.", nameof(civilizationId));
+        }
+
+        if (reserveEnergy < 0 ||
+            highPriorityThreshold < 0 ||
+            priorityReserveEnergy < 0 ||
+            breakerTripLimit < 0 ||
+            breakerMaintenanceMaterialCost < 0 ||
+            breakerFaultChancePercent is < 0 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(reserveEnergy),
+                "Power policy values must be non-negative; fault chance must be 0..100.");
+        }
+
+        if (_world.PowerPolicies.ContainsKey(civilizationId))
+        {
+            throw new InvalidOperationException(
+                $"Power policy for '{civilizationId}' already exists.");
+        }
+
+        _world.PowerPolicies.Add(
+            civilizationId,
+            new PowerPolicyState(
+                civilizationId,
+                reserveEnergy,
+                highPriorityThreshold,
+                priorityReserveEnergy,
+                autoReconnect,
+                breakerTripLimit,
+                breakerMaintenanceMaterialCost,
+                breakerFaultChancePercent));
+        return this;
+    }
+
+    public WorldBuilder SetGridCapacity(
+        string regionId,
+        string civilizationId,
+        long capacity)
+    {
+        if (!_world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new InvalidOperationException($"Unknown region '{regionId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(civilizationId))
+        {
+            throw new ArgumentException(
+                "Civilization id is required.",
+                nameof(civilizationId));
+        }
+
+        if (capacity < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(capacity),
+                "Grid capacity must be non-negative.");
+        }
+
+        if (region.GridCapacities.ContainsKey(civilizationId))
+        {
+            throw new InvalidOperationException(
+                $"Grid capacity for '{civilizationId}' already exists in '{regionId}'.");
+        }
+
+        region.GridCapacities.Add(civilizationId, capacity);
         return this;
     }
 

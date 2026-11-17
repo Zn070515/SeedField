@@ -47,6 +47,34 @@ public sealed record ObservedEnergyShipment(
     long ArriveTick,
     string Route);
 
+public sealed record ObservedTreaty(
+    long TreatyId,
+    TreatyKind Kind,
+    string OtherCivilizationId,
+    long SignedTick);
+
+public sealed record ObservedTreatyProposal(
+    long ProposalId,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long ProposedTick,
+    long ExpiresTick);
+
+public sealed record ObservedTradeOffer(
+    long TradeOfferId,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string RegionId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy,
+    long ProposedTick,
+    long ExpiresTick,
+    long NegotiationId,
+    int Round);
+
 public sealed record ObservedControlPoint(
     string Id,
     string RegionId,
@@ -70,4 +98,7 @@ public sealed record Observation(
     IReadOnlyList<ObservedEnergyShipment> EnergyShipments,
     long? ViewerEntityId = null,
     IReadOnlyList<ObservedControlPoint>? ControlPoints = null,
-    ObservedMatch? Match = null);
+    ObservedMatch? Match = null,
+    IReadOnlyList<ObservedTreaty>? Treaties = null,
+    IReadOnlyList<ObservedTreatyProposal>? TreatyProposals = null,
+    IReadOnlyList<ObservedTradeOffer>? TradeOffers = null);

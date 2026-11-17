@@ -81,12 +81,23 @@ tests/SeedField.Runtime.Js.Tests/
 - 建造取消：`CancelConstructionCommand` 退款并产生 `ConstructionCancelled`；退款统计进入存档/哈希；工坊队列 UI 可选中取消。
 - 建造失败：蓝图缺失/到期校验失败退还 `MaterialPaid`，事件携带退款额。
 - 消息策略：每文明可拒绝发送者/话题或关闭入站；`MessageDenied`；策略进入存档 schema v5。
+- 无状态消息 ACL：发送方/话题白名单、黑名单优先、同文明绕过；发送者由引擎从实体派生；重复消息 ID 读档拒绝；断联发送在扣能量前返回 `NoRoute`，已提交消息仍按 `DeliverTick` 投递；策略进入存档 schema v6 与哈希（ADR-0006）。
+- 条约/贸易：互不侵犯/贸易协定；宿主 `ExecuteDiplomacyCommand` 独占签约与接单；互不侵犯在扣能量前阻止攻击；贸易单在指定区域托管 E/M、接受时原子交换、拒绝/取消/到期退款；撕毁贸易协定级联退款；状态进入存档 schema v7、哈希与观察（ADR-0007）。
+- 外交面板：Godot `F3` 面板列出条约/提议/贸易单，A 方按钮经宿主命令签约、接受/拒绝/撕毁、创建/取消贸易单；面板与 F1/F2 互斥；`--capture-diplomacy` 与 `--diplomacy-smoke`。
+- 对手外交响应：`OpponentDiplomacyPolicy` 纯函数按画像响应 B 的 incoming 提议/贸易单；Skirmisher 拒绝 NAP、要求 120% 贸易收益，Turtle 接受 NAP 与公平贸易；无通信/库存不足时拒绝或不响应；事件进入日志（ADR-0008）。
+- 主动提议与多轮谈判：B 按 Tick 节奏主动提 NAP/Trade/贸易单；`CounterTradeCommand` 支持最多 3 轮反提议，`NegotiationId`/`Round` 进入观察、哈希与存档 v8；Skirmisher 每轮让步 10%；面板显示 `R{round}/3` 与 COUNTER（ADR-0009）。
+- 自动电力潮流：`RegionLink.PowerPerTick` 定义自动潮流通量；按文明/连通分量把电网库存从盈余区经确定性 BFS 移到缺口区，受共享链路容量限制；非活动区也参与；`PowerFlowed`/`PowerShortfall`、停电诊断、F4 面板、存档 v9（ADR-0010）。
+- 电力恢复与网络细化：本地满电后的发电溢出入网；设备移动/攻击/发信自动从电网取电，受每文明 `ReserveEnergy` 恢复储备约束；`PowerLatencyTicks`/`PowerLossPercent` 支持在途电力与损耗；诊断显示储备/负载抑制/在途；存档 v10（ADR-0011）。
+- 电网容量与断路器：每区域/文明 `GridCapacity` 限制入网与到账，溢出/到账超限浪费；`PowerModule.Priority` + 策略阈值实现优先级取电；损耗按净额反推毛额；区域/文明持久 `BreakerOpen`/`ManualHold`，电网归零跳闸、储备恢复自动合闸或宿主手动合闸；F4 面板可开关断路器；存档 v11（ADR-0012）。
+- 抢占式优先级与断路器维护：同一 Tick 按 `PowerModule.Priority` 降序处理意图，结果仍按输入顺序返回；`TripCount`/`MaintenanceRequired` 持久化，达到 `BreakerTripLimit` 后锁定所有合闸路径；`MaintainBreakerCommand` 扣材料并清除锁定；F4 显示 trips/MAINT 并提供 MAINTAIN；存档 v12（ADR-0013）。
+- 确定性随机与随机故障：`WorldState.Random` 是 SplitMix64 流，种子/状态进入存档 v13 与哈希；`Percent(0)` 不消耗随机值；`BreakerFaultChancePercent` 命中后直接锁定断路器，`BreakerLockedOut.Reason` 区分 `fault`/`trips`；`--power-fault` 演示（ADR-0014）。
+- 工程约束 Lint：`tests/SeedField.Repository.Tests` 校验 `.cs`/`.md` 600 行上限、`net10.0`、仿真核心无 Godot、ADR 命名、设计基线 MANIFEST 完整性。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
 
 - TypeScript `.d.ts` 编辑契约。
-- 离屏区域性能优化（当前 active 仅做意图 gating）、跨文明通信。
+- 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、随机战斗命中/掉落、维护时长、多电压/潮流方程。
 - 存档迁移（v1 → 后续）、回放、离线文明包。
 - OS 级进程隔离与 IPC（因此第三方 JS 导入保持关闭）。
 - `DeterministicRandom`、随机命中与正式平衡数值。
@@ -221,6 +232,98 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 - Godot HUD 绘制每个点与比分；`--capture-victory` 跑到比赛结束。
 - Godot 实测：A 在 Tick 51 占 2 点（west/center）获胜；`m0-victory.png`。
 
+### 5.11 无状态消息 ACL 与身份边界
+
+- 策略新增发送方/话题白名单；判定顺序为黑名单 > 白名单 > 默认开关，同文明消息绕过。
+- 消息信封发送文明由引擎从实体派生；脚本无法自带发送者字段，伪造 issuer 按 `UnknownEntity` 拒绝。
+- 消息 ID 在在途与所有收件箱中必须唯一；读档重复返回 `DUPLICATE_MESSAGE_ID`。
+- 无链路发送在扣能量前返回 `NoRoute`；已提交消息在链路删除后仍按 `DeliverTick` 投递。
+- 存档 schema v6；v5 策略按 `AllowAllTopics=true`、空允许列表迁移。
+- Headless 实测：
+  `MESSAGE_ACL senderAllowed=True senderDenied=True topicAllowed=True topicDenied=True noRoute=True energy=99 inboxB=1 inboxC=0 hashOk=True ok=True`
+- 测试：113 仿真 + 24 Jint；600 Tick 双跑哈希 `4ca65e0d83768a38` 一致。
+
+### 5.12 条约与贸易协议
+
+- 两种条约：`NonAggression`、`Trade`；提议/响应要求通信路径，撕毁为单边行为。
+- 互不侵犯在可见性之后、冷却/能量之前阻止攻击；`TreatyDenied`。
+- 贸易单指定单区域，提案方给出物托管；接受原子交换，不足不改变库存；拒绝/取消/到期退款；撕毁贸易协定级联退款。
+- 权限：宿主 `ExecuteDiplomacyCommand`；脚本只读观察。
+- 存档 schema v7；观察新增 `treaties`/`treatyProposals`/`tradeOffers`，设备观察按区域过滤贸易单。
+- Headless 实测：
+  `DIPLOMACY napBlocked=True napBreakAttacked=True tradeSwapped=True refundOk=True hashOk=True ok=True`
+- 测试：136 仿真 + 25 Jint；600 Tick 双跑哈希 `6c8134c8f3981da1` 一致。
+
+### 5.13 Godot 外交面板
+
+- `F3` 面板：条约操作、生效条约、待处理提议、贸易单、创建贸易单与状态行。
+- 面板只操作 A；所有按钮经 `ExecuteDiplomacyCommand`，不直接改世界。
+- B 的待处理提议/贸易单由场景/宿主预置；B 自动外交未实现。
+- 截图：`game/SeedField.Game/screenshots/m0-diplomacy.png`。
+- 实测：
+  `DIPLOMACY_SMOKE treaties=2 offers=0 A=M380/E210 B=M410/E190 settled=M70/E30 ok=True`
+- `--diplomacy-smoke` 覆盖接受 NAP、接受贸易单、取消贸易单三条面板接线。
+
+### 5.14 对手外交响应
+
+- `OpponentDiplomacyPolicy.Decide` 纯函数，按画像响应 B 的 incoming 提议/贸易单；不修改世界、无隐藏状态。
+- 画像：Skirmisher 拒绝 NAP、接受 Trade 条约、贸易需 ≥120% 收益；Turtle 接受 NAP/Trade、公平贸易 ≥100%；未知包默认 Cautious。
+- Godot `StepOnce` 在仿真 Step 后执行策略，事件进入日志；`--diplomacy-ai-smoke` 与 `--capture-diplomacy-ai` 为证据。
+- Headless 实测：
+  `DIPLOMACY_AI turtleNap=True aggressiveNapRejected=True fairAccepted=True unfairRejected=True ok=True`
+- Godot 实测：
+  `DIPLOMACY_AI_SMOKE opponent=builtin.skirmisher ... napAccepted=False expectNapAccepted=False napHandled=True settledM=50 ok=True`
+  `DIPLOMACY_AI_SMOKE opponent=builtin.turtle ... napAccepted=True expectNapAccepted=True napHandled=True settledM=50 ok=True`
+- 测试：136 仿真 + 37 Jint；截图 `m0-diplomacy-ai.png`。
+
+### 5.15 主动提议与多轮反提议
+
+- B 按 `Tick % 240 == 0` 主动提 NAP/Trade/贸易单；有响应命令时跳过主动动作。
+- `CounterTradeCommand`：目标方可反提议；退款原单、托管新给出物、`Round + 1`；最多 3 轮，超出返回 `NegotiationExhausted`。
+- B 反提议只处理单资源报价；Skirmisher 阈值 120% 起每轮 -10%，Turtle 100% 不让步。
+- 面板显示 `R{round}/3` 与 `COUNTER SELECTED`。
+- 存档 schema v8；观察/Jint 暴露 `negotiationId`、`round`。
+- Headless 实测：
+  `DIPLOMACY_NEGOTIATION proactiveNap=True napActive=True proactiveTrade=True tradeActive=True proactiveOffer=True rounds=2 counterAccepted=True ok=True`
+- Godot 实测：
+  `DIPLOMACY_COUNTER_SMOKE round=2 settledM=42 ok=True`
+- 测试：143 仿真 + 48 Jint；截图 `m0-diplomacy.png`（R1/3 + COUNTER）与 `m0-diplomacy-ai.png`（B 反提议 R2/3）。
+
+### 5.16 自动电力潮流与断供诊断
+
+- `PowerPerTick` 自动潮流通量与显式 `EnergyPerTick` 运输批次数分离。
+- 每 Tick 在发电后、意图前按文明/连通分量均衡电网库存；共享链路容量；非活动区参与。
+- 诊断：发电潜力、电网库存、本地储能、连通区域、分量库存/区域数、停电状态。
+- `PowerShortfall` 在 local/grid `NoEnergy` 失败时产生；F4 面板与事件日志展示。
+- 存档 schema v9；旧链路默认 `PowerPerTick = 0`。
+- Headless 实测：
+  `POWER_GRID balanced=True flowed=60 grid=90 regions=3 components=1 blackout=True shortfall=True ok=True`
+- 测试：156 仿真 + 48 Jint；600 Tick 双跑哈希 `84a14f0fc04a1201` 一致；截图 `m0-power.png`。
+
+### 5.17 发电溢出、自动取电与潮流时序
+
+- 发电先填本地，满后溢出入区域电网；非活动区激活/保存前按同规则补算。
+- 移动/攻击/发信本地不足时自动从电网取电，受每文明恢复储备限制；显式 `DrawEnergyIntent` 同样受储备限制。
+- `PowerLatencyTicks` > 0 时创建在途 `PowerShipment`；`PowerLossPercent` 逐跳损耗；在途参与缺口估算。
+- 事件：`EnergyAutoDrawn`、`PowerShipped`、`PowerArrived`；诊断显示储备/`IsLoadShed`/在途。
+- 存档 schema v10；旧 v9 默认延迟/损耗 0、储备 0、无在途。
+- Headless 实测：
+  `POWER_RECOVERY overflow=True autoDraw=True reserveShed=True latency=True latencyArrived=True lossArrived=True ok=True`
+- 测试：168 仿真 + 48 Jint；600 Tick 双跑哈希 `0e53707713539498` 一致；截图 `m0-power.png`。
+
+### 5.18 电网容量、优先级与断路器
+
+- `GridCapacity` 每区域/文明；溢出与到账超限浪费，显式存能超限返回 `GridFull`。
+- `PowerModule.Priority` + `HighPriorityThreshold`/`PriorityReserveEnergy` 实现低优先级负载切除。
+- 损耗按路径反向 `ceil` 计算毛额，再正向扣损；100% 损耗链路不参与自动潮流。
+- `PowerGridState { BreakerOpen, ManualHold }` 持久化；电网 ≤0 跳闸，储备恢复自动合闸，宿主可手动分/合闸。
+- F4 面板新增断路器按钮、容量/优先级/在途显示；`--power-breaker-smoke` 验证接线。
+- 存档 schema v11；旧 v10 默认容量无限、优先级 0、断路器关闭。
+- Headless 实测：
+  `POWER_LIMITS capacityWaste=True priority=True netCompensation=True ok=True`
+  `POWER_BREAKER tripped=True drawBlocked=True heldBelowReserve=True autoClosed=True manualHeld=True manualClosed=True ok=True`
+- 测试：177 仿真 + 48 Jint；600 Tick 双跑哈希 `7a2114e30b9bdd38` 一致；截图 `m0-power.png`。
+
 ## 6. 本轮工程假设（均为可替换原型决策）
 
 1. 位置使用整数毫米，速度与射程使用整数；不使用浮点。
@@ -230,8 +333,9 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 5. 尚无随机数消费者；`WorldState` 也未包含 RNG 状态。
 6. 核心区复建为脚本化 API，不是正式建造 UI。
 7. 多区域链路延迟/带宽是场景配置；BFS 以跳数为序、链路 ID 破同分；`MessagesPerTick=0` 表示不限。
-8. 跨区消息只允许同文明，且目标区域必须有己方 Comm 端点；跨文明路由尚未开放。
+8. 跨区同文明消息要求目标区域有己方 Comm 端点；跨文明消息要求目标文明端点和入站策略允许；条约/贸易是原型，签约与接单由宿主命令触发，贸易在单区域结算。
 9. 材料运输支持多跳路径但无中途仓储；无运输单位实体位置/油耗建模；链路同时承载消息与物资，容量分别限制。
+10. 自动潮流默认 `PowerLatencyTicks=0`、`PowerLossPercent=0`；容量按文明共享。发电先入本地储能，满后溢出入电网（受区域容量限制）；设备可在储备/优先级下限以上自动取电。断路器跳闸后需电网达到储备或手动合闸。
 
 ## 7. 风险与阻塞
 
@@ -241,13 +345,13 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | mono 模板/导出模板未安装 | 无法导出 Windows 包 | M0 只做编辑器运行；导出阶段再装 mono 导出模板 |
 | Jint 不是 OS 沙箱 | 恶意第三方脚本仍可能造成宿主风险 | 第三方可执行包导入保持关闭 |
 | 多跳物流无中转仓储 | 货物整段在途，不能在中途装卸/换线 | 后续加入中转节点与容量 |
-| 能源网络是显式配送 | 没有自动电网潮流/断供传播 | 后续加入电网连通与断供诊断 |
+| 电网模型仍简化 | 断路器无维护/故障；优先级通过取电下限而非抢占重排；无多电压/潮流方程 | 后续做故障模型/优先级重排/电压层；共享链路容量需平衡验证 |
 | 文明级 legacy 观察仍保留 | 工具/旧测试可看到全量传感器融合 | 游戏运行路径已用设备观察；后续标记/移除 legacy API |
 | 核心区恢复仍是 API | 恢复成本由调用方传入，未走统一命令/配额 | 后续收口为 Deployment/Recovery 命令；见审查 R4 剩余项 |
 | 离屏只延迟发电 | 战斗/制造/物流仍全局结算，性能收益有限 | 后续加入分区 Tick 预算与增量加载 |
 | 控制点只在单区域 | 不能验证跨区目标/区域级胜负 | 后续加入跨区目标与区域连接权重 |
 | 制造时间未建模 | 部署即时完成，缺少生产节奏 | 后续加入制造队列与时间 |
-| 跨文明协议仅基础收发 | 没有结盟/条约/身份认证 | 后续加入协议层与情报权限 |
+| 跨文明协议是原型 | 反提议只支持单资源；B 无议价记忆/信誉；无关税或消息签名；贸易只在单区域结算 | 后续做混合资源条款与议价记忆；签名/信誉/跨区贸易需独立 ADR |
 | 建造失败仍不退款 | 到期目标失效会损失已付 M；仅手动取消退款 | 后续定义失败退款/残骸规则 |
 | 第三方对手包未导入 | 只有内置受信任包 | 先完成进程隔离与 IPC 校验 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
@@ -255,9 +359,9 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 ## 8. 下一步（按依赖顺序）
 
 1. 核心区恢复命令统一入口与配额（R4 剩余）；清理文明级 legacy 观察 API。
-2. 跨文明协议与 PvE：目标区域权限、情报过滤、内置离线对手。
-3. 经济闭环：制造队列/时间与断供/断联诊断。
-4. `DeterministicRandom` 与种子状态进入哈希；为命中/损伤变体提供可复现实验。
+2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
+3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。
+4. 用 `DeterministicRandom` 实现可复现的命中/损伤变体与掉落；补随机流回放测试。
 5. 存档迁移/回放与离线文明包。
 6. 可视切片：正式相机/缩放、核心区与网络表现、诊断面板。
 7. 安全：进程隔离、IPC 校验、资源限额；完成前不开放第三方包执行。

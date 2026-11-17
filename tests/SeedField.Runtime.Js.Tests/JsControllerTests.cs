@@ -139,6 +139,59 @@ public sealed class JsControllerTests
     }
 
     [Fact]
+    public void ObservationExposesDiplomacyStateToScripts()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Drive: new DriveModule(100, EnergyCostPerMove: 1),
+                Comm: new CommModule(1, EnergyCostPerMessage: 0)))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "B",
+                "r0",
+                new Vec2(200, 200),
+                MaxHealth: 10,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Comm: new CommModule(1, EnergyCostPerMessage: 0)))
+            .Build();
+        var engine = new SimulationEngine(world);
+        var proposed = engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 5));
+        engine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("B", proposed.ProposalId!.Value, Accept: true));
+
+        using var controller = new JsController(
+            "A",
+            """
+            function decide(obs) {
+                var ok = obs.treaties.length === 1
+                    && obs.treaties[0].kind === "NonAggression"
+                    && obs.treaties[0].otherCivilizationId === "B";
+                return [{
+                    type: ok ? "wait" : "move",
+                    entityId: 1,
+                    target: { x: 900, y: 900 }
+                }];
+            }
+            """);
+
+        var decision = controller.Decide(engine.BuildObservation("A"));
+
+        Assert.IsType<WaitIntent>(Assert.Single(decision.Intents));
+    }
+
+    [Fact]
     public void ScriptWithoutDecideFailsToLoad()
     {
         var exception = Assert.Throws<JsControllerLoadException>(() =>

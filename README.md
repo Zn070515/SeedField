@@ -49,10 +49,14 @@
 | 工程收口 | 统一部署/升级命令、存档 schema v2 + v1 迁移、摧毁库存损失审计 |
 | PvE 目标 | 多控制点：独占驻留、争夺重置、占领数量达到阈值即胜负；HUD 与胜利截图 |
 | 通信/对手 | 跨文明消息要求目标区 Comm 端点 + 目标文明策略允许；内置对手包可选并持久化 |
+| 消息 ACL | 发送方/话题白名单、黑名单优先；引擎派生发送者；重复消息 ID 拒绝；断联不扣能量 |
+| 条约/贸易 | 互不侵犯/贸易协定；宿主命令签约；互不侵犯阻止攻击；贸易托管、原子交换与退款；反提议最多 3 轮；存档 v8 |
+| 对手外交 | B 按画像主动提议/下单并响应 A：Skirmisher 拒绝 NAP、要求贸易利润；Turtle 接受 NAP/公平贸易；反提议逐轮让步 |
+| 电力网络 | 发电溢出入网、自动取电/储备、容量上限、优先级负载切除、延迟/损耗净额补偿、持久断路器与 F4 面板；存档 v11 |
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
-| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
-| 验证 | 100 个仿真测试 + 23 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
+| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
+| 验证 | 177 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -79,12 +83,29 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energ
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-load
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --construction-cancel
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --message-acl
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-ai
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-negotiation
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-grid
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-recovery
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-limits
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-breaker
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-maintenance
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power-fault
 
-godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
+godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交，F4 电网
 godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
+godot --path game/SeedField.Game -- --capture-diplomacy # 外交面板截图
+godot --path game/SeedField.Game -- --capture-diplomacy-ai # B 方外交响应截图
+godot --path game/SeedField.Game -- --capture-power    # 电网诊断截图
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
+godot --path game/SeedField.Game -- --diplomacy-smoke  # 外交面板按钮接线冒烟
+godot --path game/SeedField.Game -- --diplomacy-ai-smoke # B 方自动响应冒烟
+godot --path game/SeedField.Game -- --diplomacy-counter-smoke # 面板反提议接线冒烟
+godot --path game/SeedField.Game -- --power-breaker-smoke # 面板断路器接线冒烟
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
@@ -115,6 +136,17 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`cancel & opponents`](docs/engineering/evidence/2026-11-17-cancel-and-opponents.md) | 取消退款、对手选择与协议边界证据 |
 | [`persistence & queue UI`](docs/engineering/evidence/2026-11-17-persistence-and-queue-ui.md) | 对手元数据存档、建造队列 UI 证据 |
 | [`policy/refund/offscreen`](docs/engineering/evidence/2026-11-17-policy-refund-offscreen.md) | 消息权限、失败退款、离屏发电预算证据 |
+| [`message ACL`](docs/engineering/evidence/2026-11-17-message-acl.md) | 发送方/话题白名单、身份边界、重复消息与断联证据 |
+| [`treaty & trade`](docs/engineering/evidence/2026-11-17-treaty-trade.md) | 互不侵犯、贸易托管/原子交换/退款、存档 v7 证据 |
+| [`diplomacy panel`](docs/engineering/evidence/2026-11-17-diplomacy-panel.md) | F3 外交面板、按钮接线、截图与 smoke 证据 |
+| [`opponent diplomacy`](docs/engineering/evidence/2026-11-17-opponent-diplomacy.md) | B 方画像化自动响应、Headless/Godot 证据与截图 |
+| [`negotiation`](docs/engineering/evidence/2026-11-17-negotiation.md) | 主动提议、多轮反提议、回合上限与让步证据 |
+| [`power grid`](docs/engineering/evidence/2026-11-17-power-grid.md) | 自动潮流、断供诊断、F4 面板与存档 v9 证据 |
+| [`power recovery`](docs/engineering/evidence/2026-11-17-power-recovery.md) | 溢出入网、自动取电/储备、潮流延迟损耗与 v10 证据 |
+| [`power limits & breaker`](docs/engineering/evidence/2026-11-17-power-limits-breaker.md) | 容量、优先级、净额补偿、持久断路器与 v11 证据 |
+| [`power maintenance`](docs/engineering/evidence/2026-11-17-power-maintenance.md) | 抢占式取电、跳闸维护锁定、F4 MAINTAIN 与 v12 证据 |
+| [`deterministic random`](docs/engineering/evidence/2026-11-17-deterministic-random.md) | SplitMix64 世界随机流、随机断路器故障与 v13 证据 |
+| [`code review medium`](docs/engineering/reviews/2026-11-17-code-review-medium.md) | 审查 8 项修复、2 项保留与回归测试 |
 
 ## 工程原则
 
@@ -126,7 +158,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | 核心区不可毁 | 外部全毁后必须能在有限步骤内复建最低实体 |
 | 不可信脚本 | Jint 限制不是 OS 沙箱；未完成进程隔离前不开放第三方包执行 |
 | 证据导向 | 不把未执行的测试、未验证的画面或演示数值写成已确认结论 |
+| 篇幅受控 | 单个 `.cs` / `.md` ≤ 600 行；`SeedField.Repository.Tests` 自动失败超限文件 |
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复命令/配额未统一；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗仍无随机命中/伤害；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

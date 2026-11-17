@@ -46,6 +46,20 @@ public sealed class SimulationStatistics
     public long ConstructionsStartedTotal { get; internal set; }
 
     public long ConstructionsCompletedTotal { get; internal set; }
+
+    public long TradeMaterialSettledTotal { get; internal set; }
+
+    public long TradeEnergySettledTotal { get; internal set; }
+
+    public long EnergyFlowedTotal { get; internal set; }
+
+    public long EnergyOverflowedTotal { get; internal set; }
+
+    public long EnergyFlowLossTotal { get; internal set; }
+
+    public long EnergyAutoDrawnTotal { get; internal set; }
+
+    public long EnergyWastedTotal { get; internal set; }
 }
 
 /// <summary>
@@ -66,6 +80,17 @@ public sealed class WorldState
 
     public long NextConstructionOrderId { get; internal set; } = 1;
 
+    public long NextTreatyProposalId { get; internal set; } = 1;
+
+    public long NextTreatyId { get; internal set; } = 1;
+
+    public long NextTradeOfferId { get; internal set; } = 1;
+
+    public long NextPowerShipmentId { get; internal set; } = 1;
+
+    /// <summary>Authoritative reproducible randomness; seed and state are hashed/saved.</summary>
+    public DeterministicRandom Random { get; } = new();
+
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Explicit bidirectional region links.</summary>
@@ -75,6 +100,14 @@ public sealed class WorldState
 
     public SortedDictionary<string, MessagePolicyState> MessagePolicies { get; } =
         new(StringComparer.Ordinal);
+
+    /// <summary>Per-civilization regional grid policies (reserve floor).</summary>
+    public SortedDictionary<string, PowerPolicyState> PowerPolicies { get; } =
+        new(StringComparer.Ordinal);
+
+    /// <summary>Persistent breaker state keyed by region and civilization.</summary>
+    public SortedDictionary<(string RegionId, string CivilizationId), PowerGridState>
+        PowerGridStates { get; } = new();
 
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
     public WorkshopService Workshop { get; } = new();
@@ -92,7 +125,18 @@ public sealed class WorldState
 
     public List<EnergyShipment> InTransitEnergy { get; } = new();
 
+    public List<PowerShipment> InTransitPower { get; } = new();
+
     public List<ConstructionOrder> ConstructionOrders { get; } = new();
+
+    /// <summary>Pending treaty proposals by stable id.</summary>
+    public SortedDictionary<long, TreatyProposalState> TreatyProposals { get; } = new();
+
+    /// <summary>Active bilateral treaties by stable id.</summary>
+    public SortedDictionary<long, TreatyState> Treaties { get; } = new();
+
+    /// <summary>Active trade offers by stable id. Escrow is already deducted.</summary>
+    public SortedDictionary<long, TradeOfferState> TradeOffers { get; } = new();
 
     /// <summary>Delivered messages per civilization, in delivery order.</summary>
     public SortedDictionary<string, List<DeliveredMessage>> Inboxes { get; } = new(StringComparer.Ordinal);

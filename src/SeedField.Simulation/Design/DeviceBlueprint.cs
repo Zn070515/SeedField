@@ -1,7 +1,13 @@
 namespace SeedField.Simulation;
 
-/// <summary>Power generation/storage module. It is what makes a design cover Energy.</summary>
-public sealed record PowerModule(int EnergyPerTick, long StorageCapacity);
+/// <summary>
+/// Power generation/storage module. Priority controls who may draw when the regional
+/// grid is under priority load shedding (higher = more important).
+/// </summary>
+public sealed record PowerModule(
+    int EnergyPerTick,
+    long StorageCapacity,
+    int Priority = 0);
 
 /// <summary>Compute/storage module. It is what makes a design cover State.</summary>
 public sealed record StateModule(int ComputePerTick, int StorageCapacity);

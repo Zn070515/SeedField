@@ -5,7 +5,7 @@ namespace SeedField.Simulation.Tests;
 public sealed class EconomyConstraintTests
 {
     [Fact]
-    public void PowerGeneratesIntoLocalStorageUpToCapacity()
+    public void PowerGeneratesIntoLocalStorageThenOverflows()
     {
         var world = new WorldBuilder()
             .AddRegion("r0", 10_000, 10_000)
@@ -28,7 +28,9 @@ public sealed class EconomyConstraintTests
         }
 
         Assert.Equal(10, world.FindEntity(new EntityId(1))!.Energy);
-        Assert.Equal(5, world.Statistics.EnergyGeneratedTotal);
+        Assert.Equal(8, world.Statistics.EnergyGeneratedTotal);
+        Assert.Equal(3, world.Statistics.EnergyOverflowedTotal);
+        Assert.Equal(3, world.Regions["r0"].GetEnergy("A"));
     }
 
     [Fact]
