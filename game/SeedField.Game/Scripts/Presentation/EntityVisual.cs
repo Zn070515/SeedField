@@ -26,7 +26,9 @@ public sealed class EntityVisual
         bool debug,
         long tick,
         bool moving,
-        bool hitFlash)
+        bool hitFlash,
+        float visualScale,
+        bool showBars)
     {
         var frame = _catalog.Get(entity.VisualAssetName, direction);
         if (frame is null)
@@ -38,7 +40,7 @@ public sealed class EntityVisual
             return;
         }
 
-        var size = frame.Footprint * ScreenScale;
+        var size = frame.Footprint * ScreenScale * visualScale;
         var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
 
         VisualDraw.Ellipse(
@@ -54,28 +56,31 @@ public sealed class EntityVisual
 
         canvas.DrawTextureRect(frame.Diffuse, rect, false);
 
-        var healthFraction = entity.MaxHealth <= 0
-            ? 0f
-            : (float)entity.Health / entity.MaxHealth;
-        var energyFraction = entity.EnergyCapacity <= 0
-            ? 0f
-            : (float)entity.Energy / entity.EnergyCapacity;
-        DrawBar(
-            canvas,
-            position + new Vector2(-15f, -size * 0.62f),
-            30f,
-            3f,
-            healthFraction,
-            new Color(0.35f, 0.95f, 0.50f));
-        if (entity.EnergyCapacity > 0)
+        if (showBars)
         {
+            var healthFraction = entity.MaxHealth <= 0
+                ? 0f
+                : (float)entity.Health / entity.MaxHealth;
+            var energyFraction = entity.EnergyCapacity <= 0
+                ? 0f
+                : (float)entity.Energy / entity.EnergyCapacity;
             DrawBar(
                 canvas,
-                position + new Vector2(-15f, size * 0.40f),
+                position + new Vector2(-15f, -size * 0.62f),
                 30f,
-                2.5f,
-                energyFraction,
-                new Color(0.35f, 0.75f, 1f));
+                3f,
+                healthFraction,
+                new Color(0.35f, 0.95f, 0.50f));
+            if (entity.EnergyCapacity > 0)
+            {
+                DrawBar(
+                    canvas,
+                    position + new Vector2(-15f, size * 0.40f),
+                    30f,
+                    2.5f,
+                    energyFraction,
+                    new Color(0.35f, 0.75f, 1f));
+            }
         }
 
         if (showId)

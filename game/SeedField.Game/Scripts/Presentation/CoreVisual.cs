@@ -20,7 +20,8 @@ public sealed class CoreVisual
         Vector2 position,
         CoreVisualState state,
         long tick,
-        bool debug)
+        bool debug,
+        float visualScale)
     {
         var frame = _catalog.GetCore(state);
         if (frame is null)
@@ -29,7 +30,7 @@ public sealed class CoreVisual
             return;
         }
 
-        var size = frame.Footprint * ScreenScale;
+        var size = frame.Footprint * ScreenScale * visualScale;
         var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
         var color = StateColor(state);
         var pulse = 0.55f + 0.20f * Mathf.Sin(tick * 0.22f);

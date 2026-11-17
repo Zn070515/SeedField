@@ -35,6 +35,7 @@ public partial class Main : Node2D
             DrawPresentationEntities();
             DrawTracers();
             DrawMessages();
+            DrawPresentationEffects();
             if (_debugVisible)
             {
                 DrawPresentationDebug();
@@ -73,14 +74,17 @@ public partial class Main : Node2D
             width: 1.6f,
             antialiased: true);
 
-        DrawString(
-            HudFont,
-            MapOrigin + new Vector2(0, -10),
-            "FRONTIER  ·  16 000 × 8 000 mm  ·  authoritative C# SimulationCore",
-            HorizontalAlignment.Left,
-            -1,
-            12,
-            Muted);
+        if (_zoom <= 1.1f)
+        {
+            DrawString(
+                HudFont,
+                MapOrigin + new Vector2(0, -10),
+                "FRONTIER  ·  16 000 × 8 000 mm  ·  authoritative C# SimulationCore",
+                HorizontalAlignment.Left,
+                -1,
+                12,
+                Muted);
+        }
     }
 
     private void DrawStagingZones()
@@ -306,7 +310,8 @@ public partial class Main : Node2D
             $"tick {_world.Tick}   entities {_world.EnumerateEntities().Count()}   " +
             $"shots {stats.ShotsFired}   damage {stats.DamageDealt}   " +
             $"messages {stats.MessagesDelivered}   E spent {stats.EnergySpentTotal}   " +
-            $"faults {_faultCount}   A program v{_slotA.Version}",
+            $"faults {_faultCount}   A program v{_slotA.Version}   " +
+            $"view {_zoom:0.00} ({DetailTier})",
             HorizontalAlignment.Left,
             -1,
             13,
@@ -357,8 +362,16 @@ public partial class Main : Node2D
             10,
             ready ? Green : Amber);
 
-        DrawLegend();
-        DrawEventLog();
+        if (_tacticalVisible || _debugVisible)
+        {
+            DrawLegend();
+        }
+
+        if (_debugVisible)
+        {
+            DrawEventLog();
+        }
+
         DrawControls();
     }
 

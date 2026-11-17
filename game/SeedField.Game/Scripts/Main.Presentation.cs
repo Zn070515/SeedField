@@ -9,6 +9,7 @@ public partial class Main
     private readonly Dictionary<long, long> _hitUntil = new();
     private readonly List<VisualEntitySnapshot> _visibleEntities = new();
     private readonly HashSet<long> _visibleEntityIds = new();
+    private readonly VisualEffectFeed _effects = new();
     private VisualAssetCatalog _visualCatalog = null!;
     private EntityVisual _entityVisual = null!;
     private CoreVisual _coreVisual = null!;
@@ -24,6 +25,18 @@ public partial class Main
     {
         _classicVisuals = arguments.Contains("--classic-visuals");
         _omniscientDebug = arguments.Contains("--omniscient-debug");
+        var viewArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--view=", StringComparison.Ordinal));
+        if (viewArgument is not null)
+        {
+            _zoom = viewArgument["--view=".Length..] switch
+            {
+                "far" => 0.78f,
+                "near" => 1.25f,
+                _ => 1f,
+            };
+            CenterView();
+        }
         if (_classicVisuals)
         {
             return;
@@ -98,10 +111,46 @@ public partial class Main
                 .Select(VisualEntitySnapshot.FromObserved));
         }
 
+        if (_benchmarkMain)
+        {
+            AddBenchmarkEntities();
+        }
+
         _visibleEntities.Sort((left, right) => left.Position.Y.CompareTo(right.Position.Y));
         foreach (var entity in _visibleEntities)
         {
             _visibleEntityIds.Add(entity.EntityId);
+        }
+    }
+
+    private void AddBenchmarkEntities()
+    {
+        var columns = Mathf.CeilToInt(Mathf.Sqrt(_benchmarkDevices));
+        var rows = Mathf.CeilToInt(_benchmarkDevices / (float)columns);
+        for (var index = 0; index < _benchmarkDevices; index++)
+        {
+            var column = index % columns;
+            var row = index / columns;
+            var position = new Vec2(
+                1_200 + column * (13_600 / Mathf.Max(1, columns - 1)),
+                900 + row * (6_200 / Mathf.Max(1, rows - 1)));
+            var weapon = index % 3 == 0;
+            _visibleEntities.Add(new VisualEntitySnapshot(
+                EntityId: -(index + 1),
+                CivilizationId: "A",
+                Position: position,
+                Health: 100,
+                MaxHealth: 100,
+                Energy: 100,
+                EnergyCapacity: 100,
+                BlueprintId: null,
+                BlueprintVersion: 1,
+                HasSensor: !weapon,
+                SensorRangeMm: weapon ? 0 : 5_000,
+                HasWeapon: weapon,
+                WeaponRangeMm: weapon ? 3_500 : 0,
+                HasDrive: true,
+                HasComm: true));
         }
     }
 
@@ -190,7 +239,9 @@ public partial class Main
                 _debugVisible,
                 _world.Tick,
                 MovingFor(entity.EntityId),
-                HitFlashFor(entity.EntityId));
+                HitFlashFor(entity.EntityId),
+                _zoom,
+                DetailTier != "far");
         }
 
         if (_tacticalVisible)
@@ -255,7 +306,8 @@ public partial class Main
             corePosition,
             state,
             _world.Tick,
-            _debugVisible);
+            _debugVisible,
+            _zoom);
     }
 
     private void DrawPresentationDebug()
@@ -281,8 +333,81 @@ public partial class Main
         }
         else if (simulationEvent is EntityDestroyed destroyed)
         {
+            if (_facing.TryGetValue(destroyed.EntityId.Value, out var last))
+            {
+                _effects.Add(
+                    last.Position,
+                    new Color(1f, 0.34f, 0.18f),
+                    destroyed.Tick,
+                    24,
+                    220f,
+                    "DESTROYED");
+            }
+
             _hitUntil.Remove(destroyed.EntityId.Value);
         }
+        else if (simulationEvent is PowerBlackout blackout &&
+                 blackout.CivilizationId == "A")
+        {
+            _effects.Add(
+                Scenarios.AStagingPosition,
+                new Color(1f, 0.25f, 0.18f),
+                blackout.Tick,
+                36,
+                1_900f,
+                "BLACKOUT");
+        }
+        else if (simulationEvent is PowerRestored restored &&
+                 restored.CivilizationId == "A")
+        {
+            _effects.Add(
+                Scenarios.AStagingPosition,
+                new Color(0.35f, 1f, 0.55f),
+                restored.Tick,
+                30,
+                1_700f,
+                "GRID RESTORED");
+        }
+        else if (simulationEvent is ConstructionQueued queued &&
+                 queued.CivilizationId == "A")
+        {
+            _effects.Add(
+                queued.Position,
+                new Color(0.40f, 0.85f, 1f),
+                queued.Tick,
+                40,
+                380f,
+                "BUILD");
+        }
+        else if (simulationEvent is EntityDeployed deployed &&
+                 deployed.CivilizationId == "A")
+        {
+            _effects.Add(
+                deployed.Position,
+                new Color(0.55f, 1f, 0.65f),
+                deployed.Tick,
+                22,
+                300f,
+                "DEPLOY");
+        }
+        else if (simulationEvent is EntityUpgraded upgraded &&
+                 upgraded.CivilizationId == "A" &&
+                 _facing.TryGetValue(upgraded.EntityId.Value, out var upgradedLast))
+        {
+            _effects.Add(
+                upgradedLast.Position,
+                new Color(0.45f, 0.90f, 1f),
+                upgraded.Tick,
+                22,
+                280f,
+                $"v{upgraded.NewVersion}");
+        }
+    }
+
+    private void DrawPresentationEffects()
+    {
+        _effects.Prune(_world.Tick);
+        _effects.Draw(this, Map, _world.Tick, _zoom);
     }
 
     private CoreVisualState CurrentCoreState()

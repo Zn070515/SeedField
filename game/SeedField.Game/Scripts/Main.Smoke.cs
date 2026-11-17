@@ -307,6 +307,8 @@ public partial class Main : Node2D
         _facing.Clear();
         _hitUntil.Clear();
         _bootstrapUntilTick = 0;
+        _zoom = 1f;
+        _pan = Vector2.Zero;
 
         if (preRun)
         {
