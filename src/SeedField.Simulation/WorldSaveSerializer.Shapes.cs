@@ -177,7 +177,10 @@ public static partial class WorldSaveSerializer
             core.Config.AnchorRecoveryCostPercent,
             core.Config.SiegeRecoveryCostPercent,
             core.Config.SiegeQuotaPenalty,
-            core.Config.RecoveryMaintenanceMaterialCost);
+            core.Config.RecoveryMaintenanceMaterialCost,
+            core.Config.AnchorEnergyPerTick,
+            core.Config.AnchorMaterialPerTick,
+            core.Config.AnchorStorageBonus);
 
     private static MessageSaveData ToMessage(MessageEnvelope message) =>
         new(

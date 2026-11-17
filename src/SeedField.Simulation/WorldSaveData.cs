@@ -259,7 +259,9 @@ public sealed record WreckSaveData(
     string BlueprintId,
     int BlueprintVersion,
     long MaterialRecoverable,
-    long CreatedTick);
+    long CreatedTick,
+    string? OccupiedByCivilizationId = null,
+    long OccupiedTick = -1);
 
 public sealed record SeedCoreProductSaveData(
     DeviceBranch Branch,
@@ -289,7 +291,10 @@ public sealed record CoreSaveData(
     int AnchorRecoveryCostPercent = 0,
     int SiegeRecoveryCostPercent = 0,
     int SiegeQuotaPenalty = 0,
-    long RecoveryMaintenanceMaterialCost = 0);
+    long RecoveryMaintenanceMaterialCost = 0,
+    long AnchorEnergyPerTick = 0,
+    long AnchorMaterialPerTick = 0,
+    long AnchorStorageBonus = 0);
 
 public sealed record MessageSaveData(
     long Id,

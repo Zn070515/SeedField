@@ -142,6 +142,8 @@ public static class WorldStateHasher
             Append(ref hash, wreck.OwnerCivilizationId);
             Append(ref hash, wreck.BlueprintId);
             Append(ref hash, wreck.BlueprintVersion);
+            Append(ref hash, wreck.OccupiedByCivilizationId ?? string.Empty);
+            Append(ref hash, wreck.OccupiedTick);
             Append(ref hash, wreck.MaterialRecoverable);
             Append(ref hash, wreck.CreatedTick);
         }
@@ -401,6 +403,9 @@ public static class WorldStateHasher
             Append(ref hash, core.Config.SiegeRecoveryCostPercent);
             Append(ref hash, core.Config.SiegeQuotaPenalty);
             Append(ref hash, core.Config.RecoveryMaintenanceMaterialCost);
+            Append(ref hash, core.Config.AnchorEnergyPerTick);
+            Append(ref hash, core.Config.AnchorMaterialPerTick);
+            Append(ref hash, core.Config.AnchorStorageBonus);
             Append(ref hash, core.AnchorTarget);
             Append(ref hash, core.RecoveryWindowStartTick);
             Append(ref hash, core.RecoveriesInWindow);

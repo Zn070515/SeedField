@@ -232,7 +232,9 @@ public static partial class WorldSaveSerializer
                     wreck.BlueprintId,
                     wreck.BlueprintVersion,
                     wreck.MaterialRecoverable,
-                    wreck.CreatedTick))
+                    wreck.CreatedTick,
+                    wreck.OccupiedByCivilizationId,
+                    wreck.OccupiedTick))
                 .ToArray(),
             world.NextWreckId,
             world.WreckRecoveryPercent,

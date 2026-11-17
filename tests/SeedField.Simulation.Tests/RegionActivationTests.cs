@@ -39,6 +39,22 @@ public sealed class RegionActivationTests
     }
 
     [Fact]
+    public void InactiveRegionEntitiesAreNotActiveForControllers()
+    {
+        var world = NewWorld();
+        var engine = new SimulationEngine(world);
+
+        Assert.True(engine.IsEntityActive(new EntityId(1)));
+        Assert.False(engine.IsEntityActive(new EntityId(99)));
+
+        engine.DeactivateRegion("r0");
+        Assert.False(engine.IsEntityActive(new EntityId(1)));
+
+        engine.ActivateRegion("r0");
+        Assert.True(engine.IsEntityActive(new EntityId(1)));
+    }
+
+    [Fact]
     public void InactivePowerIsDeferredAndCaughtUpOnActivation()
     {
         var activeWorld = NewWorld();

@@ -101,17 +101,20 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
+- Phase 2b AppContainer 沙箱：`SeedField.SandboxLauncher` 创建/复用 AppContainer profile、无 capability、worker 目录 RX、继承 stdio、启动器 Job Object；`UseAppContainer`/`--worker-opponent-appcontainer`/`--sandbox-check`；文件/网络/写入拒绝与 worker 哈希一致已实测（ADR-0034）。
+- 离屏控制器抑制：`SimulationEngine.IsEntityActive`；Main 只对 active 区域控制器构建观测/调用 decide；`--region-scale` 8 区域 × 50 台 active-only 1.19ms vs all 5.04ms；被动系统仍全局 Tick（ADR-0033）。
+- 残骸占领与锚点支持：`OccupyWreckCommand`（需在场、封锁他方回收）、`WreckOccupied`；`SeedCoreConfig.AnchorEnergyPerTick`/`AnchorMaterialPerTick`/`AnchorStorageBonus` 按存活锚点追加核心产出与仓储；存档 v19（ADR-0032）。
+- TypeScript 控制器契约：`contracts/seedfield-controller.d.ts` + 示例 + 严格 tsconfig；CI `tsc` 与 C# 字段漂移测试（ADR-0031）。
 - 确定性回放：`ReplayRecorder`/`ReplayPlayer` 以 Intent 为边界记录初始世界、每 Tick 意图与执行后哈希；16MiB/100k Tick/10k Intent 限额；首个分叉 Tick 可定位；`--replay-record`/`--replay-play`（ADR-0030）。
 - 确定性战斗随机：`CombatHitChancePercent`/`CombatDamageVariancePercent`/`CombatLootChancePercent`/`CombatLootMaterial` 场景配置；固定抽取顺序命中→伤害→掉落，0%/100% 不消耗随机值；`ShotMissed`/`CombatLootGranted` 事件与 `ShotsMissed`/`MaterialLootedTotal` 统计；存档 v18；`--combat-rng` 演示（ADR-0029）。
 - 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；默认 DOF = 逻辑核数；Headless Server GC；`Engine.PrepareScript` 跨引擎复用；进程内 `Decide` 用 `JsObject.Create` + 共享布局直接构造观测对象，worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试；100 台 33.96→1.18 ms/tick、1000 台 180.36→7.9 ms/tick（3000 Tick 稳态），1000 台启动 205→127 ms；`--benchmark-jint-parallel`、`--benchmark-jint-preserialized`、`--benchmark-startup`、`--ticks`、`--chunk-size` 与 `--budget-ms` 门禁（ADR-0028）。
 
 ### 尚未实现
 
-- TypeScript `.d.ts` 编辑契约。
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、维护时长、多电压/潮流方程。
 - 存档迁移（v1 → 后续）、完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
 - 废墟实体/占领/清理、快照签名/来源认证、Workshop 流程、残骸老化/掠夺。
-- 离线包隔离剩余门禁：AppContainer/低完整性、OS 网络/文件系统拒绝、只读挂载、OS 磁盘配额、完整 fuzz/红队、发布签名密钥/Workshop、独立安全审查；第三方 JS 导入仍关闭。
+- 离线包隔离剩余门禁：OS 磁盘配额（当前无可写文件面）、完整 fuzz/红队、发布签名密钥/Workshop、独立安全审查、正式安装 profile/ACL 流程；第三方 JS 导入仍关闭。
 - 正式平衡数值、掉落表/经济上限、暴击/穿甲等扩展。
 - PvE 对手、教程/科技树/终局与正式美术。
 
@@ -369,7 +372,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 残骸/废墟模型是原型 | 设备残骸与离线快照切片已可回收；无残骸老化/消失，无废墟实体/占领，快照无签名 | 后续 ADR 定义残骸老化、废墟实体与来源认证 |
 | 废墟快照是数据-only | 不支持导入可执行 AI/脚本；第三方可执行包仍关闭 | 完整离线文明包必须等进程隔离/IPC |
 | 外壳围困是原型 | 锚点目标只增不减；多跳围困、锚点占领、仓储/产出加成未做 | 先验证单跳围困手感，再扩展拓扑与占领 |
-| 第三方对手包未导入 | 内置包 + Phase 1 worker/IPC/Job Object + Phase 2a 签名/同意/CPU/磁盘/fuzz 已可用；AppContainer/OS 网络文件拒绝/独立审查未完成 | 继续按 ADR-0020 的 12 项门禁推进 Phase 2b，未全绿前保持关闭 |
+| 第三方对手包未导入 | 内置包 + Phase 1 worker/IPC/Job Object + Phase 2a 签名/同意/CPU/磁盘/fuzz + Phase 2b AppContainer 网络/文件隔离已可用；独立审查/发布密钥/磁盘配额未完成 | 保持 `ThirdPartyImportEnabled=false`，完成剩余门禁后再开放 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
 ## ADR 索引
@@ -406,10 +409,14 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0028](adr/ADR-0028-parallel-controller-batch.md) | 并行控制器批处理与观测批次 |
 | [ADR-0029](adr/ADR-0029-deterministic-combat-randomness-and-loot.md) | 确定性战斗随机、伤害变体与掉落 |
 | [ADR-0030](adr/ADR-0030-deterministic-replay-format.md) | 确定性回放格式与逐 Tick 校验 |
+| [ADR-0031](adr/ADR-0031-typescript-controller-contract.md) | TypeScript 控制器契约 |
+| [ADR-0032](adr/ADR-0032-wreck-occupation-and-anchor-support.md) | 残骸占领与锚点仓储/产出加成 |
+| [ADR-0033](adr/ADR-0033-offscreen-controller-suppression.md) | 离屏控制器抑制与区域规模边界 |
+| [ADR-0034](adr/ADR-0034-appcontainer-worker-sandbox.md) | Phase 2b AppContainer 工作进程沙箱 |
 
 ## 8. 下一步（按依赖顺序）
 
-1. 离线包隔离 Phase 2b：AppContainer/低完整性、OS 网络/文件拒绝、只读挂载、OS 磁盘配额、完整 fuzz/红队、发布签名密钥与独立安全审查（仍不开放导入）；废墟实体/占领/清理；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。
+1. 离线包隔离剩余门禁：OS 磁盘配额（若开放文件 API）、完整 fuzz/红队、发布签名密钥、独立安全审查、正式安装 profile/ACL（仍不开放导入）；独立废墟美术/老化掠夺；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。
 4. 用 `DeterministicRandom` 实现可复现的命中/损伤变体与掉落；补随机流回放测试。

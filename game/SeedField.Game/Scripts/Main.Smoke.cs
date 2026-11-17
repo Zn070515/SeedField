@@ -347,7 +347,7 @@ public partial class Main : Node2D
         var entityIds = new List<EntityId>(_deviceControllers.Count);
         foreach (var controller in _deviceControllers)
         {
-            if (_world.FindEntity(controller.EntityId) is null)
+            if (!_engine.IsEntityActive(controller.EntityId))
             {
                 continue;
             }

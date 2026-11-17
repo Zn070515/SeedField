@@ -222,24 +222,33 @@ public static partial class WorldSaveSerializer
                 wreckData.CreatedTick < 0 ||
                 wreckData.CreatedTick > data.Tick ||
                 !world.Regions.TryGetValue(wreckData.RegionId, out var region) ||
-                !region.Contains(new Vec2(wreckData.X, wreckData.Y)))
+                !region.Contains(new Vec2(wreckData.X, wreckData.Y)) ||
+                (wreckData.OccupiedByCivilizationId is null
+                    ? wreckData.OccupiedTick != -1
+                    : string.IsNullOrWhiteSpace(wreckData.OccupiedByCivilizationId) ||
+                      wreckData.OccupiedTick < 0 ||
+                      wreckData.OccupiedTick > data.Tick))
             {
                 throw Invalid(
                     "INVALID_WRECK",
                     $"Wreck '{wreckData.Id}' is invalid.");
             }
 
-            world.Wrecks.Add(
+            var wreck = new WreckState(
                 wreckData.Id,
-                new WreckState(
-                    wreckData.Id,
-                    wreckData.RegionId,
-                    new Vec2(wreckData.X, wreckData.Y),
-                    wreckData.OwnerCivilizationId,
-                    wreckData.BlueprintId,
-                    wreckData.BlueprintVersion,
-                    wreckData.MaterialRecoverable,
-                    wreckData.CreatedTick));
+                wreckData.RegionId,
+                new Vec2(wreckData.X, wreckData.Y),
+                wreckData.OwnerCivilizationId,
+                wreckData.BlueprintId,
+                wreckData.BlueprintVersion,
+                wreckData.MaterialRecoverable,
+                wreckData.CreatedTick);
+            if (wreckData.OccupiedByCivilizationId is { } occupier)
+            {
+                wreck.Occupy(occupier, wreckData.OccupiedTick);
+            }
+
+            world.Wrecks.Add(wreckData.Id, wreck);
         }
 
         var maxWreckId = world.Wrecks.Keys.DefaultIfEmpty(0).Max();
@@ -322,7 +331,10 @@ public static partial class WorldSaveSerializer
                 coreData.AnchorRecoveryCostPercent,
                 coreData.SiegeRecoveryCostPercent,
                 coreData.SiegeQuotaPenalty,
-                coreData.RecoveryMaintenanceMaterialCost);
+                coreData.RecoveryMaintenanceMaterialCost,
+                coreData.AnchorEnergyPerTick,
+                coreData.AnchorMaterialPerTick,
+                coreData.AnchorStorageBonus);
             config.Validate();
 
             var core = new SeedCoreState(

@@ -7,6 +7,11 @@ public sealed record RecoverWreckCommand(
     string CivilizationId,
     long WreckId) : WreckCommand(CivilizationId);
 
+/// <summary>Claims a wreck for a civilization with a living entity in its region.</summary>
+public sealed record OccupyWreckCommand(
+    string CivilizationId,
+    long WreckId) : WreckCommand(CivilizationId);
+
 public sealed record WreckCommandResult(
     bool Success,
     SimulationErrorCode ErrorCode,

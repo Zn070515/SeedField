@@ -30,9 +30,13 @@
   （内存/单进程/kill-on-close）、控制器工厂、Headless 双跑哈希验证。
 - Phase 2a（ADR-0022）已实现：ECDSA P-256 签名包、内容哈希、信任存储、显式同意、
   Job Object CPU 时间、磁盘看门狗、IPC fuzz、`--package-check` 验证 CLI。
-- **仍未实现**：AppContainer/低完整性令牌、OS 网络与文件系统拒绝、只读挂载、
-  OS 磁盘配额、完整 fuzz/红队、发布签名密钥、独立安全审查。因此第三方可执行包
-  导入继续关闭。
+- Phase 2b（ADR-0034）已实现：独立 `SeedField.SandboxLauncher`，Windows
+  AppContainer profile、无 capability、worker 目录只读/执行、继承 stdio、
+  启动器 Job Object；`--sandbox-check` 验证容器内执行、文件/网络拒绝；
+  `--worker-opponent-appcontainer` 哈希一致。
+- **仍未实现**：OS 磁盘配额（当前 worker/脚本无文件 API，无写权限；
+  应用级看门狗保留）、完整 fuzz/红队、发布签名密钥、独立安全审查、
+  正式部署 profile/ACL 安装流程。因此第三方可执行包导入继续关闭。
 - 开放第三方可执行包前，必须逐项通过威胁模型第 5 节的 12 项硬门禁。
 
 ## 已知边界

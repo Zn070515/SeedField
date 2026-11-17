@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static partial class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 18;
+    public const int CurrentSchemaVersion = 19;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -178,5 +178,13 @@ public static partial class WorldSaveSerializer
             PowerShipments = data.PowerShipments ?? Array.Empty<PowerShipmentSaveData>(),
             GridCapacities = data.GridCapacities ?? Array.Empty<GridCapacitySaveData>(),
             PowerGridStates = data.PowerGridStates ?? Array.Empty<PowerGridStateSaveData>(),
+            Cores = (data.Cores ?? Array.Empty<CoreSaveData>())
+                .Select(core => core with
+                {
+                    AnchorEnergyPerTick = 0,
+                    AnchorMaterialPerTick = 0,
+                    AnchorStorageBonus = 0,
+                })
+                .ToArray(),
         };
 }

@@ -513,6 +513,7 @@ public partial class Main : Node2D
             or BreakerMaintained
             or RecoveryQuotaDenied
             or WreckCreated
+            or WreckOccupied
             or WreckSalvaged;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
@@ -541,6 +542,7 @@ public partial class Main : Node2D
             BreakerMaintained => Green,
             RecoveryQuotaDenied => new Color(0.75f, 0.66f, 0.40f),
             WreckCreated => new Color(0.75f, 0.50f, 0.35f),
+            WreckOccupied => new Color(0.85f, 0.78f, 0.40f),
             WreckSalvaged => Green,
             _ => Text,
         };

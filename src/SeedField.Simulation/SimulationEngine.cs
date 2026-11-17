@@ -25,6 +25,14 @@ public sealed partial class SimulationEngine
     /// </summary>
     public bool IsRegionActive(string regionId) => !_inactiveRegions.Contains(regionId);
 
+    /// <summary>
+    /// Offscreen controller gate: false when the entity is missing or lives in an
+    /// inactive region. Inactive regions already reject intents, so skipping the
+    /// script call cannot change the authoritative world state.
+    /// </summary>
+    public bool IsEntityActive(EntityId entityId) =>
+        World.FindEntity(entityId) is { } entity && IsRegionActive(entity.RegionId);
+
     public void DeactivateRegion(string regionId)
     {
         if (!World.Regions.ContainsKey(regionId))

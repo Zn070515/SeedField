@@ -6,7 +6,7 @@ namespace SeedField.Headless;
 
 internal static partial class Program
 {
-    private static int RunWorkerOpponentDemo()
+    private static int RunWorkerOpponentDemo(bool appContainer = false)
     {
         var inProcess = RunScenario();
         ControllerFactory workerFactory = (civilizationId, script, options) =>
@@ -16,6 +16,7 @@ internal static partial class Program
                 new WorkerControllerOptions
                 {
                     ControllerOptions = options ?? new JsControllerOptions(),
+                    UseAppContainer = appContainer,
                 });
 
         var first = RunScenario(workerFactory);

@@ -202,6 +202,12 @@ public sealed record CoreMaintained(
     long MaterialSpent) : SimulationEvent(Tick);
 
 /// <summary>A destroyed blueprint instance left salvageable material.</summary>
+public sealed record WreckOccupied(
+    long Tick,
+    long WreckId,
+    string CivilizationId,
+    string RegionId) : SimulationEvent(Tick);
+
 public sealed record WreckCreated(
     long Tick,
     long WreckId,

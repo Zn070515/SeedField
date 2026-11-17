@@ -17,7 +17,10 @@ public sealed record SeedCoreConfig(
     int AnchorRecoveryCostPercent = 0,
     int SiegeRecoveryCostPercent = 0,
     int SiegeQuotaPenalty = 0,
-    long RecoveryMaintenanceMaterialCost = 0)
+    long RecoveryMaintenanceMaterialCost = 0,
+    long AnchorEnergyPerTick = 0,
+    long AnchorMaterialPerTick = 0,
+    long AnchorStorageBonus = 0)
 {
     /// <summary>Zero window or quota disables the fast-recovery limit.</summary>
     public bool HasRecoveryQuota =>
@@ -52,6 +55,14 @@ public sealed record SeedCoreConfig(
         if (MaxMaterialReserve < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(MaxMaterialReserve));
+        }
+
+        if (AnchorEnergyPerTick < 0 || AnchorMaterialPerTick < 0 ||
+            AnchorStorageBonus < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(AnchorEnergyPerTick),
+                "Anchor support values must be non-negative.");
         }
 
         if (RecoveryWindowTicks < 0)

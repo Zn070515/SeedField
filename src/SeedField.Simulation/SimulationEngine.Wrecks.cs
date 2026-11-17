@@ -12,6 +12,7 @@ public sealed partial class SimulationEngine
         return command switch
         {
             RecoverWreckCommand recover => RecoverWreck(recover, events),
+            OccupyWreckCommand occupy => OccupyWreck(occupy, events),
             _ => new WreckCommandResult(
                 false,
                 SimulationErrorCode.InvalidAction,
@@ -39,6 +40,16 @@ public sealed partial class SimulationEngine
                 false,
                 SimulationErrorCode.WreckNotFound,
                 $"Wreck region '{wreck.RegionId}' does not exist.",
+                events);
+        }
+
+        if (wreck.OccupiedByCivilizationId is { } occupier &&
+            !string.Equals(occupier, command.CivilizationId, StringComparison.Ordinal))
+        {
+            return new WreckCommandResult(
+                false,
+                SimulationErrorCode.WreckUnavailable,
+                $"Wreck '{wreck.Id}' is occupied by {occupier}.",
                 events);
         }
 
@@ -74,6 +85,77 @@ public sealed partial class SimulationEngine
             true,
             SimulationErrorCode.None,
             $"Salvaged {wreck.MaterialRecoverable} M from wreck {wreck.Id}.",
+            events);
+    }
+
+    private WreckCommandResult OccupyWreck(
+        OccupyWreckCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.Wrecks.TryGetValue(command.WreckId, out var wreck))
+        {
+            return new WreckCommandResult(
+                false,
+                SimulationErrorCode.WreckNotFound,
+                $"Wreck '{command.WreckId}' does not exist.",
+                events);
+        }
+
+        if (!World.Regions.TryGetValue(wreck.RegionId, out var region))
+        {
+            return new WreckCommandResult(
+                false,
+                SimulationErrorCode.WreckNotFound,
+                $"Wreck region '{wreck.RegionId}' does not exist.",
+                events);
+        }
+
+        if (wreck.OccupiedByCivilizationId is { } occupier &&
+            !string.Equals(occupier, command.CivilizationId, StringComparison.Ordinal))
+        {
+            return new WreckCommandResult(
+                false,
+                SimulationErrorCode.WreckUnavailable,
+                $"Wreck '{wreck.Id}' is occupied by {occupier}.",
+                events);
+        }
+
+        var hasPresence = region.Entities.Values.Any(entity =>
+            string.Equals(
+                entity.CivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal));
+        if (!hasPresence)
+        {
+            return new WreckCommandResult(
+                false,
+                SimulationErrorCode.WreckUnavailable,
+                "Occupation requires a living entity in the wreck's region.",
+                events);
+        }
+
+        if (string.Equals(
+                wreck.OccupiedByCivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return new WreckCommandResult(
+                true,
+                SimulationErrorCode.None,
+                $"Wreck '{wreck.Id}' is already occupied.",
+                events);
+        }
+
+        wreck.Occupy(command.CivilizationId, World.Tick);
+        events.Add(new WreckOccupied(
+            World.Tick,
+            wreck.Id,
+            command.CivilizationId,
+            region.Id));
+        return new WreckCommandResult(
+            true,
+            SimulationErrorCode.None,
+            $"Occupied wreck {wreck.Id}.",
             events);
     }
 }

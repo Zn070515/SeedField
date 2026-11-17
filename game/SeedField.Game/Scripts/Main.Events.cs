@@ -101,6 +101,9 @@ public partial class Main
             RecoveryQuotaDenied quota =>
                 $"t{quota.Tick,4}  {quota.CivilizationId} recovery quota exhausted " +
                 $"in {quota.RegionId} ({quota.Used}/{quota.Limit}, reset in {quota.ResetsInTicks}t)",
+            WreckOccupied occupied =>
+                $"t{occupied.Tick,4}  {occupied.CivilizationId} occupied wreck " +
+                $"{occupied.WreckId} in {occupied.RegionId}",
             WreckCreated wreck =>
                 $"t{wreck.Tick,4}  wreck {wreck.WreckId} in {wreck.RegionId}: " +
                 $"{wreck.BlueprintId} v{wreck.BlueprintVersion} · {wreck.MaterialRecoverable}M",
