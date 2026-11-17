@@ -84,13 +84,6 @@ public partial class Main : Node2D
     private bool _captureDebug;
     private bool _captureOmniscient;
     private bool _captureView;
-    private bool _benchmarkMain;
-    private int _benchmarkDevices;
-    private double _benchmarkElapsed;
-    private double _benchmarkSampleElapsed;
-    private double _benchmarkFpsSum;
-    private double _benchmarkProcessSum;
-    private int _benchmarkSamples;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -105,6 +98,16 @@ public partial class Main : Node2D
             ? BuiltInOpponents.Turtle
             : BuiltInOpponents.Skirmisher;
         _peacefulScenario = arguments.Contains("--peaceful");
+        var jintBenchmarkArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--benchmark-jint=", StringComparison.Ordinal));
+        if (jintBenchmarkArgument is not null &&
+            int.TryParse(jintBenchmarkArgument["--benchmark-jint=".Length..], out var jintDevices))
+        {
+            _benchmarkJint = true;
+            _benchmarkJintDevices = Mathf.Clamp(jintDevices, 2, 100);
+            DisplayServer.WindowSetVsyncMode(DisplayServer.VSyncMode.Disabled);
+        }
+
         var benchmarkArgument = arguments.FirstOrDefault(argument =>
             argument.StartsWith("--benchmark-main=", StringComparison.Ordinal));
         if (benchmarkArgument is not null &&
@@ -122,6 +125,12 @@ public partial class Main : Node2D
         BuildPowerPanel();
         BuildRecoveryPanel();
         InitializePresentation(arguments);
+
+        if (_benchmarkJint)
+        {
+            ConfigureJintBenchmark();
+            return;
+        }
 
         var coreStateArgument = arguments.FirstOrDefault(argument =>
             argument.StartsWith("--core-state=", StringComparison.Ordinal));
@@ -372,6 +381,13 @@ public partial class Main : Node2D
     public override void _Process(double delta)
     {
         _frame++;
+
+        if (_benchmarkJint)
+        {
+            RunJintBenchmarkTick();
+            QueueRedraw();
+            return;
+        }
 
         if (_benchmarkMain)
         {

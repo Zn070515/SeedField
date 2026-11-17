@@ -64,7 +64,20 @@ MAIN_BENCH devices=50  sprites=53  fps=479.2 processMs=4.34 drawCalls=432
 MAIN_BENCH devices=100 sprites=103 fps=373.7 processMs=4.52 drawCalls=582
 ```
 
-开发机 RTX 4090、vsync 关闭、1280×720；不含 Jint/完整文明仿真，不能当最低配置。
+开发机 RTX 4090、vsync 关闭、1280×720。`MAIN_BENCH` 只含表现层 decoy；
+`MAIN_JINT_BENCH` 才是真实仿真 + Jint 控制器：
+
+```text
+10 devices:  1.89 ms/tick   528.7 ticks/s   process 13.59 ms   faults 0
+50 devices: 22.73 ms/tick    44.0 ticks/s   process 51.48 ms   faults 0
+100 devices: 68.95 ms/tick   14.5 ticks/s   process 97.77 ms   faults 0
+```
+
+- 100 台 Jint 混合负载已明显低于目标 6 Tick/s 的余量，说明下一阶段应先优化控制器/观察构建，
+  而不是继续堆渲染。
+- 100 台表现层在 far/mid/near 分别约 404/377/373 FPS；GPU 不是当前瓶颈。
+- **最低配置未验证**：当前只有 RTX 4090 / OpenGL compatibility；没有第二台低端 GPU 或
+  OS 级 GPU 限制，不能把开发机数据写成最低配置结论。
 
 ## 6. 验证
 

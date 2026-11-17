@@ -39,6 +39,8 @@ Gate 2 已把设备、核心四态、模块和 mask 接入真实 `Main`，但实
 - `WorkshopPanel` 增加选中蓝图/实例的精灵预览，减少“只看文字”的装配感。
 - `--benchmark-main=N` 在真实 Main 渲染路径中加入 N 个纯表现 decoy 精灵，
   记录 10/50/100 的 FPS/process/draw calls；不改世界状态。
+- `--benchmark-jint=N` 在 peaceful 场景部署 N 个真实设备控制器，执行 30 Tick，
+  记录 avgTickMs/ticksPerSec/faults；这是真实 Jint 混合负载。
 
 ### 4. 情报边界保持
 
@@ -54,7 +56,8 @@ Gate 2 已把设备、核心四态、模块和 mask 接入真实 `Main`，但实
 - 不做正式地表材质、建筑资产、运输网络实体。
 - 不做程序编辑器大预览；工坊只做选中项的小精灵预览。
 - 不做全部事件（断电、围困、恢复、模块升级）的逐帧演出。
-- `--benchmark-main` 是表现层负载，不含 Jint/完整文明仿真；不是最低配置结论。
+- 最低配置未验证：只有 RTX 4090 / OpenGL compatibility；`--benchmark-main` 是表现层负载，
+  `--benchmark-jint` 是真实 Jint 混合负载，但都不是最低配置结论。
 
 ## 后果
 
