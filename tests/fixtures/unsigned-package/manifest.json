@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "packageId": "fixture.unsigned",
+  "version": "1.0.0",
+  "kind": "offline-opponent",
+  "engineCompat": "0.1",
+  "entryPoints": [
+    "programs/controller.js"
+  ],
+  "requiredCapabilities": [
+    "tactical-control"
+  ],
+  "contentHash": "4a16d37aa62d383fa9cab985dda04507ecf40133689673a47c860ea252a971e7",
+  "signerKeyId": "",
+  "signature": ""
+}
