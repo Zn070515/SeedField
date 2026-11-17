@@ -21,7 +21,9 @@ public sealed class VisualAssetCatalog
     private readonly Dictionary<string, List<VisualAssetFrame>> _frames =
         new(StringComparer.Ordinal);
 
-    public static VisualAssetCatalog Load(string route = "oblique")
+    public static VisualAssetCatalog Load(
+        string route = "oblique",
+        IReadOnlySet<string>? only = null)
     {
         var catalog = new VisualAssetCatalog();
         const string manifestPath = "res://Art/manifest.json";
@@ -42,6 +44,12 @@ public sealed class VisualAssetCatalog
 
             var id = asset.GetProperty("assetId").GetString() ?? string.Empty;
             var name = id.Split('.')[0];
+            if (only is not null && !only.Contains(name))
+            {
+                continue;
+            }
+
+
             var pivotArray = asset.GetProperty("pivot");
             var pivot = new Vector2(
                 (float)pivotArray[0].GetDouble(),

@@ -44,7 +44,14 @@ public partial class Main
         }
 
         _visualCatalog = VisualAssetCatalog.Load();
-        _worldCatalog = VisualAssetCatalog.Load("topdown");
+        _worldCatalog = VisualAssetCatalog.Load(
+            "topdown",
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "ruin_block",
+                "pipe_junction",
+                "wreck_hauler",
+            });
         _entityVisual = new EntityVisual(_visualCatalog);
         _coreVisual = new CoreVisual(_visualCatalog);
         UpdateFacing();
@@ -279,7 +286,7 @@ public partial class Main
     private void DrawPresentationEffects()
     {
         _effects.Prune(_world.Tick);
-        _effects.Draw(this, Map, _world.Tick, _zoom);
+        _effects.Draw(this, Map, _world.Tick, _zoom, MapScale);
     }
 
     private CoreVisualState CurrentCoreState()
