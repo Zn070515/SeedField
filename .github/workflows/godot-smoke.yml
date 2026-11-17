@@ -6,6 +6,7 @@ on:
     paths:
       - "game/**"
       - "src/SeedField.Simulation/**"
+      - "src/SeedField.Runtime.Js/**"
 
 permissions:
   contents: read

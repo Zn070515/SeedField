@@ -201,7 +201,8 @@ internal static partial class Program
         int devices,
         int dof,
         double budgetMs,
-        int ticks = 10)
+        int ticks = 10,
+        int chunkSize = 0)
     {
         ticks = Math.Max(1, ticks);
         var world = BuildPerfWorld(devices);
@@ -241,33 +242,46 @@ internal static partial class Program
         var decideMs = 0.0;
         var stepMs = 0.0;
         var total = Stopwatch.StartNew();
+        var chunk = chunkSize <= 0
+            ? controllers.Count
+            : Math.Min(chunkSize, controllers.Count);
         for (var tick = 0; tick < ticks; tick++)
         {
             var phase = Stopwatch.StartNew();
-            var observations = engine.BuildControllerObservations(
-                entityIds,
-                runner.MaxDegreeOfParallelism);
-            var items = new List<ControllerBatchItem>(controllers.Count);
-            for (var index = 0; index < controllers.Count; index++)
+            var intents = new List<Intent>(controllers.Count);
+            for (var start = 0; start < controllers.Count; start += chunk)
             {
-                items.Add(new ControllerBatchItem(
-                    index,
-                    controllers[index],
-                    observations[index]));
+                var count = Math.Min(chunk, controllers.Count - start);
+                var chunkIds = new List<EntityId>(count);
+                for (var offset = 0; offset < count; offset++)
+                {
+                    chunkIds.Add(entityIds[start + offset]);
+                }
+
+                var observations = engine.BuildControllerObservations(
+                    chunkIds,
+                    runner.MaxDegreeOfParallelism);
+                phase.Stop();
+                observationMs += phase.Elapsed.TotalMilliseconds;
+
+                var items = new List<ControllerBatchItem>(count);
+                for (var offset = 0; offset < count; offset++)
+                {
+                    items.Add(new ControllerBatchItem(
+                        offset,
+                        controllers[start + offset],
+                        observations[offset]));
+                }
+
+                phase.Restart();
+                var decisions = runner.Run(items);
+                phase.Stop();
+                decideMs += phase.Elapsed.TotalMilliseconds;
+                intents.AddRange(decisions.SelectMany(decision => decision.Intents));
+                phase.Restart();
             }
 
-            phase.Stop();
-            observationMs += phase.Elapsed.TotalMilliseconds;
-
-            phase.Restart();
-            var decisions = runner.Run(items);
-            phase.Stop();
-            decideMs += phase.Elapsed.TotalMilliseconds;
-
-            phase.Restart();
-            engine.Step(decisions
-                .SelectMany(decision => decision.Intents)
-                .ToList());
+            engine.Step(intents);
             phase.Stop();
             stepMs += phase.Elapsed.TotalMilliseconds;
         }
@@ -285,7 +299,8 @@ internal static partial class Program
             $"ticks={ticks} avgTickMs={avgTickMs:0.00} " +
             $"ticksPerSec={1000.0 / avgTickMs:0.0} obsMs={observationMs / ticks:0.00} " +
             $"decideMs={decideMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
-            $"dof={runner.LastUsedDegreeOfParallelism} peakWorkingSetMb={peakMb:0.0} " +
+            $"dof={runner.LastUsedDegreeOfParallelism} chunk={chunk} " +
+            $"peakWorkingSetMb={peakMb:0.0} " +
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
 
         if (budgetMs > 0 && avgTickMs > budgetMs)
@@ -295,6 +310,105 @@ internal static partial class Program
             return 2;
         }
 
+        return 0;
+    }
+
+    private static int RunPreserializedJintBenchmark(int devices, int dof, int ticks)
+    {
+        ticks = Math.Max(1, ticks);
+        var world = BuildPerfWorld(devices);
+        var engine = new SimulationEngine(world);
+        var ids = world.EnumerateEntities()
+            .Where(entity => entity.CivilizationId == "A")
+            .Select(entity => entity.Id)
+            .ToList();
+        var controllers = ids
+            .Select(_ => new JsController("A", PerfDeviceScript))
+            .ToList();
+        var degree = dof > 0 ? dof : Environment.ProcessorCount;
+        var json = new string[controllers.Count];
+        var decisions = new ControllerDecision[controllers.Count];
+        var options = new ParallelOptions { MaxDegreeOfParallelism = degree };
+
+        for (var warm = 0; warm < 2; warm++)
+        {
+            var warmObservations = engine.BuildControllerObservations(ids, degree);
+            Parallel.For(
+                0,
+                controllers.Count,
+                options,
+                index => json[index] = JsController.SerializeObservation(warmObservations[index]));
+            Parallel.For(
+                0,
+                controllers.Count,
+                options,
+                index =>
+                {
+                    var run = controllers[index].RunJson(json[index]);
+                    decisions[index] = run.Success
+                        ? JsController.ParseDecisionJson(run.IntentsJson!, "A")
+                        : ControllerDecision.Fault(run.FaultCode!, run.FaultMessage!);
+                });
+            engine.Step(decisions.SelectMany(decision => decision.Intents).ToList());
+        }
+
+        var observationMs = 0.0;
+        var serializeMs = 0.0;
+        var runMs = 0.0;
+        var stepMs = 0.0;
+        var total = Stopwatch.StartNew();
+        for (var tick = 0; tick < ticks; tick++)
+        {
+            var phase = Stopwatch.StartNew();
+            var observations = engine.BuildControllerObservations(ids, degree);
+            phase.Stop();
+            observationMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            Parallel.For(
+                0,
+                controllers.Count,
+                options,
+                index => json[index] = JsController.SerializeObservation(observations[index]));
+            phase.Stop();
+            serializeMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            Parallel.For(
+                0,
+                controllers.Count,
+                options,
+                index =>
+                {
+                    var run = controllers[index].RunJson(json[index]);
+                    decisions[index] = run.Success
+                        ? JsController.ParseDecisionJson(run.IntentsJson!, "A")
+                        : ControllerDecision.Fault(run.FaultCode!, run.FaultMessage!);
+                });
+            phase.Stop();
+            runMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            engine.Step(decisions.SelectMany(decision => decision.Intents).ToList());
+            phase.Stop();
+            stepMs += phase.Elapsed.TotalMilliseconds;
+        }
+
+        total.Stop();
+        foreach (var controller in controllers)
+        {
+            controller.Dispose();
+        }
+
+        var avgTickMs = total.Elapsed.TotalMilliseconds / ticks;
+        var peakMb = Process.GetCurrentProcess().PeakWorkingSet64 / (1024.0 * 1024.0);
+        Console.WriteLine(
+            $"JINT_PRESERIALIZE devices={devices} ticks={ticks} " +
+            $"avgTickMs={avgTickMs:0.00} ticksPerSec={1000.0 / avgTickMs:0.0} " +
+            $"obsMs={observationMs / ticks:0.00} serMs={serializeMs / ticks:0.00} " +
+            $"runMs={runMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
+            $"dof={degree} peakWorkingSetMb={peakMb:0.0} " +
+            $"gcServer={System.Runtime.GCSettings.IsServerGC}");
         return 0;
     }
 

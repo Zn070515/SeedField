@@ -19,9 +19,18 @@ public sealed class JsController : IController
 {
     public const int MaxObservationBytes = 4 * 1024 * 1024;
 
-    private const string Harness = """
+    private static readonly string Harness = ObservationExpander.Script + """
+
         function __seedfield_run(json) {
-            var result = decide(JSON.parse(json));
+            var result = decide(__seedfield_expand(JSON.parse(json)));
+            if (result === undefined || result === null) {
+                throw new Error("decide() must return an intent array");
+            }
+            return JSON.stringify(result);
+        }
+
+        function __seedfield_run_obj(obs) {
+            var result = decide(obs);
             if (result === undefined || result === null) {
                 throw new Error("decide() must return an intent array");
             }
@@ -34,6 +43,7 @@ public sealed class JsController : IController
 
     private readonly Engine _engine;
     private JsValue _runFunction = JsValue.Undefined;
+    private JsValue _runDirect = JsValue.Undefined;
 
     public JsController(string civilizationId, string script, JsControllerOptions? options = null)
     {
@@ -58,6 +68,7 @@ public sealed class JsController : IController
         {
             _engine.Execute(GetPreparedScript(script + "\n" + Harness));
             _runFunction = _engine.Evaluate("__seedfield_run");
+            _runDirect = _engine.Evaluate("__seedfield_run_obj");
 
             var hasDecide = _engine.Evaluate("typeof decide === 'function'").AsBoolean();
             if (!hasDecide)
@@ -91,16 +102,25 @@ public sealed class JsController : IController
                 "Observation belongs to a different civilization.");
         }
 
-        var run = RunJson(SerializeObservation(observation));
+        var run = RunInvocation(
+            () => _engine.Invoke(_runDirect, ObservationJsValue.Build(_engine, observation)));
         return run.Success
             ? ParseDecision(run.IntentsJson!, CivilizationId)
             : ControllerDecision.Fault(run.FaultCode!, run.FaultMessage!);
     }
 
+    /// <summary>Compact controller payload; the trusted harness expands it.</summary>
     public static string SerializeObservation(Observation observation)
     {
         ArgumentNullException.ThrowIfNull(observation);
         return ObservationJson.Serialize(observation);
+    }
+
+    /// <summary>Object-shaped JSON for tests and tooling.</summary>
+    public static string SerializeFullObservation(Observation observation)
+    {
+        ArgumentNullException.ThrowIfNull(observation);
+        return ObservationJson.SerializeFull(observation);
     }
 
     public static ControllerDecision ParseDecisionJson(string json, string civilizationId) =>
@@ -131,10 +151,14 @@ public sealed class JsController : IController
                 $"Observation exceeds {MaxObservationBytes} bytes.");
         }
 
+        return RunInvocation(() => _engine.Invoke(_runFunction, observationJson));
+    }
+
+    private ControllerRunResult RunInvocation(Func<JsValue> invoke)
+    {
         try
         {
-            var result = _engine.Invoke(_runFunction, observationJson);
-            return ControllerRunResult.Ok(result.AsString());
+            return ControllerRunResult.Ok(invoke().AsString());
         }
         catch (TimeoutException exception)
         {

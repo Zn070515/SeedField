@@ -72,6 +72,50 @@ Zen 5 的 CCD 绑定没有收益；AVX-512 对 Jint 的标量解释器没有可�
 硬件层面的有效杠杆是 **Server GC + 默认分层 PGO + 逻辑核并行度**；进一步
 提升需要改脚本模型或换成原生 JS 引擎，属于独立 ADR。
 
+## 0c. 紧凑观测与可信展开器
+
+控制器边界 JSON 从对象属性改为位置数组 + 字符串表，可信 harness 展开回原对象：
+
+| 指标 | 完整 JSON | 紧凑观测 | 进程内直接对象 |
+|---|---:|---:|---:|
+| 平均 payload | 8424 B | **1966 B** | 无 JSON 文本 |
+| 隔离 decide（1000 台，DOF 32，含序列化） | 7.06 ms | 6.77 ms | **2.46 ms** |
+| 隔离 `RunJson`（预序列化紧凑） | — | 2.51 ms | — |
+| 每次调用分配 | 48.5 KiB | 49.3 KiB | **23.8 KiB** |
+| 真实 tick 稳态 1000 台 | 15.7 ms | 11.6 ms | **7.9 ms**（125 ticks/s） |
+| 真实 tick 稳态 100 台 | 1.8 ms | 1.67 ms | **1.18 ms**（845 ticks/s） |
+| 峰值工作集 1000 / 100 台 | 424 / 150 MiB | 650 / 200 MiB | **450 / 145 MiB** |
+
+- 进程内 `Decide` 用 `JsObject.Create` + 共享 `JsObjectLayout` 直接构造对象；
+  worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试。
+- 契约验证：脚本 `JSON.stringify(obs)` 与 `SerializeFullObservation` 语义相等；
+  worker 双跑哈希 `34886c1bb93164a1` 一致；Godot `--save-smoke` 通过。
+- 10 Tick 短窗口 1000 台约 24–33 ms（JIT/GC 预热）；长跑才体现收益。
+- `--chunk-size` 分块（500/250/128/64）与预序列化均更慢，未采用。
+
+## 0d. QuickJS 原生引擎可行性
+
+用 QuickJS-NG（CMake Release，`libqjs.dll`）建立 1000 个独立 runtime，同一
+脚本与观测，P/Invoke 调用 `JSON.parse`/`JSON.stringify`：
+
+| DOF | Jint ms/1000 | QuickJS ms/1000 |
+|---:|---:|---:|
+| 1 | 63.5 | 85.5 |
+| 8 | 10.6 | 89.8 |
+| 16 | 7.3 | 252.4 |
+| 32 | 6.3 | 232.7 |
+
+QuickJS 单线程即慢于 Jint，且多 runtime 并发下分配器/全局竞争导致几乎不缩放，
+不适合替换；V8/ClearScript 需要大依赖与 JIT/沙箱重做，留作独立 ADR。
+
+## 0e. 9950X 缩放与 GC
+
+- 32 线程相对 1 线程仅 2.5×（1000 台 60 Tick：97.6 → 38.9 ms）。
+- `dotnet-counters`：分配率约 **8.5 GB/s**，Gen0/Gen1 约 65 次/秒，
+  **约 27% 时间在 GC**；全核约 122% 基频（约 5.25 GHz），不是降频问题。
+- 缓存/拓扑：16 核、SMT 相邻（0/1）、每核 L2 1 MiB、双 CCD 各 32 MiB L3、
+  DDR5-6000 96 GiB、AVX-512 F/BW/DQ/CD/VBMI2。
+
 ## 1. 探针结论（仓库外，Jint 4.18.0）
 
 在 `%TEMP%` 的独立探针中复现 100 个独立 `Engine` 与真实观测尺寸：
