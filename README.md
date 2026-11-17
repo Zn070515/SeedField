@@ -146,6 +146,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`power limits & breaker`](docs/engineering/evidence/2026-11-17-power-limits-breaker.md) | 容量、优先级、净额补偿、持久断路器与 v11 证据 |
 | [`power maintenance`](docs/engineering/evidence/2026-11-17-power-maintenance.md) | 抢占式取电、跳闸维护锁定、F4 MAINTAIN 与 v12 证据 |
 | [`deterministic random`](docs/engineering/evidence/2026-11-17-deterministic-random.md) | SplitMix64 世界随机流、随机断路器故障与 v13 证据 |
+| [`code review medium`](docs/engineering/reviews/2026-11-17-code-review-medium.md) | 审查 8 项修复、2 项保留与回归测试 |
 
 ## 工程原则
 

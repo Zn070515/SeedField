@@ -171,6 +171,7 @@ public static partial class WorldSaveSerializer
             world.NextTreatyId,
             world.NextTradeOfferId,
             world.PowerPolicies.Values
+                .OrderBy(policy => policy.CivilizationId, StringComparer.Ordinal)
                 .Select(policy => new PowerPolicySaveData(
                     policy.CivilizationId,
                     policy.ReserveEnergy,

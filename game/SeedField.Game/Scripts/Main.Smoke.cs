@@ -127,13 +127,20 @@ public partial class Main : Node2D
             state.ManualHold;
 
         StepOnce();
-        var held = state!.BreakerOpen && state.ManualHold;
+        var held = state is not null && state.BreakerOpen && state.ManualHold;
 
         CloseBreakerFromPower("frontier");
-        var closed = !state.BreakerOpen && !state.ManualHold;
+        var closed = state is not null && !state.BreakerOpen && !state.ManualHold;
 
         MaintainBreakerFromPower("frontier");
-        var maintained = state.TripCount == 0 && !state.MaintenanceRequired;
+        // The wear was already zero here, so the state check alone would pass even
+        // if the handler never ran. Require the command's event to prove the UI
+        // wiring executed the maintenance path.
+        var maintained =
+            state is not null &&
+            _history.Any(item => item.Event is BreakerMaintained) &&
+            state.TripCount == 0 &&
+            !state.MaintenanceRequired;
 
         var ok = opened && held && closed && maintained;
         GD.Print(

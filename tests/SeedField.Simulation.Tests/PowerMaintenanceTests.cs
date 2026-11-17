@@ -146,6 +146,51 @@ public sealed class PowerMaintenanceTests
     }
 
     [Fact]
+    public void LoadRejectsALockedOutBreakerThatIsClosed()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("A", reserveEnergy: 0, breakerTripLimit: 1)
+            .Build();
+        var data = WorldSaveSerializer.ToData(world) with
+        {
+            PowerGridStates = new[]
+            {
+                new PowerGridStateSaveData(
+                    "r0",
+                    "A",
+                    BreakerOpen: false,
+                    ManualHold: false,
+                    TripCount: 1,
+                    MaintenanceRequired: true),
+            },
+        };
+
+        var exception = Assert.Throws<SaveFormatException>(
+            () => WorldSaveSerializer.Load(WorldSaveSerializer.SaveData(data)));
+
+        Assert.Equal("INVALID_POWER_GRID_STATE", exception.Code);
+    }
+
+    [Fact]
+    public void PowerPolicyOrderDoesNotChangeHashOrSaveOutput()
+    {
+        var first = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .SetPowerPolicy("B", reserveEnergy: 20)
+            .Build();
+        var second = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("B", reserveEnergy: 20)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .Build();
+
+        Assert.Equal(WorldStateHasher.Compute(first), WorldStateHasher.Compute(second));
+        Assert.Equal(WorldSaveSerializer.Save(first), WorldSaveSerializer.Save(second));
+    }
+
+    [Fact]
     public void V11SaveMigratesToNoBreakerLockout()
     {
         var world = new WorldBuilder()

@@ -56,7 +56,7 @@ public sealed partial class SimulationEngine
         }
     }
 
-    /// <summary>Unified host entry for breaker open/close.</summary>
+    /// <summary>Unified host entry for breaker open/close/maintenance.</summary>
     public PowerCommandResult ExecutePowerCommand(PowerCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);

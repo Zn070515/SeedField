@@ -92,13 +92,14 @@ public static partial class WorldSaveSerializer
             if (!world.Regions.ContainsKey(stateData.RegionId) ||
                 string.IsNullOrWhiteSpace(stateData.CivilizationId) ||
                 stateData.TripCount < 0 ||
+                (stateData.MaintenanceRequired && !stateData.BreakerOpen) ||
                 world.PowerGridStates.ContainsKey((
                     stateData.RegionId,
                     stateData.CivilizationId)))
             {
                 throw Invalid(
                     "INVALID_POWER_GRID_STATE",
-                    "Power grid states must reference existing regions, be unique, and have a non-negative trip count.");
+                    "Power grid states must reference existing regions, be unique, have a non-negative trip count, and keep a locked-out breaker open.");
             }
 
             world.PowerGridStates.Add(

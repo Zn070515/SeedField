@@ -41,8 +41,9 @@
 
 ## 5. 篇幅控制与仓库 Lint
 
-- 拆分前最大文件：`SimulationEngine.cs` 3717 行、`Main.cs` 1855 行、
-  `WorldSaveSerializer.cs` 1445 行、`Program.cs` 1415 行、`PowerGridTests.cs` 903 行。
+- 拆分前最大文件（`git show 049545e:<path>` 实测）：`SimulationEngine.cs` 3560 行、
+  `Main.cs` 1838 行、`WorldSaveSerializer.cs` 1434 行、`Program.cs` 1340 行、
+  `PowerGridTests.cs` 903 行。
 - 拆分后最大 `.cs` 文件 559 行；全部 `.cs` / `.md` 均 ≤ 600 行。
 - 新增 `tests/SeedField.Repository.Tests`，`dotnet test SeedField.slnx` 自动执行：
   - `.cs` / `.md` 600 行上限；

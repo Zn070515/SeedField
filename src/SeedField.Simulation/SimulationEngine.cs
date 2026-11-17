@@ -164,12 +164,23 @@ public sealed partial class SimulationEngine
         {
             // Power-consuming intents are scheduled preemptively: higher device
             // priority claims grid energy first. Entity id and input index are stable
-            // tie-breakers, so equal priorities preserve the old id order.
+            // tie-breakers, so equal priorities preserve the old id order. The
+            // priority lookup is built once instead of rescanning every region per
+            // intent in the comparator path.
+            var priorities = new Dictionary<EntityId, int>();
+            foreach (var entity in World.EnumerateEntities())
+            {
+                if (entity.Power is { } power)
+                {
+                    priorities[entity.Id] = power.Priority;
+                }
+            }
+
             var processingOrder = intents
                 .Select((intent, index) => (
                     Intent: intent,
                     Index: index,
-                    Priority: IntentPriority(intent.EntityId)))
+                    Priority: priorities.GetValueOrDefault(intent.EntityId)))
                 .OrderByDescending(item => item.Priority)
                 .ThenBy(item => item.Intent.EntityId.Value)
                 .ThenBy(item => item.Index);

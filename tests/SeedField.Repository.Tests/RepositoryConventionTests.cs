@@ -209,11 +209,12 @@ public sealed partial class RepositoryConventionTests
 
     private static bool IsGenerated(string path)
     {
-        var segments = path.Split(
-            Path.DirectorySeparatorChar,
-            Path.AltDirectorySeparatorChar);
+        // Classify by path relative to the repository root: agent worktrees live
+        // under .claude/ and must not be linted, and an absolute checkout path such
+        // as D:/bin/SeedField must not silently skip every source file.
+        var segments = Relative(path).Split('/', StringSplitOptions.RemoveEmptyEntries);
         return segments.Any(segment =>
-            segment is "bin" or "obj" or ".git" or "TestResults" or ".godot");
+            segment is "bin" or "obj" or ".git" or ".claude" or "TestResults" or ".godot");
     }
 
     private static int CountLines(string path) => File.ReadLines(path).Count();

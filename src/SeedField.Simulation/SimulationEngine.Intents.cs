@@ -115,9 +115,6 @@ public sealed partial class SimulationEngine
 
     private static int IntentComputeCost(Intent intent) => intent is WaitIntent ? 0 : 1;
 
-    private int IntentPriority(EntityId entityId) =>
-        World.FindEntity(entityId)?.Power?.Priority ?? 0;
-
     /// <summary>
     /// Processing order is preemptive by device priority. Results are restored to the
     /// caller's input order so the observation/intent contract does not change.

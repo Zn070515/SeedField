@@ -433,7 +433,9 @@ public partial class Main : Node2D
             or EnergyAutoDrawn
             or EnergyWasted
             or PowerBlackout
-            or PowerRestored;
+            or PowerRestored
+            or BreakerLockedOut
+            or BreakerMaintained;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -455,6 +457,8 @@ public partial class Main : Node2D
             EnergyWasted => new Color(0.75f, 0.50f, 0.35f),
             PowerBlackout => Red,
             PowerRestored => Green,
+            BreakerLockedOut => Red,
+            BreakerMaintained => Green,
             _ => Text,
         };
 
