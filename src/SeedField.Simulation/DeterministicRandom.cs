@@ -54,7 +54,15 @@ public sealed class DeterministicRandom
                 "maxExclusive must be positive.");
         }
 
-        return (int)(NextUInt64() % (ulong)maxExclusive);
+        var bound = ulong.MaxValue - (ulong.MaxValue % (ulong)maxExclusive);
+        ulong value;
+        do
+        {
+            value = NextUInt64();
+        }
+        while (value >= bound);
+
+        return (int)(value % (ulong)maxExclusive);
     }
 
     /// <summary>True with the given integer percentage chance (0..100).</summary>
