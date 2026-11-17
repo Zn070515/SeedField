@@ -230,6 +230,12 @@ public partial class VisualBench : Node2D
     {
         RenderingServer.ForceDraw();
         var image = GetViewport().GetTexture().GetImage();
+        if (image is null)
+        {
+            GD.PushError("VISUAL_BENCH_SHOT viewport image unavailable");
+            return;
+        }
+
         var path = ProjectSettings.GlobalizePath($"res://screenshots/{_shot}");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var error = image.SavePng(path);

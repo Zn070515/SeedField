@@ -114,6 +114,11 @@ public partial class Main
             snapshot,
             _world.Tick,
             _bootstrapUntilTick);
+        if (state == CoreVisualState.Absent)
+        {
+            return;
+        }
+
         _coreVisual.Draw(
             this,
             Map(new Vec2(900, 2_000)),
