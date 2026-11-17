@@ -36,8 +36,18 @@ internal static class Scenarios
                 radiusMm: 1_200,
                 holdTicksRequired: 12)
             .SetVictoryCondition(capturedPointsToWin: 2)
-            .SetPowerPolicy("A", reserveEnergy: 10)
-            .SetPowerPolicy("B", reserveEnergy: 10)
+            .SetGridCapacity("frontier", "A", capacity: 500)
+            .SetGridCapacity("frontier", "B", capacity: 500)
+            .SetPowerPolicy(
+                "A",
+                reserveEnergy: 10,
+                highPriorityThreshold: 5,
+                priorityReserveEnergy: 20)
+            .SetPowerPolicy(
+                "B",
+                reserveEnergy: 10,
+                highPriorityThreshold: 5,
+                priorityReserveEnergy: 20)
             .Build();
 
         world.Regions["frontier"].AddEnergy("A", 200);
@@ -68,7 +78,10 @@ internal static class Scenarios
             Weapon: new WeaponModule(3_500, Damage: 8, EnergyCost: 2, CooldownTicks: 2),
             Drive: new DriveModule(90, EnergyCostPerMove: 1),
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
-            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000),
+            Power: new PowerModule(
+                EnergyPerTick: 2,
+                StorageCapacity: 5_000,
+                Priority: 10),
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
             ControllerProgramId: "program.strike",
             MaterialCost: 80));

@@ -39,6 +39,22 @@ public sealed class RegionState
     /// <summary>Local material stock per civilization. Materials do not teleport.</summary>
     public SortedDictionary<string, RegionStock> Stocks { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Optional regional grid capacity per civilization; absent means unlimited.</summary>
+    public SortedDictionary<string, long> GridCapacities { get; } = new(StringComparer.Ordinal);
+
+    public long GetGridCapacity(string civilizationId) =>
+        GridCapacities.TryGetValue(civilizationId, out var capacity)
+            ? capacity
+            : long.MaxValue;
+
+    public long GetGridFree(string civilizationId)
+    {
+        var capacity = GetGridCapacity(civilizationId);
+        return capacity == long.MaxValue
+            ? long.MaxValue
+            : Math.Max(0, capacity - GetEnergy(civilizationId));
+    }
+
     public bool Contains(Vec2 position) =>
         position.X >= 0 && position.Y >= 0 && position.X <= WidthMm && position.Y <= HeightMm;
 

@@ -19,7 +19,7 @@ ADR-0011 已实现溢出入网、自动取电/储备、延迟/损耗与无状态
 ### 1. 区域电网容量
 
 - 每区域/每文明可配置 `GridCapacity`；缺省无限。
-- 溢出发电：只加到容量上限，多余浪费（`EnergyWastedTotal`，`source=overflow`）。
+- 溢出发电：只加到容量上限，多余计入 `EnergyWastedTotal`；不逐 Tick 发浪费事件，避免日志刷屏。
 - `SendEnergyIntent` 本地→电网：容量不足时整单拒绝 `GridFull`，不半存。
 - 显式/自动电力运输到账：容量不足时存入可用部分，其余浪费（`source=arrival`）。
 - 自动潮流：目标库存按容量截断；满区域不能再收货，但仍可作为盈余源。

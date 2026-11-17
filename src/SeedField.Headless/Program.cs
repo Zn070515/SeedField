@@ -77,6 +77,16 @@ internal static class Program
             return RunPowerRecoveryDemo();
         }
 
+        if (args.Contains("--power-limits"))
+        {
+            return RunPowerLimitsDemo();
+        }
+
+        if (args.Contains("--power-breaker"))
+        {
+            return RunPowerBreakerDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -697,7 +707,7 @@ internal static class Program
         });
         var shortfall = shortfallStep.Events
             .OfType<PowerShortfall>()
-            .Any(item => item.Source == "grid");
+            .Any(item => item.Source is "grid" or "blackout");
 
         var ok = balanced && blackout && shortfall;
         Console.WriteLine(
@@ -813,13 +823,147 @@ internal static class Program
         return ok ? 0 : 1;
     }
 
+    private static int RunPowerLimitsDemo()
+    {
+        var capacityWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetGridCapacity("r0", "A", capacity: 2)
+            .AddEntity(PowerNode(1, "r0", energy: 9, capacity: 10, generation: 5))
+            .Build();
+        new SimulationEngine(capacityWorld).Step(Array.Empty<Intent>());
+        var capacityWaste = capacityWorld.Regions["r0"].GetEnergy("A") == 2 &&
+                            capacityWorld.Statistics.EnergyWastedTotal == 2;
+
+        var priorityWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy(
+                "A",
+                reserveEnergy: 10,
+                highPriorityThreshold: 5,
+                priorityReserveEnergy: 5)
+            .AddEntity(PowerNode(
+                1,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 3,
+                priority: 10))
+            .AddEntity(PowerNode(
+                2,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 3,
+                priority: 0))
+            .Build();
+        priorityWorld.Regions["r0"].AddEnergy("A", 13);
+        var priorityStep = new SimulationEngine(priorityWorld).Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+            new MoveIntent(new EntityId(2), new Vec2(500, 500)),
+        });
+        var priority = priorityStep.IntentResults.Single(item =>
+                           item.Intent.EntityId == new EntityId(1)).Accepted &&
+                       priorityStep.IntentResults.Single(item =>
+                           item.Intent.EntityId == new EntityId(2)).ErrorCode ==
+                       SimulationErrorCode.NoEnergy;
+
+        var lossWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddRegion("r2", 10_000, 10_000)
+            .AddLink(
+                "l01",
+                "r0",
+                "r1",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLossPercent: 10)
+            .AddLink(
+                "l12",
+                "r1",
+                "r2",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLossPercent: 10)
+            .Build();
+        lossWorld.Regions["r0"].AddEnergy("A", 100);
+        new SimulationEngine(lossWorld).Step(Array.Empty<Intent>());
+        var netCompensation = lossWorld.Regions["r1"].GetEnergy("A") == 34 &&
+                              lossWorld.Statistics.EnergyFlowedTotal == 57;
+
+        var ok = capacityWaste && priority && netCompensation;
+        Console.WriteLine(
+            $"POWER_LIMITS capacityWaste={capacityWaste} priority={priority} " +
+            $"netCompensation={netCompensation} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunPowerBreakerDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .AddEntity(PowerNode(1, "r0", energy: 0, capacity: 100, generation: 0))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var trip = engine.Step(Array.Empty<Intent>());
+        var tripped = trip.Events.OfType<PowerBlackout>().Any() &&
+                      world.PowerGridStates[("r0", "A")].BreakerOpen;
+
+        var blocked = engine.Step(new Intent[]
+        {
+            new DrawEnergyIntent(new EntityId(1), 5),
+        });
+        var drawBlocked = blocked.IntentResults[0].ErrorCode == SimulationErrorCode.NoEnergy &&
+                          blocked.Events.OfType<PowerShortfall>()
+                              .Any(item => item.Source == "blackout");
+
+        world.Regions["r0"].AddEnergy("A", 5);
+        engine.Step(Array.Empty<Intent>());
+        var heldBelowReserve = world.PowerGridStates[("r0", "A")].BreakerOpen;
+
+        world.Regions["r0"].AddEnergy("A", 10);
+        var restored = engine.Step(Array.Empty<Intent>());
+        var autoClosed = restored.Events.OfType<PowerRestored>().Any() &&
+                         !world.PowerGridStates[("r0", "A")].BreakerOpen;
+
+        var opened = engine.ExecutePowerCommand(new OpenBreakerCommand("A", "r0"));
+        engine.Step(Array.Empty<Intent>());
+        var manualHeld = opened.Success &&
+                         world.PowerGridStates[("r0", "A")].BreakerOpen &&
+                         world.PowerGridStates[("r0", "A")].ManualHold;
+
+        var closed = engine.ExecutePowerCommand(new CloseBreakerCommand("A", "r0"));
+        var manualClosed = closed.Success &&
+                           !world.PowerGridStates[("r0", "A")].BreakerOpen;
+
+        var ok = tripped &&
+                 drawBlocked &&
+                 heldBelowReserve &&
+                 autoClosed &&
+                 manualHeld &&
+                 manualClosed;
+        Console.WriteLine(
+            $"POWER_BREAKER tripped={tripped} drawBlocked={drawBlocked} " +
+            $"heldBelowReserve={heldBelowReserve} autoClosed={autoClosed} " +
+            $"manualHeld={manualHeld} manualClosed={manualClosed} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
     private static EntityDefinition PowerNode(
         long id,
         string regionId,
         long energy,
         long capacity,
         int generation,
-        long driveCost = 0) =>
+        long driveCost = 0,
+        int priority = 0) =>
         new(
             new EntityId(id),
             "A",
@@ -830,7 +974,7 @@ internal static class Program
             EnergyCapacity: capacity,
             Material: 0,
             Drive: driveCost > 0 ? new DriveModule(100, driveCost) : null,
-            Power: new PowerModule(generation, capacity));
+            Power: new PowerModule(generation, capacity, priority));
 
     private static void AdvanceToTick(
         SimulationEngine engine,

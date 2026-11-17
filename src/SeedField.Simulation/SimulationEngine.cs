@@ -50,6 +50,10 @@ public sealed class SimulationEngine
             CatchUpPower(regionId, Math.Max(0, World.Tick - since));
             _inactiveSince.Remove(regionId);
         }
+
+        // Breaker state is passive: after catch-up, align it with the active run.
+        // Catch-up events are not surfaced; state/hash equivalence is what matters.
+        UpdatePowerBreakers(World.Tick, new List<SimulationEvent>());
     }
 
     public void CatchUpInactiveRegions()
@@ -118,8 +122,17 @@ public sealed class SimulationEngine
 
             if (overflow > 0)
             {
-                region.AddEnergy(entity.CivilizationId, overflow);
-                World.Statistics.EnergyOverflowedTotal += overflow;
+                var free = region.GetGridFree(entity.CivilizationId);
+                var toGrid = free == long.MaxValue
+                    ? overflow
+                    : Math.Min(overflow, free);
+                if (toGrid > 0)
+                {
+                    region.AddEnergy(entity.CivilizationId, toGrid);
+                    World.Statistics.EnergyOverflowedTotal += toGrid;
+                }
+
+                World.Statistics.EnergyWastedTotal += overflow - toGrid;
             }
 
             World.Statistics.EnergyGeneratedTotal += generated;
@@ -145,6 +158,7 @@ public sealed class SimulationEngine
 
         GeneratePower();
         FlowPower(tick, events);
+        UpdatePowerBreakers(tick, events);
 
         if (intents is { Count: > 0 })
         {
@@ -1479,14 +1493,197 @@ public sealed class SimulationEngine
 
                 if (overflow > 0)
                 {
-                    region.AddEnergy(entity.CivilizationId, overflow);
-                    World.Statistics.EnergyOverflowedTotal += overflow;
+                    var free = region.GetGridFree(entity.CivilizationId);
+                    var toGrid = free == long.MaxValue
+                        ? overflow
+                        : Math.Min(overflow, free);
+                    if (toGrid > 0)
+                    {
+                        region.AddEnergy(entity.CivilizationId, toGrid);
+                        World.Statistics.EnergyOverflowedTotal += toGrid;
+                    }
+
+                    var wasted = overflow - toGrid;
+                    if (wasted > 0)
+                    {
+                        World.Statistics.EnergyWastedTotal += wasted;
+                    }
                 }
 
                 World.Statistics.EnergyGeneratedTotal += generated;
             }
         }
     }
+
+    /// <summary>Unified host entry for breaker open/close.</summary>
+    public PowerCommandResult ExecutePowerCommand(PowerCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var events = new List<SimulationEvent>();
+        return command switch
+        {
+            OpenBreakerCommand open => OpenBreaker(open, events),
+            CloseBreakerCommand close => CloseBreaker(close, events),
+            _ => new PowerCommandResult(
+                false,
+                SimulationErrorCode.InvalidAction,
+                "Unknown power command.",
+                events),
+        };
+    }
+
+    private PowerCommandResult OpenBreaker(
+        OpenBreakerCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.Regions.ContainsKey(command.RegionId))
+        {
+            return new PowerCommandResult(
+                false,
+                SimulationErrorCode.InvalidAction,
+                $"Region '{command.RegionId}' does not exist.",
+                events);
+        }
+
+        var state = GetOrCreatePowerGridState(command.RegionId, command.CivilizationId);
+        var changed = !state.BreakerOpen;
+        state.BreakerOpen = true;
+        state.ManualHold = true;
+        if (changed)
+        {
+            events.Add(new PowerBlackout(
+                World.Tick,
+                command.CivilizationId,
+                command.RegionId));
+        }
+
+        return new PowerCommandResult(
+            true,
+            SimulationErrorCode.None,
+            $"Breaker for {command.CivilizationId} in '{command.RegionId}' is open.",
+            events);
+    }
+
+    private PowerCommandResult CloseBreaker(
+        CloseBreakerCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.Regions.TryGetValue(command.RegionId, out var region))
+        {
+            return new PowerCommandResult(
+                false,
+                SimulationErrorCode.InvalidAction,
+                $"Region '{command.RegionId}' does not exist.",
+                events);
+        }
+
+        var state = GetOrCreatePowerGridState(command.RegionId, command.CivilizationId);
+        if (!state.BreakerOpen)
+        {
+            state.ManualHold = false;
+            return new PowerCommandResult(
+                true,
+                SimulationErrorCode.None,
+                "Breaker is already closed.",
+                events);
+        }
+
+        if (region.GetEnergy(command.CivilizationId) <= 0)
+        {
+            return new PowerCommandResult(
+                false,
+                SimulationErrorCode.NoEnergy,
+                "Cannot close a breaker on an empty grid.",
+                events);
+        }
+
+        state.BreakerOpen = false;
+        state.ManualHold = false;
+        events.Add(new PowerRestored(
+            World.Tick,
+            command.CivilizationId,
+            command.RegionId,
+            region.GetEnergy(command.CivilizationId)));
+        return new PowerCommandResult(
+            true,
+            SimulationErrorCode.None,
+            $"Breaker for {command.CivilizationId} in '{command.RegionId}' is closed.",
+            events);
+    }
+
+    private void UpdatePowerBreakers(long tick, List<SimulationEvent> events)
+    {
+        var loads = new SortedSet<(string RegionId, string CivilizationId)>();
+        foreach (var region in World.Regions.Values)
+        {
+            foreach (var entity in region.Entities.Values)
+            {
+                if (entity.Power is not null)
+                {
+                    loads.Add((region.Id, entity.CivilizationId));
+                }
+            }
+        }
+
+        foreach (var load in loads)
+        {
+            var state = GetOrCreatePowerGridState(load.RegionId, load.CivilizationId);
+            var grid = World.Regions[load.RegionId].GetEnergy(load.CivilizationId);
+
+            if (state.BreakerOpen)
+            {
+                if (!state.ManualHold &&
+                    AutoReconnect(load.CivilizationId) &&
+                    grid > 0 &&
+                    grid >= PowerReserve(load.CivilizationId))
+                {
+                    state.BreakerOpen = false;
+                    events.Add(new PowerRestored(
+                        tick,
+                        load.CivilizationId,
+                        load.RegionId,
+                        grid));
+                }
+
+                continue;
+            }
+
+            if (grid <= 0)
+            {
+                state.BreakerOpen = true;
+                state.ManualHold = false;
+                events.Add(new PowerBlackout(
+                    tick,
+                    load.CivilizationId,
+                    load.RegionId));
+            }
+        }
+    }
+
+    private PowerGridState GetOrCreatePowerGridState(
+        string regionId,
+        string civilizationId)
+    {
+        var key = (regionId, civilizationId);
+        if (!World.PowerGridStates.TryGetValue(key, out var state))
+        {
+            state = new PowerGridState(regionId, civilizationId);
+            World.PowerGridStates.Add(key, state);
+        }
+
+        return state;
+    }
+
+    private bool AutoReconnect(string civilizationId) =>
+        !World.PowerPolicies.TryGetValue(civilizationId, out var policy) ||
+        policy.AutoReconnect;
+
+    private bool IsBreakerOpen(string regionId, string civilizationId) =>
+        World.PowerGridStates.TryGetValue(
+            (regionId, civilizationId),
+            out var state) &&
+        state.BreakerOpen;
 
     private void FlowPower(long tick, List<SimulationEvent> events)
     {
@@ -1593,7 +1790,11 @@ public sealed class SimulationEngine
             desired,
             linkUsage);
         var deficits = component
-            .Where(regionId => projected[regionId] < desired[regionId])
+            .Where(regionId =>
+                projected[regionId] <
+                Math.Min(
+                    desired[regionId],
+                    World.Regions[regionId].GetGridCapacity(civilizationId)))
             .OrderBy(regionId =>
                 distances.TryGetValue(regionId, out var distance)
                     ? distance
@@ -1608,7 +1809,10 @@ public sealed class SimulationEngine
                 var projectedStock =
                     World.Regions[deficitRegionId].GetEnergy(civilizationId) +
                     incoming.GetValueOrDefault(deficitRegionId);
-                var deficit = desired[deficitRegionId] - projectedStock;
+                var targetStock = Math.Min(
+                    desired[deficitRegionId],
+                    World.Regions[deficitRegionId].GetGridCapacity(civilizationId));
+                var deficit = targetStock - projectedStock;
                 if (deficit <= 0)
                 {
                     break;
@@ -1630,18 +1834,24 @@ public sealed class SimulationEngine
                 var sourceSurplus = sourceEnergy - desired[path.SourceRegionId];
                 var pathCapacity = path.Links.Min(link =>
                     link.PowerPerTick - linkUsage.GetValueOrDefault(link.Id));
+                var grossNeeded = ComputeGrossPowerForNet(deficit, path.Links);
+                if (grossNeeded is null)
+                {
+                    break;
+                }
+
                 var amount = Math.Min(
-                    Math.Min(sourceSurplus, deficit),
+                    Math.Min(sourceSurplus, grossNeeded.Value),
                     pathCapacity);
                 if (amount <= 0)
                 {
                     break;
                 }
 
-                var delivered = amount;
-                foreach (var link in path.Links)
+                var delivered = ApplyPowerLoss(amount, path.Links);
+                if (delivered <= 0)
                 {
-                    delivered = delivered * (100 - link.PowerLossPercent) / 100;
+                    break;
                 }
 
                 var lost = amount - delivered;
@@ -1708,6 +1918,53 @@ public sealed class SimulationEngine
                 }
             }
         }
+    }
+
+    private static long? ComputeGrossPowerForNet(
+        long net,
+        IReadOnlyList<RegionLink> links)
+    {
+        if (net <= 0)
+        {
+            return 0;
+        }
+
+        var gross = (Int128)net;
+        for (var index = links.Count - 1; index >= 0; index--)
+        {
+            var loss = links[index].PowerLossPercent;
+            if (loss >= 100)
+            {
+                return null;
+            }
+
+            if (loss <= 0)
+            {
+                continue;
+            }
+
+            var denominator = 100 - loss;
+            gross = (gross * 100 + denominator - 1) / denominator;
+            if (gross > long.MaxValue)
+            {
+                return null;
+            }
+        }
+
+        return (long)gross;
+    }
+
+    private static long ApplyPowerLoss(
+        long amount,
+        IReadOnlyList<RegionLink> links)
+    {
+        var delivered = (Int128)amount;
+        foreach (var link in links)
+        {
+            delivered = delivered * (100 - link.PowerLossPercent) / 100;
+        }
+
+        return delivered > long.MaxValue ? long.MaxValue : (long)delivered;
     }
 
     private Dictionary<string, int> ComputePowerDistances(
@@ -1804,6 +2061,7 @@ public sealed class SimulationEngine
         World.Links.Values
             .Where(link =>
                 link.PowerPerTick > 0 &&
+                link.PowerLossPercent < 100 &&
                 link.Connects(regionId) &&
                 componentSet.Contains(link.Other(regionId)) &&
                 link.PowerPerTick - linkUsage.GetValueOrDefault(link.Id) > 0)
@@ -2422,6 +2680,18 @@ public sealed class SimulationEngine
 
         if (string.Equals(targetRegionId, sourceRegion.Id, StringComparison.Ordinal))
         {
+            if (sourceRegion.GetGridFree(entity.CivilizationId) < intent.Amount)
+            {
+                Reject(
+                    intent,
+                    SimulationErrorCode.GridFull,
+                    $"Region '{sourceRegion.Id}' grid has insufficient free capacity.",
+                    tick,
+                    events,
+                    results);
+                return;
+            }
+
             entity.Energy -= intent.Amount;
             sourceRegion.AddEnergy(entity.CivilizationId, intent.Amount);
             World.Statistics.EnergyStoredTotal += intent.Amount;
@@ -2532,26 +2802,52 @@ public sealed class SimulationEngine
             return;
         }
 
-        var reserve = PowerReserve(entity.CivilizationId);
-        var gridEnergy = region.GetEnergy(entity.CivilizationId);
-        var availableAboveReserve = Math.Max(0, gridEnergy - reserve);
-        if (availableAboveReserve < intent.Amount ||
-            !region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
+        if (IsBreakerOpen(region.Id, entity.CivilizationId))
         {
             AddPowerShortfall(
                 entity,
                 region.Id,
                 intent.Amount,
-                availableAboveReserve,
-                reserve > 0 && gridEnergy < intent.Amount + reserve
-                    ? "reserve"
-                    : "grid",
+                0,
+                "blackout",
                 tick,
                 events);
             Reject(
                 intent,
                 SimulationErrorCode.NoEnergy,
-                reserve > 0 && gridEnergy < intent.Amount + reserve
+                $"Region '{region.Id}' breaker is open.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
+        var floor = DrawFloor(entity);
+        var baseReserve = PowerReserve(entity.CivilizationId);
+        var gridEnergy = region.GetEnergy(entity.CivilizationId);
+        var availableAboveFloor = Math.Max(0, gridEnergy - floor);
+        if (availableAboveFloor < intent.Amount ||
+            !region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
+        {
+            var source = floor > baseReserve &&
+                         gridEnergy < intent.Amount + floor
+                ? "priority"
+                : baseReserve > 0 &&
+                  gridEnergy < intent.Amount + baseReserve
+                    ? "reserve"
+                    : "grid";
+            AddPowerShortfall(
+                entity,
+                region.Id,
+                intent.Amount,
+                availableAboveFloor,
+                source,
+                tick,
+                events);
+            Reject(
+                intent,
+                SimulationErrorCode.NoEnergy,
+                source is "priority" or "reserve"
                     ? $"Region '{region.Id}' grid reserve leaves insufficient energy."
                     : $"Region '{region.Id}' grid has insufficient energy.",
                 tick,
@@ -2588,7 +2884,27 @@ public sealed class SimulationEngine
                 continue;
             }
 
-            destination.AddEnergy(shipment.CivilizationId, shipment.Amount);
+            var free = destination.GetGridFree(shipment.CivilizationId);
+            var stored = free == long.MaxValue
+                ? shipment.Amount
+                : Math.Min(shipment.Amount, free);
+            if (stored > 0)
+            {
+                destination.AddEnergy(shipment.CivilizationId, stored);
+            }
+
+            var wasted = shipment.Amount - stored;
+            if (wasted > 0)
+            {
+                World.Statistics.EnergyWastedTotal += wasted;
+                events.Add(new EnergyWasted(
+                    tick,
+                    shipment.CivilizationId,
+                    shipment.ToRegionId,
+                    wasted,
+                    "arrival"));
+            }
+
             World.Statistics.EnergyDeliveredTotal += shipment.Amount;
             events.Add(new EnergyArrived(
                 tick,
@@ -2715,17 +3031,35 @@ public sealed class SimulationEngine
                 continue;
             }
 
-            destination.AddEnergy(
-                shipment.CivilizationId,
-                shipment.DeliveredAmount);
-            World.Statistics.EnergyFlowedTotal += shipment.DeliveredAmount;
+            var free = destination.GetGridFree(shipment.CivilizationId);
+            var stored = free == long.MaxValue
+                ? shipment.DeliveredAmount
+                : Math.Min(shipment.DeliveredAmount, free);
+            if (stored > 0)
+            {
+                destination.AddEnergy(shipment.CivilizationId, stored);
+            }
+
+            var wasted = shipment.DeliveredAmount - stored;
+            if (wasted > 0)
+            {
+                World.Statistics.EnergyWastedTotal += wasted;
+                events.Add(new EnergyWasted(
+                    tick,
+                    shipment.CivilizationId,
+                    shipment.ToRegionId,
+                    wasted,
+                    "arrival"));
+            }
+
+            World.Statistics.EnergyFlowedTotal += stored;
             World.Statistics.EnergyFlowLossTotal += lost;
             events.Add(new PowerArrived(
                 tick,
                 shipment.Id,
                 shipment.CivilizationId,
                 shipment.ToRegionId,
-                shipment.DeliveredAmount,
+                stored,
                 lost));
         }
     }
@@ -3078,6 +3412,25 @@ public sealed class SimulationEngine
             ? policy.ReserveEnergy
             : 0;
 
+    private long DrawFloor(EntityState entity)
+    {
+        if (!World.PowerPolicies.TryGetValue(
+                entity.CivilizationId,
+                out var policy))
+        {
+            return 0;
+        }
+
+        var floor = policy.ReserveEnergy;
+        if (entity.Power is not null &&
+            entity.Power.Priority < policy.HighPriorityThreshold)
+        {
+            floor += policy.PriorityReserveEnergy;
+        }
+
+        return floor;
+    }
+
     private bool TryAutoDrawForAction(
         EntityState entity,
         RegionState region,
@@ -3090,15 +3443,16 @@ public sealed class SimulationEngine
             return true;
         }
 
-        if (entity.Power is null)
+        if (entity.Power is null ||
+            IsBreakerOpen(region.Id, entity.CivilizationId))
         {
             return false;
         }
 
-        var reserve = PowerReserve(entity.CivilizationId);
+        var floor = DrawFloor(entity);
         var available = Math.Max(
             0,
-            region.GetEnergy(entity.CivilizationId) - reserve);
+            region.GetEnergy(entity.CivilizationId) - floor);
         var needed = cost - entity.Energy;
         var headroom = entity.EnergyCapacity - entity.Energy;
         if (needed > headroom ||
@@ -3127,15 +3481,16 @@ public sealed class SimulationEngine
 
     private long ActionAvailableEnergy(EntityState entity, RegionState region)
     {
-        if (entity.Power is null)
+        if (entity.Power is null ||
+            IsBreakerOpen(region.Id, entity.CivilizationId))
         {
             return entity.Energy;
         }
 
-        var reserve = PowerReserve(entity.CivilizationId);
+        var floor = DrawFloor(entity);
         return entity.Energy + Math.Max(
             0,
-            region.GetEnergy(entity.CivilizationId) - reserve);
+            region.GetEnergy(entity.CivilizationId) - floor);
     }
 
     private string ActionShortfallSource(
@@ -3148,14 +3503,25 @@ public sealed class SimulationEngine
             return "local";
         }
 
+        if (IsBreakerOpen(region.Id, entity.CivilizationId))
+        {
+            return "blackout";
+        }
+
         var grid = region.GetEnergy(entity.CivilizationId);
         if (grid <= 0)
         {
             return "local";
         }
 
-        var reserve = PowerReserve(entity.CivilizationId);
-        return reserve > 0 && grid < requested + reserve
+        var floor = DrawFloor(entity);
+        var baseReserve = PowerReserve(entity.CivilizationId);
+        if (floor > baseReserve && grid < requested + floor)
+        {
+            return "priority";
+        }
+
+        return baseReserve > 0 && grid < requested + baseReserve
             ? "reserve"
             : "grid";
     }

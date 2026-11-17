@@ -35,11 +35,27 @@ public sealed record WorldSaveData(
     long NextTradeOfferId = 0,
     PowerPolicySaveData[]? PowerPolicies = null,
     PowerShipmentSaveData[]? PowerShipments = null,
-    long NextPowerShipmentId = 0);
+    long NextPowerShipmentId = 0,
+    GridCapacitySaveData[]? GridCapacities = null,
+    PowerGridStateSaveData[]? PowerGridStates = null);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
-    long ReserveEnergy);
+    long ReserveEnergy,
+    int HighPriorityThreshold = 0,
+    long PriorityReserveEnergy = 0,
+    bool AutoReconnect = true);
+
+public sealed record GridCapacitySaveData(
+    string RegionId,
+    string CivilizationId,
+    long Capacity);
+
+public sealed record PowerGridStateSaveData(
+    string RegionId,
+    string CivilizationId,
+    bool BreakerOpen,
+    bool ManualHold);
 
 public sealed record TreatyProposalSaveData(
     long Id,
@@ -195,7 +211,10 @@ public sealed record CommSaveData(
     long EnergyCostPerMessage,
     int BandwidthPerTick = 0);
 
-public sealed record PowerSaveData(int EnergyPerTick, long StorageCapacity);
+public sealed record PowerSaveData(
+    int EnergyPerTick,
+    long StorageCapacity,
+    int Priority = 0);
 
 public sealed record StateSaveData(int ComputePerTick, int StorageCapacity);
 
@@ -281,7 +300,8 @@ public sealed record StatisticsSaveData(
     long EnergyFlowedTotal = 0,
     long EnergyOverflowedTotal = 0,
     long EnergyFlowLossTotal = 0,
-    long EnergyAutoDrawnTotal = 0);
+    long EnergyAutoDrawnTotal = 0,
+    long EnergyWastedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

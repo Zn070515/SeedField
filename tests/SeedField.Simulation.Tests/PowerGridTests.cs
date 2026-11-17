@@ -222,6 +222,264 @@ public sealed class PowerGridTests
     }
 
     [Fact]
+    public void OverflowRespectsGridCapacityAndWastesExcess()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetGridCapacity("r0", "A", capacity: 2)
+            .AddEntity(PowerNode(
+                1,
+                "r0",
+                energy: 9,
+                capacity: 10,
+                generation: 5))
+            .Build();
+
+        new SimulationEngine(world).Step(Array.Empty<Intent>());
+
+        Assert.Equal(10, world.FindEntity(new EntityId(1))!.Energy);
+        Assert.Equal(2, world.Regions["r0"].GetEnergy("A"));
+        Assert.Equal(2, world.Statistics.EnergyOverflowedTotal);
+        Assert.Equal(2, world.Statistics.EnergyWastedTotal);
+    }
+
+    [Fact]
+    public void ExplicitStoreRejectsWhenGridIsFull()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetGridCapacity("r0", "A", capacity: 10)
+            .AddEntity(PowerNode(1, "r0", energy: 20, capacity: 100, generation: 0))
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 10);
+
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new SendEnergyIntent(new EntityId(1), 5),
+        });
+
+        Assert.Equal(SimulationErrorCode.GridFull, Assert.Single(result.IntentResults).ErrorCode);
+        Assert.Equal(20, world.FindEntity(new EntityId(1))!.Energy);
+        Assert.Equal(10, world.Regions["r0"].GetEnergy("A"));
+    }
+
+    [Fact]
+    public void FlowRespectsGridCapacity()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .SetGridCapacity("r1", "A", capacity: 10)
+            .AddLink("l01", "r0", "r1", latencyTicks: 1, powerPerTick: 100)
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 90);
+
+        new SimulationEngine(world).Step(Array.Empty<Intent>());
+
+        Assert.Equal(80, world.Regions["r0"].GetEnergy("A"));
+        Assert.Equal(10, world.Regions["r1"].GetEnergy("A"));
+    }
+
+    [Fact]
+    public void PowerShipmentArrivalWastesWhenGridIsFull()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .SetGridCapacity("r1", "A", capacity: 5)
+            .AddLink(
+                "l01",
+                "r0",
+                "r1",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLatencyTicks: 2)
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 90);
+        var engine = new SimulationEngine(world);
+
+        engine.Step(Array.Empty<Intent>());
+        Assert.Equal(5, Assert.Single(world.InTransitPower).DeliveredAmount);
+
+        world.Regions["r1"].AddEnergy("A", 5);
+        var arrival = engine.Step(Array.Empty<Intent>());
+
+        Assert.Empty(world.InTransitPower);
+        Assert.Equal(5, world.Regions["r1"].GetEnergy("A"));
+        Assert.Equal(5, world.Statistics.EnergyWastedTotal);
+        Assert.Contains(arrival.Events, item =>
+            item is EnergyWasted { Source: "arrival", Amount: 5 });
+    }
+
+    [Fact]
+    public void PriorityLoadSheddingProtectsHighPriorityDraws()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy(
+                "A",
+                reserveEnergy: 10,
+                highPriorityThreshold: 5,
+                priorityReserveEnergy: 5)
+            .AddEntity(PowerNode(
+                1,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 3,
+                priority: 10))
+            .AddEntity(PowerNode(
+                2,
+                "r0",
+                energy: 0,
+                capacity: 100,
+                generation: 0,
+                driveCost: 3,
+                priority: 0))
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 13);
+
+        var result = new SimulationEngine(world).Step(new Intent[]
+        {
+            new MoveIntent(new EntityId(1), new Vec2(500, 500)),
+            new MoveIntent(new EntityId(2), new Vec2(500, 500)),
+        });
+
+        Assert.True(result.IntentResults.Single(item =>
+            item.Intent.EntityId == new EntityId(1)).Accepted);
+        var low = result.IntentResults.Single(item =>
+            item.Intent.EntityId == new EntityId(2));
+        Assert.Equal(SimulationErrorCode.NoEnergy, low.ErrorCode);
+        Assert.Equal(10, world.Regions["r0"].GetEnergy("A"));
+        Assert.Equal(3, world.Statistics.EnergyAutoDrawnTotal);
+        Assert.Contains(result.Events, item =>
+            item is PowerShortfall { Source: "priority" });
+    }
+
+    [Fact]
+    public void BreakerTripsAndAutoReconnectsAtReserve()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetPowerPolicy("A", reserveEnergy: 10)
+            .AddEntity(PowerNode(1, "r0", energy: 0, capacity: 100, generation: 0))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var trip = engine.Step(Array.Empty<Intent>());
+        Assert.Contains(trip.Events, item => item is PowerBlackout);
+        Assert.True(world.PowerGridStates[("r0", "A")].BreakerOpen);
+
+        var blocked = engine.Step(new Intent[]
+        {
+            new DrawEnergyIntent(new EntityId(1), 5),
+        });
+        Assert.Equal(SimulationErrorCode.NoEnergy, Assert.Single(blocked.IntentResults).ErrorCode);
+        Assert.Contains(blocked.Events, item =>
+            item is PowerShortfall { Source: "blackout" });
+
+        world.Regions["r0"].AddEnergy("A", 5);
+        engine.Step(Array.Empty<Intent>());
+        Assert.True(world.PowerGridStates[("r0", "A")].BreakerOpen);
+
+        world.Regions["r0"].AddEnergy("A", 10);
+        var restored = engine.Step(Array.Empty<Intent>());
+        Assert.Contains(restored.Events, item => item is PowerRestored);
+        Assert.False(world.PowerGridStates[("r0", "A")].BreakerOpen);
+
+        var draw = engine.Step(new Intent[]
+        {
+            new DrawEnergyIntent(new EntityId(1), 5),
+        });
+        Assert.True(Assert.Single(draw.IntentResults).Accepted);
+        Assert.Equal(10, world.Regions["r0"].GetEnergy("A"));
+    }
+
+    [Fact]
+    public void ManualBreakerOpenHoldsUntilManualClose()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(PowerNode(1, "r0", energy: 0, capacity: 100, generation: 0))
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 20);
+        var engine = new SimulationEngine(world);
+        engine.Step(Array.Empty<Intent>());
+
+        var opened = engine.ExecutePowerCommand(
+            new OpenBreakerCommand("A", "r0"));
+        Assert.True(opened.Success);
+
+        engine.Step(Array.Empty<Intent>());
+        var state = world.PowerGridStates[("r0", "A")];
+        Assert.True(state.BreakerOpen);
+        Assert.True(state.ManualHold);
+
+        var closed = engine.ExecutePowerCommand(
+            new CloseBreakerCommand("A", "r0"));
+        Assert.True(closed.Success);
+        Assert.False(state.BreakerOpen);
+        Assert.False(state.ManualHold);
+    }
+
+    [Fact]
+    public void BreakerAndCapacitySurviveSaveLoad()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .SetGridCapacity("r0", "A", capacity: 50)
+            .SetPowerPolicy(
+                "A",
+                reserveEnergy: 10,
+                highPriorityThreshold: 5,
+                priorityReserveEnergy: 5,
+                autoReconnect: false)
+            .AddEntity(PowerNode(1, "r0", energy: 0, capacity: 100, generation: 0))
+            .Build();
+        new SimulationEngine(world).Step(Array.Empty<Intent>());
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+        Assert.Equal(50, loaded.Regions["r0"].GetGridCapacity("A"));
+        Assert.True(loaded.PowerGridStates[("r0", "A")].BreakerOpen);
+        Assert.False(loaded.PowerPolicies["A"].AutoReconnect);
+        Assert.Equal(5, loaded.PowerPolicies["A"].HighPriorityThreshold);
+    }
+
+    [Fact]
+    public void LossCompensationDeliversTheNetDeficitInOneShipment()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddRegion("r2", 10_000, 10_000)
+            .AddLink(
+                "l01",
+                "r0",
+                "r1",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLossPercent: 10)
+            .AddLink(
+                "l12",
+                "r1",
+                "r2",
+                latencyTicks: 1,
+                powerPerTick: 100,
+                powerLossPercent: 10)
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 100);
+
+        new SimulationEngine(world).Step(Array.Empty<Intent>());
+
+        Assert.Equal(34, world.Regions["r1"].GetEnergy("A"));
+        Assert.Equal(57, world.Statistics.EnergyFlowedTotal);
+        Assert.Equal(10, world.Statistics.EnergyFlowLossTotal);
+    }
+
+    [Fact]
     public void PowerLatencyDelaysArrival()
     {
         var world = new WorldBuilder()
@@ -548,7 +806,7 @@ public sealed class PowerGridTests
 
         Assert.Equal(SimulationErrorCode.NoEnergy, Assert.Single(result.IntentResults).ErrorCode);
         var shortfall = Assert.Single(result.Events.OfType<PowerShortfall>());
-        Assert.Equal("grid", shortfall.Source);
+        Assert.Equal("blackout", shortfall.Source);
         Assert.Equal(10, shortfall.Requested);
         Assert.Equal(0, shortfall.Available);
     }
@@ -597,6 +855,26 @@ public sealed class PowerGridTests
             EnergyCapacity: 100,
             Material: 0,
             Power: new PowerModule(generation, 100));
+
+    private static EntityDefinition PowerNode(
+        long id,
+        string regionId,
+        long energy,
+        long capacity,
+        int generation,
+        long driveCost = 0,
+        int priority = 0) =>
+        new(
+            new EntityId(id),
+            "A",
+            regionId,
+            new Vec2(100, 100),
+            MaxHealth: 10,
+            Energy: energy,
+            EnergyCapacity: capacity,
+            Material: 0,
+            Drive: driveCost > 0 ? new DriveModule(100, driveCost) : null,
+            Power: new PowerModule(generation, capacity, priority));
 
     private static WorldState ThreeRegionChain()
     {

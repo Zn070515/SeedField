@@ -55,6 +55,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.EnergyOverflowedTotal);
         Append(ref hash, world.Statistics.EnergyFlowLossTotal);
         Append(ref hash, world.Statistics.EnergyAutoDrawnTotal);
+        Append(ref hash, world.Statistics.EnergyWastedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -69,6 +70,13 @@ public static class WorldStateHasher
                 Append(ref hash, stock.Key);
                 Append(ref hash, stock.Value.Material);
                 Append(ref hash, stock.Value.Energy);
+            }
+
+            Append(ref hash, region.GridCapacities.Count);
+            foreach (var capacity in region.GridCapacities)
+            {
+                Append(ref hash, capacity.Key);
+                Append(ref hash, capacity.Value);
             }
 
             Append(ref hash, region.Entities.Count);
@@ -100,6 +108,7 @@ public static class WorldStateHasher
                 {
                     Append(ref hash, entity.Power.EnergyPerTick);
                     Append(ref hash, entity.Power.StorageCapacity);
+                    Append(ref hash, entity.Power.Priority);
                 }
 
                 Append(ref hash, entity.State is not null);
@@ -276,6 +285,7 @@ public static class WorldStateHasher
             {
                 Append(ref hash, blueprint.Power.EnergyPerTick);
                 Append(ref hash, blueprint.Power.StorageCapacity);
+                Append(ref hash, blueprint.Power.Priority);
             }
 
             Append(ref hash, blueprint.State is not null);
@@ -323,6 +333,18 @@ public static class WorldStateHasher
         {
             Append(ref hash, policy.CivilizationId);
             Append(ref hash, policy.ReserveEnergy);
+            Append(ref hash, policy.HighPriorityThreshold);
+            Append(ref hash, policy.PriorityReserveEnergy);
+            Append(ref hash, policy.AutoReconnect);
+        }
+
+        Append(ref hash, world.PowerGridStates.Count);
+        foreach (var state in world.PowerGridStates.Values)
+        {
+            Append(ref hash, state.RegionId);
+            Append(ref hash, state.CivilizationId);
+            Append(ref hash, state.BreakerOpen);
+            Append(ref hash, state.ManualHold);
         }
 
         Append(ref hash, world.Cores.Count);

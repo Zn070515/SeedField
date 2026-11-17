@@ -114,6 +114,7 @@ public enum SimulationErrorCode
     ProposalNotFound,
     TradeNotFound,
     NegotiationExhausted,
+    GridFull,
 }
 
 public sealed record IntentResult(

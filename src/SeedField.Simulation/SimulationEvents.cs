@@ -271,6 +271,24 @@ public sealed record PowerFlowed(
     string ToRegionId,
     long Amount) : SimulationEvent(Tick);
 
+public sealed record EnergyWasted(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long Amount,
+    string Source) : SimulationEvent(Tick);
+
+public sealed record PowerBlackout(
+    long Tick,
+    string CivilizationId,
+    string RegionId) : SimulationEvent(Tick);
+
+public sealed record PowerRestored(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long GridEnergy) : SimulationEvent(Tick);
+
 public sealed record PowerShipped(
     long Tick,
     long PowerShipmentId,

@@ -141,18 +141,25 @@ public sealed class WorldBuilder
         return this;
     }
 
-    public WorldBuilder SetPowerPolicy(string civilizationId, long reserveEnergy)
+    public WorldBuilder SetPowerPolicy(
+        string civilizationId,
+        long reserveEnergy,
+        int highPriorityThreshold = 0,
+        long priorityReserveEnergy = 0,
+        bool autoReconnect = true)
     {
         if (string.IsNullOrWhiteSpace(civilizationId))
         {
             throw new ArgumentException("Civilization id is required.", nameof(civilizationId));
         }
 
-        if (reserveEnergy < 0)
+        if (reserveEnergy < 0 ||
+            highPriorityThreshold < 0 ||
+            priorityReserveEnergy < 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(reserveEnergy),
-                "Power reserve must be non-negative.");
+                "Power policy values must be non-negative.");
         }
 
         if (_world.PowerPolicies.ContainsKey(civilizationId))
@@ -163,7 +170,46 @@ public sealed class WorldBuilder
 
         _world.PowerPolicies.Add(
             civilizationId,
-            new PowerPolicyState(civilizationId, reserveEnergy));
+            new PowerPolicyState(
+                civilizationId,
+                reserveEnergy,
+                highPriorityThreshold,
+                priorityReserveEnergy,
+                autoReconnect));
+        return this;
+    }
+
+    public WorldBuilder SetGridCapacity(
+        string regionId,
+        string civilizationId,
+        long capacity)
+    {
+        if (!_world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new InvalidOperationException($"Unknown region '{regionId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(civilizationId))
+        {
+            throw new ArgumentException(
+                "Civilization id is required.",
+                nameof(civilizationId));
+        }
+
+        if (capacity < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(capacity),
+                "Grid capacity must be non-negative.");
+        }
+
+        if (region.GridCapacities.ContainsKey(civilizationId))
+        {
+            throw new InvalidOperationException(
+                $"Grid capacity for '{civilizationId}' already exists in '{regionId}'.");
+        }
+
+        region.GridCapacities.Add(civilizationId, capacity);
         return this;
     }
 

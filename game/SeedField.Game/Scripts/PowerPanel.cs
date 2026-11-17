@@ -11,10 +11,15 @@ public partial class PowerPanel : PanelContainer
 {
     public event Action? CloseRequested;
 
+    public event Action<string>? OpenBreakerRequested;
+
+    public event Action<string>? CloseBreakerRequested;
+
     private Label _summary = null!;
     private ItemList _regions = null!;
     private ItemList _links = null!;
     private Label _status = null!;
+    private readonly List<string> _regionIds = new();
 
     public override void _Ready()
     {
@@ -31,7 +36,7 @@ public partial class PowerPanel : PanelContainer
         AddThemeStyleboxOverride("panel", style);
 
         Position = new Vector2(300, 24);
-        Size = new Vector2(680, 560);
+        Size = new Vector2(680, 620);
         CustomMinimumSize = Size;
 
         var margin = new MarginContainer();
@@ -57,6 +62,20 @@ public partial class PowerPanel : PanelContainer
         box.AddChild(SectionLabel("REGIONS · GRID STOCK / GENERATION / LOCAL BUFFER"));
         _regions = new ItemList { CustomMinimumSize = new Vector2(640, 190) };
         box.AddChild(_regions);
+
+        var breakerRow = new HBoxContainer();
+        breakerRow.AddThemeConstantOverride("separation", 8);
+        breakerRow.AddChild(ActionButton("OPEN BREAKER", OnOpenBreaker));
+        breakerRow.AddChild(ActionButton("CLOSE BREAKER", OnCloseBreaker));
+        var breakerHint = new Label
+        {
+            Text = "Manual open holds the breaker open until manually closed.",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        breakerHint.AddThemeFontSizeOverride("font_size", 11);
+        breakerHint.Modulate = new Color(0.55f, 0.68f, 0.78f);
+        breakerRow.AddChild(breakerHint);
+        box.AddChild(breakerRow);
 
         box.AddChild(SectionLabel("POWER LINKS · AUTOMATIC FLOW CAPACITY"));
         _links = new ItemList { CustomMinimumSize = new Vector2(640, 100) };
@@ -94,23 +113,29 @@ public partial class PowerPanel : PanelContainer
             $"gen {diagnostics.TotalGenerationPerTick}/t · " +
             $"grid {diagnostics.TotalGridEnergy} · " +
             $"local {diagnostics.TotalLocalEnergy}/{diagnostics.TotalCapacity} · " +
-            $"reserve {diagnostics.ReserveEnergy} · " +
+            $"res {diagnostics.ReserveEnergy}+{diagnostics.PriorityReserveEnergy} · " +
+            $"pri≥{diagnostics.HighPriorityThreshold} · " +
             $"transit {diagnostics.TotalInTransitPower}";
 
+        _regionIds.Clear();
         _regions.Clear();
         foreach (var region in diagnostics.Regions)
         {
+            _regionIds.Add(region.RegionId);
             var connected = region.ConnectedRegions.Count == 0
                 ? "iso"
                 : string.Join(",", region.ConnectedRegions.Take(3)) +
                   (region.ConnectedRegions.Count > 3 ? "+" : string.Empty);
+            var capacity = region.GridCapacity == long.MaxValue
+                ? "∞"
+                : region.GridCapacity.ToString();
             _regions.AddItem(
-                $"{region.RegionId} · G{region.GridEnergy} · " +
+                $"{region.RegionId} · G{region.GridEnergy}/{capacity} · " +
                 $"gen{region.GenerationPerTick}/t · " +
                 $"L{region.LocalEnergy}/{region.LocalCapacity} · " +
                 $"comp{region.ComponentRegionCount} · {connected} · " +
                 $"res{region.ReserveEnergy} · in{region.IncomingPower} · " +
-                $"{(region.IsBlackedOut ? "BLACKOUT" : region.IsLoadShed ? "SHED" : "OK")}");
+                $"{(region.BreakerOpen ? "BREAKER" : region.IsBlackedOut ? "BLACKOUT" : region.IsLoadShed ? "SHED" : "OK")}");
         }
 
         if (_regions.ItemCount > 0)
@@ -144,6 +169,47 @@ public partial class PowerPanel : PanelContainer
         _status.Modulate = error
             ? new Color(1.00f, 0.45f, 0.35f)
             : new Color(0.50f, 0.95f, 0.60f);
+    }
+
+    private void OnOpenBreaker()
+    {
+        var index = SelectedRegionIndex();
+        if (index < 0)
+        {
+            SetStatus("select a region first", true);
+            return;
+        }
+
+        OpenBreakerRequested?.Invoke(_regionIds[index]);
+    }
+
+    private void OnCloseBreaker()
+    {
+        var index = SelectedRegionIndex();
+        if (index < 0)
+        {
+            SetStatus("select a region first", true);
+            return;
+        }
+
+        CloseBreakerRequested?.Invoke(_regionIds[index]);
+    }
+
+    private int SelectedRegionIndex()
+    {
+        var selected = _regions.GetSelectedItems();
+        return selected.Length == 0 ||
+               selected[0] < 0 ||
+               selected[0] >= _regionIds.Count
+            ? -1
+            : selected[0];
+    }
+
+    private static Button ActionButton(string text, Action action)
+    {
+        var button = new Button { Text = text };
+        button.Pressed += action;
+        return button;
     }
 
     private static Label SectionLabel(string text)

@@ -109,6 +109,12 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--power-breaker-smoke"))
+        {
+            RunPowerBreakerSmoke();
+            return;
+        }
+
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
         _captureDiplomacy = arguments.Contains("--capture-diplomacy");
@@ -433,6 +439,8 @@ public partial class Main : Node2D
 
         _power = new PowerPanel();
         _power.CloseRequested += ClosePower;
+        _power.OpenBreakerRequested += OpenBreakerFromPower;
+        _power.CloseBreakerRequested += CloseBreakerFromPower;
         _powerLayer.AddChild(_power);
         RefreshPower();
     }
@@ -484,6 +492,34 @@ public partial class Main : Node2D
     private void RefreshPower()
     {
         _power.Refresh(_world, "A");
+    }
+
+    private void OpenBreakerFromPower(string regionId)
+    {
+        ApplyPowerResult(_engine.ExecutePowerCommand(
+            new OpenBreakerCommand("A", regionId)));
+    }
+
+    private void CloseBreakerFromPower(string regionId)
+    {
+        ApplyPowerResult(_engine.ExecutePowerCommand(
+            new CloseBreakerCommand("A", regionId)));
+    }
+
+    private void ApplyPowerResult(PowerCommandResult result)
+    {
+        foreach (var simulationEvent in result.Events)
+        {
+            _history.Add(new TimedEvent(simulationEvent.Tick, simulationEvent));
+        }
+
+        _power.SetStatus(
+            result.Success
+                ? result.Message
+                : $"failed [{result.ErrorCode}]: {result.Message}",
+            !result.Success);
+        RefreshPower();
+        QueueRedraw();
     }
 
     private void RefreshPowerIfReady()
@@ -977,6 +1013,27 @@ public partial class Main : Node2D
             $"DIPLOMACY_COUNTER_SMOKE round={countered.Round} " +
             $"settledM={_world.Statistics.TradeMaterialSettledTotal} ok={ok}");
 
+        GetTree().Quit();
+    }
+
+    private void RunPowerBreakerSmoke()
+    {
+        OpenBreakerFromPower("frontier");
+        var opened = _world.PowerGridStates.TryGetValue(
+                ("frontier", "A"),
+                out var state) &&
+            state.BreakerOpen &&
+            state.ManualHold;
+
+        StepOnce();
+        var held = state!.BreakerOpen && state.ManualHold;
+
+        CloseBreakerFromPower("frontier");
+        var closed = !state.BreakerOpen && !state.ManualHold;
+
+        var ok = opened && held && closed;
+        GD.Print(
+            $"POWER_BREAKER_SMOKE opened={opened} held={held} closed={closed} ok={ok}");
         GetTree().Quit();
     }
 
@@ -1654,7 +1711,10 @@ public partial class Main : Node2D
             or PowerShipped
             or PowerArrived
             or PowerShortfall
-            or EnergyAutoDrawn;
+            or EnergyAutoDrawn
+            or EnergyWasted
+            or PowerBlackout
+            or PowerRestored;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1673,6 +1733,9 @@ public partial class Main : Node2D
             PowerArrived => Green,
             EnergyAutoDrawn => Blue,
             PowerShortfall => Red,
+            EnergyWasted => new Color(0.75f, 0.50f, 0.35f),
+            PowerBlackout => Red,
+            PowerRestored => Green,
             _ => Text,
         };
 
@@ -1749,6 +1812,15 @@ public partial class Main : Node2D
             EnergyAutoDrawn autoDrawn =>
                 $"t{autoDrawn.Tick,4}  {autoDrawn.EntityId} auto-drew {autoDrawn.Amount}E " +
                 $"from {autoDrawn.RegionId}",
+            EnergyWasted wasted =>
+                $"t{wasted.Tick,4}  {wasted.CivilizationId} wasted {wasted.Amount}E " +
+                $"in {wasted.RegionId} ({wasted.Source})",
+            PowerBlackout blackout =>
+                $"t{blackout.Tick,4}  {blackout.CivilizationId} breaker opened " +
+                $"in {blackout.RegionId}",
+            PowerRestored restored =>
+                $"t{restored.Tick,4}  {restored.CivilizationId} breaker closed " +
+                $"in {restored.RegionId} (grid {restored.GridEnergy})",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

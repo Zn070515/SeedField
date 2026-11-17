@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 10;
+    public const int CurrentSchemaVersion = 11;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -101,7 +101,8 @@ public static class WorldSaveSerializer
                 world.Statistics.EnergyFlowedTotal,
                 world.Statistics.EnergyOverflowedTotal,
                 world.Statistics.EnergyFlowLossTotal,
-                world.Statistics.EnergyAutoDrawnTotal),
+                world.Statistics.EnergyAutoDrawnTotal,
+                world.Statistics.EnergyWastedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -220,7 +221,10 @@ public static class WorldSaveSerializer
             world.PowerPolicies.Values
                 .Select(policy => new PowerPolicySaveData(
                     policy.CivilizationId,
-                    policy.ReserveEnergy))
+                    policy.ReserveEnergy,
+                    policy.HighPriorityThreshold,
+                    policy.PriorityReserveEnergy,
+                    policy.AutoReconnect))
                 .ToArray(),
             world.InTransitPower
                 .OrderBy(shipment => shipment.Id)
@@ -235,7 +239,25 @@ public static class WorldSaveSerializer
                     shipment.SentTick,
                     shipment.ArriveTick))
                 .ToArray(),
-            world.NextPowerShipmentId);
+            world.NextPowerShipmentId,
+            world.Regions.Values
+                .SelectMany(region => region.GridCapacities.Select(capacity =>
+                    new GridCapacitySaveData(
+                        region.Id,
+                        capacity.Key,
+                        capacity.Value)))
+                .OrderBy(capacity => capacity.RegionId, StringComparer.Ordinal)
+                .ThenBy(capacity => capacity.CivilizationId, StringComparer.Ordinal)
+                .ToArray(),
+            world.PowerGridStates.Values
+                .OrderBy(state => state.RegionId, StringComparer.Ordinal)
+                .ThenBy(state => state.CivilizationId, StringComparer.Ordinal)
+                .Select(state => new PowerGridStateSaveData(
+                    state.RegionId,
+                    state.CivilizationId,
+                    state.BreakerOpen,
+                    state.ManualHold))
+                .ToArray());
     }
 
     public static WorldState FromData(WorldSaveData data)
@@ -345,7 +367,8 @@ public static class WorldSaveSerializer
                         ? null
                         : new PowerModule(
                             entityData.Power.EnergyPerTick,
-                            entityData.Power.StorageCapacity),
+                            entityData.Power.StorageCapacity,
+                            entityData.Power.Priority),
                     entityData.State is null
                         ? null
                         : new StateModule(
@@ -1026,18 +1049,64 @@ public static class WorldSaveSerializer
         {
             if (string.IsNullOrWhiteSpace(policyData.CivilizationId) ||
                 policyData.ReserveEnergy < 0 ||
+                policyData.HighPriorityThreshold < 0 ||
+                policyData.PriorityReserveEnergy < 0 ||
                 world.PowerPolicies.ContainsKey(policyData.CivilizationId))
             {
                 throw Invalid(
                     "INVALID_POWER_POLICY",
-                    "Power policy ids must be unique and non-empty; reserve must be non-negative.");
+                    "Power policy ids must be unique and non-empty; policy values must be non-negative.");
             }
 
             world.PowerPolicies.Add(
                 policyData.CivilizationId,
                 new PowerPolicyState(
                     policyData.CivilizationId,
-                    policyData.ReserveEnergy));
+                    policyData.ReserveEnergy,
+                    policyData.HighPriorityThreshold,
+                    policyData.PriorityReserveEnergy,
+                    policyData.AutoReconnect));
+        }
+
+        foreach (var capacityData in data.GridCapacities ?? Array.Empty<GridCapacitySaveData>())
+        {
+            if (!world.Regions.TryGetValue(capacityData.RegionId, out var capacityRegion) ||
+                string.IsNullOrWhiteSpace(capacityData.CivilizationId) ||
+                capacityData.Capacity < 0 ||
+                capacityRegion.GridCapacities.ContainsKey(capacityData.CivilizationId))
+            {
+                throw Invalid(
+                    "INVALID_GRID_CAPACITY",
+                    "Grid capacities must reference existing regions with unique civilizations and non-negative values.");
+            }
+
+            capacityRegion.GridCapacities.Add(
+                capacityData.CivilizationId,
+                capacityData.Capacity);
+        }
+
+        foreach (var stateData in data.PowerGridStates ?? Array.Empty<PowerGridStateSaveData>())
+        {
+            if (!world.Regions.ContainsKey(stateData.RegionId) ||
+                string.IsNullOrWhiteSpace(stateData.CivilizationId) ||
+                world.PowerGridStates.ContainsKey((
+                    stateData.RegionId,
+                    stateData.CivilizationId)))
+            {
+                throw Invalid(
+                    "INVALID_POWER_GRID_STATE",
+                    "Power grid states must reference existing regions and be unique.");
+            }
+
+            world.PowerGridStates.Add(
+                (stateData.RegionId, stateData.CivilizationId),
+                new PowerGridState(
+                    stateData.RegionId,
+                    stateData.CivilizationId)
+                {
+                    BreakerOpen = stateData.BreakerOpen,
+                    ManualHold = stateData.ManualHold,
+                });
         }
 
         ApplyStatistics(world, data.Statistics);
@@ -1089,7 +1158,8 @@ public static class WorldSaveSerializer
                 ? null
                 : new PowerSaveData(
                     blueprint.Power.EnergyPerTick,
-                    blueprint.Power.StorageCapacity),
+                    blueprint.Power.StorageCapacity,
+                    blueprint.Power.Priority),
             blueprint.State is null
                 ? null
                 : new StateSaveData(
@@ -1129,7 +1199,8 @@ public static class WorldSaveSerializer
                 ? null
                 : new PowerModule(
                     blueprint.Power.EnergyPerTick,
-                    blueprint.Power.StorageCapacity),
+                    blueprint.Power.StorageCapacity,
+                    blueprint.Power.Priority),
             blueprint.State is null
                 ? null
                 : new StateModule(
@@ -1192,7 +1263,8 @@ public static class WorldSaveSerializer
                 ? null
                 : new PowerSaveData(
                     entity.Power.EnergyPerTick,
-                    entity.Power.StorageCapacity),
+                    entity.Power.StorageCapacity,
+                    entity.Power.Priority),
             entity.State is null
                 ? null
                 : new StateSaveData(
@@ -1268,6 +1340,7 @@ public static class WorldSaveSerializer
         world.Statistics.EnergyOverflowedTotal = statistics.EnergyOverflowedTotal;
         world.Statistics.EnergyFlowLossTotal = statistics.EnergyFlowLossTotal;
         world.Statistics.EnergyAutoDrawnTotal = statistics.EnergyAutoDrawnTotal;
+        world.Statistics.EnergyWastedTotal = statistics.EnergyWastedTotal;
     }
 
     /// <summary>
@@ -1299,6 +1372,8 @@ public static class WorldSaveSerializer
             TradeOffers = data.TradeOffers ?? Array.Empty<TradeOfferSaveData>(),
             PowerPolicies = data.PowerPolicies ?? Array.Empty<PowerPolicySaveData>(),
             PowerShipments = data.PowerShipments ?? Array.Empty<PowerShipmentSaveData>(),
+            GridCapacities = data.GridCapacities ?? Array.Empty<GridCapacitySaveData>(),
+            PowerGridStates = data.PowerGridStates ?? Array.Empty<PowerGridStateSaveData>(),
         };
 
     private static ControlPointSaveData ToControlPointSave(ControlPointState point) =>

@@ -58,6 +58,8 @@ public sealed class SimulationStatistics
     public long EnergyFlowLossTotal { get; internal set; }
 
     public long EnergyAutoDrawnTotal { get; internal set; }
+
+    public long EnergyWastedTotal { get; internal set; }
 }
 
 /// <summary>
@@ -99,6 +101,10 @@ public sealed class WorldState
     /// <summary>Per-civilization regional grid policies (reserve floor).</summary>
     public SortedDictionary<string, PowerPolicyState> PowerPolicies { get; } =
         new(StringComparer.Ordinal);
+
+    /// <summary>Persistent breaker state keyed by region and civilization.</summary>
+    public SortedDictionary<(string RegionId, string CivilizationId), PowerGridState>
+        PowerGridStates { get; } = new();
 
     /// <summary>Immutable workshop versions available to deployments in this world.</summary>
     public WorkshopService Workshop { get; } = new();
