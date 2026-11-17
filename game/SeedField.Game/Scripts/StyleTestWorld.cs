@@ -96,12 +96,7 @@ public partial class StyleTestWorld : Node2D
                 (float)pivotArray[0].AsDouble(),
                 (float)pivotArray[1].AsDouble());
             var footprint = (float)entry["footprintPx"].AsDouble();
-            var position = name switch
-            {
-                "seed_core" => new Vector2(1200f, 780f),
-                "power_node" => new Vector2(880f, 690f),
-                _ => new Vector2(1520f, 910f),
-            };
+            var position = BasePosition(name);
 
             _assets.Add(new StyleAsset(
                 assetId,
@@ -125,14 +120,15 @@ public partial class StyleTestWorld : Node2D
         DrawPlaza();
         DrawNetworks();
 
-        foreach (var asset in _assets.OrderBy(asset => asset.Position.Y))
+        foreach (var asset in _assets)
         {
             DrawAsset(asset);
         }
 
         if (Overlay == "selected")
         {
-            var power = _assets.FirstOrDefault(asset => asset.Id.StartsWith("power_node", StringComparison.Ordinal));
+            var power = _assets.FirstOrDefault(asset =>
+                asset.Id.StartsWith("power_node", StringComparison.Ordinal));
             if (power is not null)
             {
                 DrawSelection(power);
@@ -227,8 +223,8 @@ public partial class StyleTestWorld : Node2D
 
     private void DrawRoads()
     {
-        var core = new Vector2(1200f, 780f);
-        foreach (var target in new[] { new Vector2(880f, 690f), new Vector2(1520f, 910f) })
+        var core = PositionOf("seed_core");
+        foreach (var target in new[] { PositionOf("power_node"), PositionOf("worker_frame") })
         {
             DrawLine(core, target, new Color(0.045f, 0.065f, 0.085f, 0.95f), 34f);
             DrawLine(core, target, new Color(0.22f, 0.30f, 0.36f, 0.55f), 2f);
@@ -246,7 +242,7 @@ public partial class StyleTestWorld : Node2D
 
     private void DrawPlaza()
     {
-        var center = new Vector2(1200f, 780f);
+        var center = PositionOf("seed_core");
         DrawColoredPolygon(Octagon(center, 360f, 210f), new Color(0.045f, 0.065f, 0.090f, 0.94f));
         DrawColoredPolygon(Octagon(center, 315f, 184f), new Color(0.070f, 0.095f, 0.122f, 0.96f));
         DrawColoredPolygon(Octagon(center, 250f, 146f), new Color(0.055f, 0.075f, 0.098f, 0.96f));
@@ -278,9 +274,9 @@ public partial class StyleTestWorld : Node2D
 
     private void DrawNetworks()
     {
-        var core = new Vector2(1200f, 780f);
-        var power = new Vector2(880f, 690f);
-        var worker = new Vector2(1520f, 910f);
+        var core = PositionOf("seed_core");
+        var power = PositionOf("power_node");
+        var worker = PositionOf("worker_frame");
         var tactical = Overlay is "tactical" or "debug";
 
         DrawLine(
@@ -388,13 +384,16 @@ public partial class StyleTestWorld : Node2D
 
     private void DrawTacticalOverlay()
     {
-        DrawArc(new Vector2(880f, 690f), 180f, 0, Mathf.Tau, 64, new Color(0.3f, 0.9f, 1f, 0.40f), 2f);
-        DrawArc(new Vector2(1520f, 910f), 210f, 0, Mathf.Tau, 64, new Color(0.75f, 0.55f, 1f, 0.40f), 2f);
-        DrawArc(new Vector2(1200f, 780f), 300f, 0, Mathf.Tau, 96, new Color(1f, 0.75f, 0.35f, 0.30f), 2f);
+        var core = PositionOf("seed_core");
+        var power = PositionOf("power_node");
+        var worker = PositionOf("worker_frame");
+        DrawArc(power, 180f, 0, Mathf.Tau, 64, new Color(0.3f, 0.9f, 1f, 0.40f), 2f);
+        DrawArc(worker, 210f, 0, Mathf.Tau, 64, new Color(0.75f, 0.55f, 1f, 0.40f), 2f);
+        DrawArc(core, 300f, 0, Mathf.Tau, 96, new Color(1f, 0.75f, 0.35f, 0.30f), 2f);
 
         var hostile = new Vector2(1700f, 500f);
         DrawLine(
-            new Vector2(880f, 690f),
+            power,
             hostile,
             new Color(1f, 0.55f, 0.20f, 0.55f),
             2f);
@@ -444,6 +443,20 @@ public partial class StyleTestWorld : Node2D
                 13,
                 new Color(0.90f, 0.72f, 0.40f));
         }
+    }
+
+    private static Vector2 BasePosition(string name) => name switch
+    {
+        "seed_core" => new Vector2(1200f, 780f),
+        "power_node" => new Vector2(880f, 690f),
+        _ => new Vector2(1520f, 910f),
+    };
+
+    private Vector2 PositionOf(string name)
+    {
+        var asset = _assets.FirstOrDefault(candidate =>
+            candidate.Id.StartsWith(name, StringComparison.Ordinal));
+        return asset?.Position ?? BasePosition(name);
     }
 
     private static Vector2[] Closed(Vector2[] points)
