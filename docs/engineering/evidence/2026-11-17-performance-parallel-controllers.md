@@ -76,18 +76,21 @@ Zen 5 的 CCD 绑定没有收益；AVX-512 对 Jint 的标量解释器没有可�
 
 控制器边界 JSON 从对象属性改为位置数组 + 字符串表，可信 harness 展开回原对象：
 
-| 指标 | 完整 JSON | 紧凑观测 |
-|---|---:|---:|
-| 平均 payload | 8424 B | **1966 B**（0.23×） |
-| Jint decide（1000 台，DOF 32，隔离） | 7.06 ms | **2.25 ms**（3.1×） |
-| Jint decide（DOF 1） | 65.9 ms | **24.3 ms** |
-| 真实 tick 稳态 1000 台 | 15.7 ms | **11.6 ms**（86 ticks/s） |
-| 真实 tick 稳态 100 台 | 1.8 ms | **1.67 ms**（600 ticks/s） |
-| 峰值工作集 1000 / 100 台 | 424 / 150 MiB | 650 / 200 MiB |
+| 指标 | 完整 JSON | 紧凑观测 | 进程内直接对象 |
+|---|---:|---:|---:|
+| 平均 payload | 8424 B | **1966 B** | 无 JSON 文本 |
+| 隔离 decide（1000 台，DOF 32，含序列化） | 7.06 ms | 6.77 ms | **2.46 ms** |
+| 隔离 `RunJson`（预序列化紧凑） | — | 2.51 ms | — |
+| 每次调用分配 | 48.5 KiB | 49.3 KiB | **23.8 KiB** |
+| 真实 tick 稳态 1000 台 | 15.7 ms | 11.6 ms | **7.9 ms**（125 ticks/s） |
+| 真实 tick 稳态 100 台 | 1.8 ms | 1.67 ms | **1.18 ms**（845 ticks/s） |
+| 峰值工作集 1000 / 100 台 | 424 / 150 MiB | 650 / 200 MiB | **450 / 145 MiB** |
 
+- 进程内 `Decide` 用 `JsObject.Create` + 共享 `JsObjectLayout` 直接构造对象；
+  worker/IPC 仍用紧凑 JSON + 可信展开器。
 - 契约验证：脚本 `JSON.stringify(obs)` 与 `SerializeFullObservation` 语义相等；
-  worker 双跑哈希一致；Godot `--save-smoke` 通过。
-- 10 Tick 短窗口 100 台约 4.7–5.5 ms，因展开预热略慢于完整路径；长跑才体现收益。
+  worker 双跑哈希 `34886c1bb93164a1` 一致；Godot `--save-smoke` 通过。
+- 10 Tick 短窗口 1000 台约 24–33 ms（JIT/GC 预热）；长跑才体现收益。
 - `--chunk-size` 分块（500/250/128/64）与预序列化均更慢，未采用。
 
 ## 0d. QuickJS 原生引擎可行性

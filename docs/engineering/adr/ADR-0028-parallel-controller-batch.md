@@ -97,19 +97,21 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
 1000 台控制器启动从约 205 ms 降到约 127 ms，峰值内存从约 77 MiB 降到
 约 50 MiB；每 Tick 行为不变。
 
-### 7. 紧凑观测与可信展开器
+### 7. 观测传输：进程内直接对象，跨进程紧凑 JSON
 
-- 控制器边界 JSON 改为位置数组 + 字符串表；可信 harness 在执行 `decide` 前用
-  `__seedfield_expand` 还原成脚本原本收到的对象形状；
-- 平均 payload 8424 → 1966 bytes（0.23×）；1000 台隔离测试中 Jint decide
-  7.06 → 2.25 ms（3.1×，DOF 32）；
-- 真实 tick 稳态：1000 台 15.7 → **11.6 ms**（约 86 ticks/s），100 台
-  1.8 → **1.67 ms**（约 600 ticks/s）；
-- 脚本契约不变：`ObservationJsonTests` 用脚本 `JSON.stringify(obs)` 与完整
-  序列化做语义对比；worker 双跑哈希一致；Godot `--save-smoke` 通过；
+- **进程内 `Decide`**：`ObservationJsValue` 用 `JsObject.Create` + 共享
+  `JsObjectLayout` 直接构造观测对象，没有 JSON 字符串、`JSON.parse` 或展开器。
+  隔离测试 1000 台 decide 约 2.46 ms（DOF 32），每次调用分配约 23.8 KiB，
+  低于 JSON 路径的约 49 KiB；
+- **worker/IPC**：仍走紧凑 JSON（位置数组 + 字符串表），可信 harness 用
+  `__seedfield_expand` 还原对象；跨进程不传 CLR 对象；
+- **脚本契约**：两条路径都提供同一对象形状；`ObservationJsonTests` 用脚本
+  `JSON.stringify(obs)` 与 `SerializeFullObservation` 做语义对比；
+  worker 双跑哈希 `34886c1bb93164a1` 一致；Godot `--save-smoke` 通过；
+- **真实 tick 稳态**：100 台 **1.18 ms**（约 845 ticks/s），1000 台
+  **7.9 ms**（约 125 ticks/s）；1000 台峰值约 450 MiB、100 台约 145 MiB；
+- 短窗口 1000 台 10 Tick 约 24–33 ms（JIT/GC 预热），CI 60 ms 门禁通过；
 - `SerializeFullObservation` 保留对象形状，供测试/工具/调试；
-- 代价：紧凑数组与展开对象形成双对象图，1000 台稳态峰值约 650 MiB、
-  100 台约 200 MiB；10 Tick 短窗口因展开预热略慢，长跑才体现收益；
 - `--chunk-size`（分块）与预序列化实验均更慢，未采用。
 
 ### 8. 底层引擎与 CPU 实验结论
@@ -137,13 +139,13 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
 
 基准（Release，AMD Ryzen 9 9950X，32 逻辑核，默认 DOF = 逻辑核数）：
 
-| 场景 | 前（ADR-0027） | 并行批次 | + Server GC/预编译 | 3000 Tick 稳态 | + 紧凑观测 |
+| 场景 | 前（ADR-0027） | 并行批次 | + Server GC/预编译 | + 紧凑观测 | + 进程内直接对象 |
 |---|---:|---:|---:|---:|---:|
-| 100 台 | 33.96 ms | 7.46 ms | **4.12 ms** | **1.8 ms** | **1.67 ms** |
-| 1000 台 | 180.36 ms | 103.71 ms | **60.12 ms** | **15.7 ms** | **11.6 ms** |
+| 100 台 | 33.96 ms | 7.46 ms | 4.12 ms | 1.67 ms | **1.18 ms** |
+| 1000 台 | 180.36 ms | 103.71 ms | 60.12 ms | 11.6 ms | **7.9 ms** |
 
-100 台约 600 ticks/s，1000 台约 86 ticks/s；1000 台稳态峰值约 650 MiB、
-100 台约 200 MiB；1000 台控制器启动约 127 ms / 50 MiB。
+100 台约 845 ticks/s，1000 台约 125 ticks/s；1000 台稳态峰值约 450 MiB、
+100 台约 145 MiB；1000 台控制器启动约 127 ms / 50 MiB。
 短窗口包含 JIT/PGO/GC 预热，门禁数字因此偏保守。
 
 ## 后果
@@ -161,9 +163,10 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
   `Parallel.For` 阻塞造成线程池饥饿（xUnit 在小型 CI runner 上最容易触发）。
   游戏主线程与 Headless 主线程不受影响。
 - 性能门禁使用宽松阈值吸收 CI 共享 runner 噪声；开发机基线记录在证据文件。
-- 紧凑观测用速度换内存：1000 台约 650 MiB、100 台约 200 MiB。若目标是
-  极低内存而非吞吐，可保留 `SerializeFullObservation` 并走完整 JSON 路径；
-  当前默认选紧凑，因为 1000 台稳态快 26%。
+- 进程内直接对象路径同时降低时间与内存（无 JSON 文本/展开器双对象图）；
+  worker 仍用紧凑 JSON，跨进程边界不传 CLR 对象。
+- 若目标是极低内存或调试，可保留 `SerializeFullObservation` 并走完整 JSON；
+  当前默认是最快的直接对象路径。
 
 ## 回滚
 
