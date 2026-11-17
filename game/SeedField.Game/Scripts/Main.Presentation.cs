@@ -13,6 +13,7 @@ public partial class Main
     private VisualAssetCatalog _visualCatalog = null!;
     private VisualAssetCatalog _worldCatalog = null!;
     private EntityVisual _entityVisual = null!;
+    private LodBatchRenderer _lodBatch = null!;
     private CoreVisual _coreVisual = null!;
     private long _bootstrapUntilTick;
     private bool _tacticalVisible;
@@ -56,6 +57,7 @@ public partial class Main
                 "terrain_road",
             });
         _entityVisual = new EntityVisual(_visualCatalog);
+        _lodBatch = new LodBatchRenderer(_visualCatalog);
         _coreVisual = new CoreVisual(_visualCatalog);
         UpdateFacing();
         if (_benchmarkMixed)

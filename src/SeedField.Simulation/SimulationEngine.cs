@@ -187,6 +187,9 @@ public sealed partial class SimulationEngine
         var degree = maxDegreeOfParallelism > 0
             ? Math.Min(maxDegreeOfParallelism, entityIds.Count)
             : Math.Min(Math.Clamp(Environment.ProcessorCount, 1, 16), entityIds.Count);
+        var sharedCache = GetObservationCache();
+        sharedCache.PrepareForControllers();
+
         // A blocked thread-pool caller can starve the pool when many callers
         // parallelize at once; the game/headless main threads keep the parallel
         // path, pool callers stay sequential instead of deadlocking.
@@ -196,7 +199,11 @@ public sealed partial class SimulationEngine
         {
             for (var index = 0; index < entityIds.Count; index++)
             {
-                results[index] = BuildControllerObservation(entityIds[index]);
+                results[index] = ObservationBuilder.BuildForEntity(
+                    World,
+                    entityIds[index],
+                    sharedCache,
+                    includeAllies: false);
             }
 
             return results;
@@ -206,7 +213,7 @@ public sealed partial class SimulationEngine
             0,
             entityIds.Count,
             new ParallelOptions { MaxDegreeOfParallelism = degree },
-            () => ObservationCache.Build(World),
+            () => sharedCache,
             (index, _, cache) =>
             {
                 results[index] = ObservationBuilder.BuildForEntity(

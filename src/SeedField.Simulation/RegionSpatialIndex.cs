@@ -39,7 +39,11 @@ internal sealed class RegionSpatialIndex
 
     public static RegionSpatialIndex Build(RegionState region) => new(region);
 
-    public void Query(Vec2 center, int radiusMm, List<EntityState> results)
+    public void Query(
+        Vec2 center,
+        int radiusMm,
+        List<EntityState> results,
+        string? excludeCivilizationId = null)
     {
         results.Clear();
         if (radiusMm <= 0)
@@ -62,9 +66,29 @@ internal sealed class RegionSpatialIndex
         {
             for (var x = minX; x <= maxX; x++)
             {
-                if (_buckets.TryGetValue(Key(x, y), out var bucket))
+                if (!_buckets.TryGetValue(Key(x, y), out var bucket))
+                {
+                    continue;
+                }
+
+                if (excludeCivilizationId is null)
                 {
                     results.AddRange(bucket);
+                    continue;
+                }
+
+                // Device views only need foreign entities; adding every friendly
+                // unit in range made a dense 1000-unit fleet scan 1000 candidates
+                // per controller just to discard them later.
+                foreach (var entity in bucket)
+                {
+                    if (!string.Equals(
+                            entity.CivilizationId,
+                            excludeCivilizationId,
+                            StringComparison.Ordinal))
+                    {
+                        results.Add(entity);
+                    }
                 }
             }
         }

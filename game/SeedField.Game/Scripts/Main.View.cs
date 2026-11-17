@@ -22,7 +22,9 @@ public partial class Main
 
     private bool _benchmarkMixed;
     private bool _benchmarkMixedQuiet;
+    private bool _benchmarkMixedCapture;
     private int _benchmarkMixedDevices;
+    private int _benchmarkMixedMaxFps;
     private double _benchmarkMixedSeconds = 10;
     private double _benchmarkMixedElapsed;
     private long _benchmarkMixedAllocStart;
@@ -37,6 +39,10 @@ public partial class Main
     private readonly List<double> _benchmarkStepMs = new();
     private readonly List<double> _benchmarkPresentMs = new();
     private readonly Dictionary<string, int> _benchmarkMixedFaultCodes = new();
+    private long _benchmarkAllocObs;
+    private long _benchmarkAllocDecide;
+    private long _benchmarkAllocStep;
+    private long _benchmarkAllocPresent;
     private readonly Stopwatch _benchmarkMixedWall = new();
     private long _benchmarkMixedLastTimestamp;
     private const double MixedWarmupSeconds = 1.5;
@@ -53,7 +59,17 @@ public partial class Main
 
         _benchmarkMixed = true;
         _benchmarkMixedQuiet = arguments.Contains("--benchmark-mixed-quiet");
+        _benchmarkMixedCapture = arguments.Contains("--benchmark-mixed-capture");
         _benchmarkMixedDevices = Mathf.Clamp(devices, 1, 1_000);
+        var maxFpsArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--benchmark-mixed-max-fps=", StringComparison.Ordinal));
+        if (maxFpsArgument is not null &&
+            int.TryParse(
+                maxFpsArgument["--benchmark-mixed-max-fps=".Length..],
+                out var maxFps))
+        {
+            _benchmarkMixedMaxFps = Mathf.Clamp(maxFps, 0, 240);
+        }
         var secondsArgument = arguments.FirstOrDefault(argument =>
             argument.StartsWith("--benchmark-mixed-seconds=", StringComparison.Ordinal));
         if (secondsArgument is not null &&
@@ -87,8 +103,13 @@ public partial class Main
         _benchmarkStepMs.Clear();
         _benchmarkPresentMs.Clear();
         _benchmarkMixedFaultCodes.Clear();
+        _benchmarkAllocObs = 0;
+        _benchmarkAllocDecide = 0;
+        _benchmarkAllocStep = 0;
+        _benchmarkAllocPresent = 0;
         _benchmarkMixedWall.Restart();
         _benchmarkMixedLastTimestamp = Stopwatch.GetTimestamp();
+        Engine.MaxFps = _benchmarkMixedMaxFps;
         _benchmarkMixedAllocStart = GC.GetTotalAllocatedBytes(precise: true);
         _benchmarkMixedGc0Start = GC.CollectionCount(0);
         _benchmarkMixedGc1Start = GC.CollectionCount(1);
@@ -198,7 +219,7 @@ public partial class Main
                     .Select(pair => $"{pair.Key}:{pair.Value}"));
         GD.Print(
             $"MIXED_BENCH devices={_benchmarkMixedDevices} " +
-            $"quiet={_benchmarkMixedQuiet} " +
+            $"quiet={_benchmarkMixedQuiet} maxFps={_benchmarkMixedMaxFps} " +
             $"entities={_world.EnumerateEntities().Count()} " +
             $"sprites={_visibleEntities.Count} frames={_benchmarkFrameMs.Count} " +
             $"ticks={_benchmarkTickMs.Count} seconds={measuredSeconds:0.0} " +
@@ -214,6 +235,10 @@ public partial class Main
             $"decideMs={Average(_benchmarkDecideMs):0.00} " +
             $"stepMs={Average(_benchmarkStepMs):0.00} " +
             $"presentMs={Average(_benchmarkPresentMs):0.00} " +
+            $"allocObsMB={_benchmarkAllocObs / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
+            $"allocDecideMB={_benchmarkAllocDecide / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
+            $"allocStepMB={_benchmarkAllocStep / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
+            $"allocPresentMB={_benchmarkAllocPresent / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
             $"allocMBPerFrame={allocated / (1024.0 * 1024.0) / _benchmarkFrameMs.Count:0.00} " +
             $"allocMBPerTick={allocated / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
             $"gc0={gc0} gc1={gc1} gc2={gc2} gcPauseMs={pauseMs:0.0} " +
@@ -221,6 +246,14 @@ public partial class Main
             $"faults={_faultCount} faultCodes={faultCodes} " +
             $"peakWorkingSetMb={peakMb:0.0} " +
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
+        if (_benchmarkMixedCapture)
+        {
+            RenderingServer.ForceDraw();
+            var image = GetViewport().GetTexture().GetImage();
+            image.SavePng("res://screenshots/mixed-lod.png");
+            GD.Print("MIXED_BENCH_CAPTURE res://screenshots/mixed-lod.png");
+        }
+
         GetTree().Quit();
     }
 
