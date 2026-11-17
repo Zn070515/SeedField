@@ -193,6 +193,8 @@ public static class WorldStateHasher
             Append(ref hash, offer.GiveEnergy);
             Append(ref hash, offer.WantMaterial);
             Append(ref hash, offer.WantEnergy);
+            Append(ref hash, offer.NegotiationId);
+            Append(ref hash, offer.Round);
             Append(ref hash, offer.ProposedTick);
             Append(ref hash, offer.ExpiresTick);
         }

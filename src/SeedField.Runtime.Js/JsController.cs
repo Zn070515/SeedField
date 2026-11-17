@@ -451,7 +451,9 @@ public sealed class JsController : IDisposable
                         offer.WantMaterial,
                         offer.WantEnergy,
                         offer.ProposedTick,
-                        offer.ExpiresTick))]);
+                        offer.ExpiresTick,
+                        offer.NegotiationId,
+                        offer.Round))]);
 
         private sealed record ObservationDto(
             long Tick,
@@ -491,7 +493,9 @@ public sealed class JsController : IDisposable
             long WantMaterial,
             long WantEnergy,
             long ProposedTick,
-            long ExpiresTick);
+            long ExpiresTick,
+            long NegotiationId,
+            int Round);
 
         private sealed record MatchDto(
             int CapturedPointsToWin,

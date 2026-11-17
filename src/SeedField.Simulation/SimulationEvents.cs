@@ -263,3 +263,17 @@ public sealed record TradeExpired(
     string TargetCivilizationId,
     long RefundedMaterial,
     long RefundedEnergy) : SimulationEvent(Tick);
+
+public sealed record TradeCountered(
+    long Tick,
+    long OriginalTradeOfferId,
+    long NewTradeOfferId,
+    string CivilizationId,
+    long NegotiationId,
+    int Round,
+    long RefundedMaterial,
+    long RefundedEnergy,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy) : SimulationEvent(Tick);

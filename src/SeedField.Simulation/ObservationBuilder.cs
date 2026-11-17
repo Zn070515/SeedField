@@ -281,7 +281,9 @@ public static class ObservationBuilder
             offer.WantMaterial,
             offer.WantEnergy,
             offer.ProposedTick,
-            offer.ExpiresTick);
+            offer.ExpiresTick,
+            offer.NegotiationId,
+            offer.Round);
 
     private static ObservedMatch? ToObservedMatch(MatchState? match) =>
         match is null

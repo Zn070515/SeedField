@@ -149,27 +149,7 @@ public sealed class OpponentDiplomacyTests
     }
 
     [Fact]
-    public void CautiousProfileRejectsAnUnfairTradeOffer()
-    {
-        var world = TradeWorld();
-        var engine = new SimulationEngine(world);
-        CreateTradeTreaty(engine);
-        engine.ExecuteDiplomacyCommand(
-            new ProposeTradeCommand("A", "B", "r0", 10, 0, 20, 0, ExpiresInTicks: 10));
-
-        var response = Assert.IsType<RespondTradeCommand>(Assert.Single(
-            OpponentDiplomacyPolicy.Decide(
-                world,
-                "B",
-                "A",
-                canCommunicate: true,
-                OpponentDiplomacyProfiles.Cautious)));
-
-        Assert.False(response.Accept);
-    }
-
-    [Fact]
-    public void AggressiveProfileRequiresAProfitMargin()
+    public void AggressiveProfileCountersToDemandAProfitMargin()
     {
         var world = TradeWorld();
         var engine = new SimulationEngine(world);
@@ -177,7 +157,7 @@ public sealed class OpponentDiplomacyTests
         engine.ExecuteDiplomacyCommand(
             new ProposeTradeCommand("A", "B", "r0", 20, 0, 20, 0, ExpiresInTicks: 10));
 
-        var response = Assert.IsType<RespondTradeCommand>(Assert.Single(
+        var response = Assert.IsType<CounterTradeCommand>(Assert.Single(
             OpponentDiplomacyPolicy.Decide(
                 world,
                 "B",
@@ -185,7 +165,8 @@ public sealed class OpponentDiplomacyTests
                 canCommunicate: true,
                 OpponentDiplomacyProfiles.Aggressive)));
 
-        Assert.False(response.Accept);
+        Assert.Equal(20, response.GiveMaterial);
+        Assert.Equal(24, response.WantMaterial);
     }
 
     [Fact]
@@ -250,6 +231,283 @@ public sealed class OpponentDiplomacyTests
                 refusingProfile)));
 
         Assert.False(response.Accept);
+    }
+
+    [Fact]
+    public void TurtleProactivelyProposesNonAggressionAtCadence()
+    {
+        var world = World();
+        AdvanceToTick(world, 240);
+
+        var command = Assert.IsType<ProposeTreatyCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Cautious)));
+
+        Assert.Equal(TreatyKind.NonAggression, command.Kind);
+        Assert.Equal("B", command.CivilizationId);
+        Assert.Equal("A", command.TargetCivilizationId);
+    }
+
+    [Fact]
+    public void AggressiveProposesTradeInsteadOfNonAggression()
+    {
+        var world = World();
+        AdvanceToTick(world, 240);
+
+        var command = Assert.IsType<ProposeTreatyCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Aggressive)));
+
+        Assert.Equal(TreatyKind.Trade, command.Kind);
+    }
+
+    [Fact]
+    public void NoProactiveCommandsOffCadence()
+    {
+        var world = World();
+        AdvanceToTick(world, 239);
+
+        var commands = OpponentDiplomacyPolicy.Decide(
+            world,
+            "B",
+            "A",
+            canCommunicate: true,
+            OpponentDiplomacyProfiles.Cautious);
+
+        Assert.Empty(commands);
+    }
+
+    [Fact]
+    public void ProactiveProposalSkipsWhenTheSameKindIsPending()
+    {
+        var world = World();
+        var engine = new SimulationEngine(world);
+        engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("B", "A", TreatyKind.NonAggression, ExpiresInTicks: 500));
+        AdvanceToTick(world, 240);
+        var profile = OpponentDiplomacyProfiles.Cautious with
+        {
+            ProposesTradeAgreement = false,
+            ProposesTradeOffers = false,
+        };
+
+        var commands = OpponentDiplomacyPolicy.Decide(
+            world,
+            "B",
+            "A",
+            canCommunicate: true,
+            profile);
+
+        Assert.Empty(commands);
+    }
+
+    [Fact]
+    public void ProactiveOfferRequiresActiveTradeTreaty()
+    {
+        var world = TradeWorld();
+        AdvanceToTick(world, 240);
+        var profile = OpponentDiplomacyProfiles.Cautious with
+        {
+            ProposesNonAggression = false,
+            ProposesTradeAgreement = false,
+            ProposesTradeOffers = true,
+        };
+
+        var commands = OpponentDiplomacyPolicy.Decide(
+            world,
+            "B",
+            "A",
+            canCommunicate: true,
+            profile);
+
+        Assert.Empty(commands);
+    }
+
+    [Fact]
+    public void ProactiveOfferUsesProfileGoods()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        AdvanceToTick(world, 240);
+        var profile = OpponentDiplomacyProfiles.Cautious with
+        {
+            ProposesNonAggression = false,
+            ProposesTradeAgreement = false,
+            ProposesTradeOffers = true,
+        };
+
+        var command = Assert.IsType<ProposeTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                profile)));
+
+        Assert.Equal("B", command.CivilizationId);
+        Assert.Equal("A", command.TargetCivilizationId);
+        Assert.Equal(20, command.GiveMaterial);
+        Assert.Equal(20, command.WantMaterial);
+    }
+
+    [Fact]
+    public void ProactiveOfferSkipsWithoutStock()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(Unit(1, "A"))
+            .AddEntity(Unit(2, "B"))
+            .AddStock("r0", "A", 100)
+            .AddStock("r0", "B", 0)
+            .Build();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        AdvanceToTick(world, 240);
+        var profile = OpponentDiplomacyProfiles.Cautious with
+        {
+            ProposesNonAggression = false,
+            ProposesTradeAgreement = false,
+            ProposesTradeOffers = true,
+        };
+
+        var commands = OpponentDiplomacyPolicy.Decide(
+            world,
+            "B",
+            "A",
+            canCommunicate: true,
+            profile);
+
+        Assert.Empty(commands);
+    }
+
+    [Fact]
+    public void AggressiveCountersAnUnfairOfferWithAProfitMargin()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        var offer = engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 10, 0, 20, 0, ExpiresInTicks: 10));
+
+        var response = Assert.IsType<CounterTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Aggressive)));
+
+        Assert.Equal("B", response.CivilizationId);
+        Assert.Equal(offer.TradeOfferId, response.TradeOfferId);
+        Assert.Equal(20, response.GiveMaterial);
+        Assert.Equal(24, response.WantMaterial);
+    }
+
+    [Fact]
+    public void CautiousCountersAtFairTerms()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 10, 0, 20, 0, ExpiresInTicks: 10));
+
+        var response = Assert.IsType<CounterTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Cautious)));
+
+        Assert.Equal(20, response.GiveMaterial);
+        Assert.Equal(20, response.WantMaterial);
+    }
+
+    [Fact]
+    public void MixedResourceOfferIsRejectedInsteadOfCountered()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        world.Regions["r0"].AddEnergy("A", 100);
+        world.Regions["r0"].AddEnergy("B", 100);
+        engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 10, 5, 20, 5, ExpiresInTicks: 10));
+
+        var response = Assert.IsType<RespondTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Aggressive)));
+
+        Assert.False(response.Accept);
+    }
+
+    [Fact]
+    public void ConcessionAcceptsAtLaterRound()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        var bOffer = engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("B", "A", "r0", 20, 0, 20, 0, ExpiresInTicks: 10));
+        engine.ExecuteDiplomacyCommand(
+            new CounterTradeCommand("A", bOffer.TradeOfferId!.Value, 22, 0, 20, 0, 10));
+
+        var response = Assert.IsType<RespondTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Aggressive)));
+
+        Assert.True(response.Accept);
+    }
+
+    [Fact]
+    public void RoundThreeOfferIsRejectedInsteadOfCountered()
+    {
+        var world = TradeWorld();
+        var engine = new SimulationEngine(world);
+        CreateTradeTreaty(engine);
+        var first = engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 20, 0, 20, 0, ExpiresInTicks: 10));
+        var second = engine.ExecuteDiplomacyCommand(
+            new CounterTradeCommand("B", first.TradeOfferId!.Value, 20, 0, 24, 0, 10));
+        engine.ExecuteDiplomacyCommand(
+            new CounterTradeCommand("A", second.TradeOfferId!.Value, 24, 0, 28, 0, 10));
+
+        var response = Assert.IsType<RespondTradeCommand>(Assert.Single(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                OpponentDiplomacyProfiles.Aggressive)));
+
+        Assert.False(response.Accept);
+    }
+
+    private static void AdvanceToTick(WorldState world, long tick)
+    {
+        var engine = new SimulationEngine(world);
+        while (world.Tick < tick)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
     }
 
     private static void CreateTradeTreaty(SimulationEngine engine)

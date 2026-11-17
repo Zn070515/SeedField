@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -203,7 +203,9 @@ public static class WorldSaveSerializer
                     offer.WantMaterial,
                     offer.WantEnergy,
                     offer.ProposedTick,
-                    offer.ExpiresTick))
+                    offer.ExpiresTick,
+                    offer.NegotiationId,
+                    offer.Round))
                 .ToArray(),
             world.NextTreatyProposalId,
             world.NextTreatyId,
@@ -921,6 +923,10 @@ public static class WorldSaveSerializer
                     $"Trade offer '{offerData.Id}' has no active trade treaty.");
             }
 
+            var negotiationId = offerData.NegotiationId > 0
+                ? offerData.NegotiationId
+                : offerData.Id;
+            var round = offerData.Round > 0 ? offerData.Round : 1;
             world.TradeOffers.Add(
                 offerData.Id,
                 new TradeOfferState(
@@ -932,6 +938,8 @@ public static class WorldSaveSerializer
                     offerData.GiveEnergy,
                     offerData.WantMaterial,
                     offerData.WantEnergy,
+                    negotiationId,
+                    round,
                     offerData.ProposedTick,
                     offerData.ExpiresTick));
             maxTradeOfferId = Math.Max(maxTradeOfferId, offerData.Id);

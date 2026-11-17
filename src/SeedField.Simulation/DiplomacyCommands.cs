@@ -40,6 +40,15 @@ public sealed record CancelTradeCommand(
     string CivilizationId,
     long TradeOfferId) : DiplomacyCommand(CivilizationId);
 
+public sealed record CounterTradeCommand(
+    string CivilizationId,
+    long TradeOfferId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy,
+    int ExpiresInTicks) : DiplomacyCommand(CivilizationId);
+
 public sealed record DiplomacyCommandResult(
     bool Success,
     long? TreatyId,

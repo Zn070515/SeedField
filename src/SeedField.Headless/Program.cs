@@ -62,6 +62,11 @@ internal static class Program
             return RunDiplomacyAiDemo();
         }
 
+        if (args.Contains("--diplomacy-negotiation"))
+        {
+            return RunDiplomacyNegotiationDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -514,29 +519,150 @@ internal static class Program
 
         tradeEngine.ExecuteDiplomacyCommand(
             new ProposeTradeCommand("A", "B", "r0", 10, 0, 20, 0, ExpiresInTicks: 50));
-        var unfairResponse = AssertSinglePolicyCommand(
+        var counterResponse = AssertSinglePolicyCommand(
             OpponentDiplomacyPolicy.Decide(
                 tradeWorld,
                 "B",
                 "A",
                 canCommunicate: true,
                 OpponentDiplomacyProfiles.Cautious));
-        tradeEngine.ExecuteDiplomacyCommand(unfairResponse);
-        var unfairRejected =
-            unfairResponse is RespondTradeCommand { Accept: false } &&
+        var counterRaised = counterResponse is CounterTradeCommand
+        {
+            GiveMaterial: 20,
+            WantMaterial: 20,
+        };
+        tradeEngine.ExecuteDiplomacyCommand(counterResponse);
+        var counterOffer = tradeWorld.TradeOffers.Values.Single();
+        var acceptCounter = tradeEngine.ExecuteDiplomacyCommand(
+            new RespondTradeCommand("A", counterOffer.Id, Accept: true));
+        var counterAccepted =
+            counterRaised &&
+            acceptCounter.Success &&
             tradeWorld.TradeOffers.Count == 0 &&
-            tradeWorld.Regions["r0"].GetMaterial("A") == 90;
+            tradeWorld.Regions["r0"].GetMaterial("A") == 90 &&
+            tradeWorld.Regions["r0"].GetMaterial("B") == 110;
 
         var ok = turtleNap &&
                  aggressiveNapRejected &&
                  fairAccepted &&
-                 unfairRejected;
+                 counterRaised &&
+                 counterAccepted;
         Console.WriteLine(
             $"DIPLOMACY_AI turtleNap={turtleNap} " +
             $"aggressiveNapRejected={aggressiveNapRejected} " +
-            $"fairAccepted={fairAccepted} unfairRejected={unfairRejected} ok={ok}");
+            $"fairAccepted={fairAccepted} counterRaised={counterRaised} " +
+            $"counterAccepted={counterAccepted} ok={ok}");
 
         return ok ? 0 : 1;
+    }
+
+    private static int RunDiplomacyNegotiationDemo()
+    {
+        var world = AiWorld();
+        var engine = new SimulationEngine(world);
+        var profile = OpponentDiplomacyProfiles.Cautious;
+
+        AdvanceToTick(engine, world, 240);
+        var napProposal = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                profile));
+        var proactiveNap = napProposal is ProposeTreatyCommand
+        {
+            Kind: TreatyKind.NonAggression,
+        };
+        engine.ExecuteDiplomacyCommand(napProposal);
+        engine.ExecuteDiplomacyCommand(new RespondTreatyCommand(
+            "A",
+            world.TreatyProposals.Values.Single().Id,
+            Accept: true));
+        var napActive = world.Treaties.Values.Any(treaty =>
+            treaty.Kind == TreatyKind.NonAggression);
+
+        AdvanceToTick(engine, world, 480);
+        var tradeProposal = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                profile));
+        var proactiveTrade = tradeProposal is ProposeTreatyCommand
+        {
+            Kind: TreatyKind.Trade,
+        };
+        engine.ExecuteDiplomacyCommand(tradeProposal);
+        engine.ExecuteDiplomacyCommand(new RespondTreatyCommand(
+            "A",
+            world.TreatyProposals.Values.Single().Id,
+            Accept: true));
+        var tradeActive = world.Treaties.Values.Any(treaty =>
+            treaty.Kind == TreatyKind.Trade);
+
+        var proactiveOfferCommand = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                profile));
+        var proactiveOffer = proactiveOfferCommand is ProposeTradeCommand
+        {
+            GiveMaterial: 20,
+            WantMaterial: 20,
+        };
+        var offerResult = engine.ExecuteDiplomacyCommand(proactiveOfferCommand);
+
+        var counter = engine.ExecuteDiplomacyCommand(
+            new CounterTradeCommand(
+                "A",
+                offerResult.TradeOfferId!.Value,
+                21,
+                0,
+                20,
+                0,
+                50));
+        var counterOffer = world.TradeOffers.Values.Single();
+        var counterRounds = counterOffer.Round;
+        var acceptCounter = AssertSinglePolicyCommand(
+            OpponentDiplomacyPolicy.Decide(
+                world,
+                "B",
+                "A",
+                canCommunicate: true,
+                profile));
+        var counterAccepted = acceptCounter is RespondTradeCommand { Accept: true } &&
+                              engine.ExecuteDiplomacyCommand(acceptCounter).Success;
+
+        var ok = proactiveNap &&
+                 napActive &&
+                 proactiveTrade &&
+                 tradeActive &&
+                 proactiveOffer &&
+                 counter.Success &&
+                 counterRounds == 2 &&
+                 counterAccepted;
+        Console.WriteLine(
+            $"DIPLOMACY_NEGOTIATION proactiveNap={proactiveNap} napActive={napActive} " +
+            $"proactiveTrade={proactiveTrade} tradeActive={tradeActive} " +
+            $"proactiveOffer={proactiveOffer} rounds={counterRounds} " +
+            $"counterAccepted={counterAccepted} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static void AdvanceToTick(
+        SimulationEngine engine,
+        WorldState world,
+        long tick)
+    {
+        while (world.Tick < tick)
+        {
+            engine.Step(Array.Empty<Intent>());
+        }
     }
 
     private static DiplomacyCommand AssertSinglePolicyCommand(

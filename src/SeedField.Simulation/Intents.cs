@@ -113,6 +113,7 @@ public enum SimulationErrorCode
     TreatyNotFound,
     ProposalNotFound,
     TradeNotFound,
+    NegotiationExhausted,
 }
 
 public sealed record IntentResult(

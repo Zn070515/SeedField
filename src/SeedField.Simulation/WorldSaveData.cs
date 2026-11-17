@@ -60,7 +60,9 @@ public sealed record TradeOfferSaveData(
     long WantMaterial,
     long WantEnergy,
     long ProposedTick,
-    long ExpiresTick);
+    long ExpiresTick,
+    long NegotiationId = 0,
+    int Round = 1);
 
 public sealed record MessagePolicySaveData(
     string CivilizationId,

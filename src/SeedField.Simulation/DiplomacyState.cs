@@ -48,6 +48,12 @@ public sealed class TreatyProposalState
             : ProposerCivilizationId;
 }
 
+/// <summary>Prototype negotiation limits. Not a final balance value.</summary>
+public static class TradeNegotiationRules
+{
+    public const int MaxRounds = 3;
+}
+
 /// <summary>
 /// An active trade offer. The proposer's give side is escrowed at creation; the
 /// target's want side is only checked and consumed at acceptance.
@@ -63,6 +69,8 @@ public sealed class TradeOfferState
         long giveEnergy,
         long wantMaterial,
         long wantEnergy,
+        long negotiationId,
+        int round,
         long proposedTick,
         long expiresTick)
     {
@@ -74,6 +82,8 @@ public sealed class TradeOfferState
         GiveEnergy = giveEnergy;
         WantMaterial = wantMaterial;
         WantEnergy = wantEnergy;
+        NegotiationId = negotiationId;
+        Round = round;
         ProposedTick = proposedTick;
         ExpiresTick = expiresTick;
     }
@@ -93,6 +103,10 @@ public sealed class TradeOfferState
     public long WantMaterial { get; }
 
     public long WantEnergy { get; }
+
+    public long NegotiationId { get; }
+
+    public int Round { get; }
 
     public long ProposedTick { get; }
 

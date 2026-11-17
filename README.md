@@ -50,12 +50,12 @@
 | PvE 目标 | 多控制点：独占驻留、争夺重置、占领数量达到阈值即胜负；HUD 与胜利截图 |
 | 通信/对手 | 跨文明消息要求目标区 Comm 端点 + 目标文明策略允许；内置对手包可选并持久化 |
 | 消息 ACL | 发送方/话题白名单、黑名单优先；引擎派生发送者；重复消息 ID 拒绝；断联不扣能量 |
-| 条约/贸易 | 互不侵犯/贸易协定；宿主命令签约；互不侵犯阻止攻击；贸易托管、原子交换与退款；存档 v7 |
-| 对手外交 | B 按画像自动响应 A 的提议/贸易单：Skirmisher 拒绝 NAP、要求贸易利润；Turtle 接受 NAP/公平贸易 |
+| 条约/贸易 | 互不侵犯/贸易协定；宿主命令签约；互不侵犯阻止攻击；贸易托管、原子交换与退款；反提议最多 3 轮；存档 v8 |
+| 对手外交 | B 按画像主动提议/下单并响应 A：Skirmisher 拒绝 NAP、要求贸易利润；Turtle 接受 NAP/公平贸易；反提议逐轮让步 |
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交面板（net10.0）** |
-| 验证 | 136 个仿真测试 + 37 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | 143 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -85,6 +85,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --const
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --message-acl
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-ai
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy-negotiation
 
 godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -95,6 +96,7 @@ godot --path game/SeedField.Game -- --capture-diplomacy-ai # B 方外交响应�
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
 godot --path game/SeedField.Game -- --diplomacy-smoke  # 外交面板按钮接线冒烟
 godot --path game/SeedField.Game -- --diplomacy-ai-smoke # B 方自动响应冒烟
+godot --path game/SeedField.Game -- --diplomacy-counter-smoke # 面板反提议接线冒烟
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
@@ -129,6 +131,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`treaty & trade`](docs/engineering/evidence/2026-11-17-treaty-trade.md) | 互不侵犯、贸易托管/原子交换/退款、存档 v7 证据 |
 | [`diplomacy panel`](docs/engineering/evidence/2026-11-17-diplomacy-panel.md) | F3 外交面板、按钮接线、截图与 smoke 证据 |
 | [`opponent diplomacy`](docs/engineering/evidence/2026-11-17-opponent-diplomacy.md) | B 方画像化自动响应、Headless/Godot 证据与截图 |
+| [`negotiation`](docs/engineering/evidence/2026-11-17-negotiation.md) | 主动提议、多轮反提议、回合上限与让步证据 |
 
 ## 工程原则
 
@@ -143,4 +146,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；跨文明协议已有消息 ACL、条约/贸易原型、F3 外交面板与 B 方自动响应，但 B 不会主动谈判/下单，也没有消息签名/信誉/关税；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；跨文明协议已有消息 ACL、条约/贸易原型、F3 外交面板、B 方主动提议与最多 3 轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

@@ -71,7 +71,9 @@ public sealed record ObservedTradeOffer(
     long WantMaterial,
     long WantEnergy,
     long ProposedTick,
-    long ExpiresTick);
+    long ExpiresTick,
+    long NegotiationId,
+    int Round);
 
 public sealed record ObservedControlPoint(
     string Id,

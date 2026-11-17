@@ -412,6 +412,7 @@ public sealed class SimulationEngine
             ProposeTradeCommand proposeTrade => ProposeTrade(proposeTrade, events),
             RespondTradeCommand respondTrade => RespondTrade(respondTrade, events),
             CancelTradeCommand cancelTrade => CancelTrade(cancelTrade, events),
+            CounterTradeCommand counterTrade => CounterTrade(counterTrade, events),
             _ => new DiplomacyCommandResult(
                 false,
                 null,
@@ -551,8 +552,9 @@ public sealed class SimulationEngine
         region.TryConsumeEnergy(command.CivilizationId, command.GiveEnergy);
 
         var tick = World.Tick;
+        var offerId = World.NextTradeOfferId++;
         var offer = new TradeOfferState(
-            World.NextTradeOfferId++,
+            offerId,
             command.CivilizationId,
             command.TargetCivilizationId,
             command.RegionId,
@@ -560,6 +562,8 @@ public sealed class SimulationEngine
             command.GiveEnergy,
             command.WantMaterial,
             command.WantEnergy,
+            offerId,
+            1,
             tick,
             tick + command.ExpiresInTicks);
         World.TradeOffers.Add(offer.Id, offer);
@@ -736,6 +740,134 @@ public sealed class SimulationEngine
             offer.Id,
             SimulationErrorCode.None,
             $"Trade offer {offer.Id} cancelled.",
+            events);
+    }
+
+    private DiplomacyCommandResult CounterTrade(
+        CounterTradeCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.TradeOffers.TryGetValue(command.TradeOfferId, out var original) ||
+            !string.Equals(
+                original.TargetCivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TradeNotFound,
+                "Trade offer does not exist for this civilization.",
+                events);
+        }
+
+        if (original.Round >= TradeNegotiationRules.MaxRounds)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NegotiationExhausted,
+                "Trade negotiation has reached its round limit.",
+                events);
+        }
+
+        if (command.GiveMaterial < 0 ||
+            command.GiveEnergy < 0 ||
+            command.WantMaterial < 0 ||
+            command.WantEnergy < 0 ||
+            (command.GiveMaterial == 0 && command.GiveEnergy == 0) ||
+            (command.WantMaterial == 0 && command.WantEnergy == 0) ||
+            command.ExpiresInTicks <= 0)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                "Counter offer needs non-negative goods, both sides non-empty and a positive expiry.",
+                events);
+        }
+
+        if (!HasCommunicationPath(
+                command.CivilizationId,
+                original.ProposerCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoRoute,
+                "No communication path between the civilizations.",
+                events);
+        }
+
+        if (!HasActiveTreaty(
+                TreatyKind.Trade,
+                command.CivilizationId,
+                original.ProposerCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyDenied,
+                "A trade treaty is required.",
+                events);
+        }
+
+        if (!World.Regions.TryGetValue(original.RegionId, out var region))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                $"Trade region '{original.RegionId}' does not exist.",
+                events);
+        }
+
+        if (region.GetMaterial(command.CivilizationId) < command.GiveMaterial)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InsufficientMaterial,
+                "Not enough material to escrow the counter offer.",
+                events);
+        }
+
+        if (region.GetEnergy(command.CivilizationId) < command.GiveEnergy)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoEnergy,
+                "Not enough energy to escrow the counter offer.",
+                events);
+        }
+
+        var refunded = RefundTradeOffer(original);
+        World.TradeOffers.Remove(original.Id);
+        region.TryConsumeMaterial(command.CivilizationId, command.GiveMaterial);
+        region.TryConsumeEnergy(command.CivilizationId, command.GiveEnergy);
+
+        var tick = World.Tick;
+        var offerId = World.NextTradeOfferId++;
+        var offer = new TradeOfferState(
+            offerId,
+            command.CivilizationId,
+            original.ProposerCivilizationId,
+            original.RegionId,
+            command.GiveMaterial,
+            command.GiveEnergy,
+            command.WantMaterial,
+            command.WantEnergy,
+            original.NegotiationId,
+            original.Round + 1,
+            tick,
+            tick + command.ExpiresInTicks);
+        World.TradeOffers.Add(offer.Id, offer);
+        events.Add(new TradeCountered(
+            tick,
+            original.Id,
+            offer.Id,
+            command.CivilizationId,
+            offer.NegotiationId,
+            offer.Round,
+            refunded.Material,
+            refunded.Energy,
+            offer.GiveMaterial,
+            offer.GiveEnergy,
+            offer.WantMaterial,
+            offer.WantEnergy));
+
+        return new DiplomacyCommandResult(
+            true,
+            null,
+            null,
+            offer.Id,
+            SimulationErrorCode.None,
+            $"Trade offer {original.Id} countered with {offer.Id}.",
             events);
     }
 

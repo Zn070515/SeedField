@@ -99,6 +99,12 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--diplomacy-counter-smoke"))
+        {
+            RunDiplomacyCounterSmoke();
+            return;
+        }
+
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
         _captureDiplomacy = arguments.Contains("--capture-diplomacy");
@@ -163,8 +169,10 @@ public partial class Main : Node2D
             OpenDiplomacy();
             var napAccepted = _world.Treaties.Values.Any(treaty =>
                 treaty.Kind == TreatyKind.NonAggression);
+            var countered = _world.TradeOffers.Values.Any(offer => offer.Round > 1);
             _diplomacy.SetStatus(
-                $"B responded: trade accepted, offer settled, " +
+                $"B responded: trade treaty accepted, " +
+                $"{(countered ? "offer countered at R2" : "offer settled")}, " +
                 $"NAP {(napAccepted ? "accepted" : "rejected")}",
                 false);
             _status = "diplomacy AI · paused";
@@ -380,6 +388,7 @@ public partial class Main : Node2D
         _diplomacy.RespondTradeRequested += RespondTradeFromDiplomacy;
         _diplomacy.CancelTradeRequested += CancelTradeFromDiplomacy;
         _diplomacy.ProposeTradeRequested += ProposeTradeFromDiplomacy;
+        _diplomacy.CounterTradeRequested += CounterTradeFromDiplomacy;
         _diplomacy.CloseRequested += CloseDiplomacy;
         _diplomacyLayer.AddChild(_diplomacy);
         RefreshDiplomacy();
@@ -478,6 +487,24 @@ public partial class Main : Node2D
                 "A",
                 "B",
                 "frontier",
+                giveMaterial,
+                giveEnergy,
+                wantMaterial,
+                wantEnergy,
+                ExpiresInTicks: 200)));
+    }
+
+    private void CounterTradeFromDiplomacy(
+        long offerId,
+        long giveMaterial,
+        long giveEnergy,
+        long wantMaterial,
+        long wantEnergy)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new CounterTradeCommand(
+                "A",
+                offerId,
                 giveMaterial,
                 giveEnergy,
                 wantMaterial,
@@ -715,7 +742,7 @@ public partial class Main : Node2D
             new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 200));
         StepOnce();
         _engine.ExecuteDiplomacyCommand(
-            new ProposeTradeCommand("A", "B", "frontier", 30, 0, 20, 0, ExpiresInTicks: 200));
+            new ProposeTradeCommand("A", "B", "frontier", 20, 0, 30, 0, ExpiresInTicks: 200));
         StepOnce();
         _engine.ExecuteDiplomacyCommand(
             new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 200));
@@ -793,6 +820,28 @@ public partial class Main : Node2D
             $"tradeAccepted={tradeAccepted} offerAccepted={offerAccepted} " +
             $"napAccepted={napAccepted} expectNapAccepted={_opponentDiplomacy.AcceptsNonAggression} " +
             $"napHandled={napHandled} " +
+            $"settledM={_world.Statistics.TradeMaterialSettledTotal} ok={ok}");
+
+        GetTree().Quit();
+    }
+
+    private void RunDiplomacyCounterSmoke()
+    {
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 200));
+        StepOnce();
+        var offer = _engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("B", "A", "frontier", 20, 0, 20, 0, ExpiresInTicks: 200));
+        CounterTradeFromDiplomacy(offer.TradeOfferId!.Value, 22, 0, 20, 0);
+        var countered = _world.TradeOffers.Values.Single();
+        StepOnce();
+
+        var settled = _world.Statistics.TradeMaterialSettledTotal == 42;
+        var ok = countered.Round == 2 &&
+                 _world.TradeOffers.Count == 0 &&
+                 settled;
+        GD.Print(
+            $"DIPLOMACY_COUNTER_SMOKE round={countered.Round} " +
             $"settledM={_world.Statistics.TradeMaterialSettledTotal} ok={ok}");
 
         GetTree().Quit();
@@ -1464,7 +1513,8 @@ public partial class Main : Node2D
             or TradeAccepted
             or TradeRejected
             or TradeCancelled
-            or TradeExpired;
+            or TradeExpired
+            or TradeCountered;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1475,7 +1525,7 @@ public partial class Main : Node2D
             MessageQueued => new Color(0.75f, 0.66f, 0.40f),
             TreatyAccepted or TradeAccepted => Green,
             TreatyRejected or TreatyBroken or TradeRejected => Red,
-            TreatyProposed or TreatyProposalExpired or TradeProposed =>
+            TreatyProposed or TreatyProposalExpired or TradeProposed or TradeCountered =>
                 new Color(0.75f, 0.66f, 0.40f),
             TradeCancelled or TradeExpired => Muted,
             _ => Text,
@@ -1531,6 +1581,11 @@ public partial class Main : Node2D
             TradeExpired expired =>
                 $"t{expired.Tick,4}  trade {expired.TradeOfferId} expired; " +
                 $"refund M{expired.RefundedMaterial}/E{expired.RefundedEnergy}",
+            TradeCountered countered =>
+                $"t{countered.Tick,4}  trade {countered.OriginalTradeOfferId} → " +
+                $"{countered.NewTradeOfferId} countered by {countered.CivilizationId} " +
+                $"R{countered.Round} give M{countered.GiveMaterial}/E{countered.GiveEnergy} → " +
+                $"want M{countered.WantMaterial}/E{countered.WantEnergy}",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

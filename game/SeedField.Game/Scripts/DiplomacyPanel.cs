@@ -25,6 +25,8 @@ public partial class DiplomacyPanel : PanelContainer
 
     public event Action<long, long, long, long>? ProposeTradeRequested;
 
+    public event Action<long, long, long, long, long>? CounterTradeRequested;
+
     public event Action? CloseRequested;
 
     private Label _connection = null!;
@@ -119,10 +121,11 @@ public partial class DiplomacyPanel : PanelContainer
         offerRow.AddThemeConstantOverride("separation", 8);
         offerRow.AddChild(ActionButton("ACCEPT SELECTED", () => RespondOffer(true)));
         offerRow.AddChild(ActionButton("REJECT SELECTED", () => RespondOffer(false)));
+        offerRow.AddChild(ActionButton("COUNTER SELECTED", OnCounterOfferPressed));
         offerRow.AddChild(ActionButton("CANCEL SELECTED", OnCancelOfferPressed));
         box.AddChild(offerRow);
 
-        box.AddChild(SectionLabel("CREATE TRADE OFFER · FRONTIER · TARGET B"));
+        box.AddChild(SectionLabel("CREATE / COUNTER TRADE OFFER · FRONTIER · TARGET B"));
         var goodsRow = new HBoxContainer();
         goodsRow.AddThemeConstantOverride("separation", 8);
         _giveMaterial = AddGoods(goodsRow, "Give M", 20);
@@ -136,7 +139,7 @@ public partial class DiplomacyPanel : PanelContainer
         createRow.AddChild(ActionButton("CREATE OFFER", OnCreateOfferPressed));
         var createHint = new Label
         {
-            Text = "Escrow is taken from A's frontier stock immediately.",
+            Text = "COUNTER uses these fields. Escrow is taken from A's frontier stock.",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         createHint.AddThemeFontSizeOverride("font_size", 11);
@@ -225,6 +228,7 @@ public partial class DiplomacyPanel : PanelContainer
                 $"{(incoming ? "IN" : "OUT")} · {offer.RegionId} · " +
                 $"give M{offer.GiveMaterial}/E{offer.GiveEnergy} → " +
                 $"want M{offer.WantMaterial}/E{offer.WantEnergy} · " +
+                $"R{offer.Round}/{TradeNegotiationRules.MaxRounds} · " +
                 $"expires t{offer.ExpiresTick}");
         }
 
@@ -288,6 +292,41 @@ public partial class DiplomacyPanel : PanelContainer
         }
 
         RespondTradeRequested?.Invoke(_offerIds[index], accept);
+    }
+
+    private void OnCounterOfferPressed()
+    {
+        var index = SelectedIndex(_offers);
+        if (index < 0 || index >= _offerIds.Count)
+        {
+            SetStatus("select a trade offer first", true);
+            return;
+        }
+
+        if (!_offerIncoming[index])
+        {
+            SetStatus("cannot counter your own offer; use CANCEL", true);
+            return;
+        }
+
+        var giveMaterial = (long)_giveMaterial.Value;
+        var giveEnergy = (long)_giveEnergy.Value;
+        var wantMaterial = (long)_wantMaterial.Value;
+        var wantEnergy = (long)_wantEnergy.Value;
+
+        if ((giveMaterial == 0 && giveEnergy == 0) ||
+            (wantMaterial == 0 && wantEnergy == 0))
+        {
+            SetStatus("counter offer needs goods on both sides", true);
+            return;
+        }
+
+        CounterTradeRequested?.Invoke(
+            _offerIds[index],
+            giveMaterial,
+            giveEnergy,
+            wantMaterial,
+            wantEnergy);
     }
 
     private void OnCancelOfferPressed()
