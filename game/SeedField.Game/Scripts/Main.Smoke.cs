@@ -353,7 +353,7 @@ public partial class Main : Node2D
             }
 
             var decision = controller.Decide(
-                _engine.BuildDeviceObservation(controller.EntityId));
+                _engine.BuildControllerObservation(controller.EntityId));
             intents.AddRange(decision.Intents);
             _faultCount += decision.Faults.Count;
         }

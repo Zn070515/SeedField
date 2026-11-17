@@ -8,6 +8,7 @@ public sealed partial class SimulationEngine
     public DiplomacyCommandResult ExecuteDiplomacyCommand(DiplomacyCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        InvalidateObservationCache();
 
         var events = new List<SimulationEvent>();
         ExpireDiplomacy(World.Tick, events);

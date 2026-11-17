@@ -8,6 +8,7 @@ public sealed partial class SimulationEngine
         Vec2 position)
     {
         ArgumentNullException.ThrowIfNull(blueprint);
+        InvalidateObservationCache();
         ValidateBlueprint(blueprint);
 
         if (!World.Cores.TryGetValue(civilizationId, out var core))
@@ -116,6 +117,7 @@ public sealed partial class SimulationEngine
     public RecoveryCommandResult ExecuteRecoveryCommand(RecoveryCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        InvalidateObservationCache();
 
         return command switch
         {

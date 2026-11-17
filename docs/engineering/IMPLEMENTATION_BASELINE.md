@@ -397,6 +397,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0024](adr/ADR-0024-art-camera-route-world-space.md) | 美术相机路线 A 与世界空间样片 |
 | [ADR-0025](adr/ADR-0025-art-gate2-direction-modules-masks.md) | 方向数、模块剪影、核心四态与 mask 验证 |
 | [ADR-0026](adr/ADR-0026-world-slice-environment-and-dynamics.md) | Gate 3 工业废土环境与动态表现 |
+| [ADR-0027](adr/ADR-0027-spatial-observation-controller-view.md) | 空间索引、共享观测与控制器观测视图 |
 
 ## 8. 下一步（按依赖顺序）
 
