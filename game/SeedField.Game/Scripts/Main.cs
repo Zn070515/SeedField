@@ -235,12 +235,17 @@ public partial class Main : Node2D
         {
             OpenWorkshop();
             DeployFromWorkshop("power");
-            UpgradeFromWorkshop(new EntityId(1));
+            var scoutForCapture = _world.EnumerateEntities().FirstOrDefault(entity =>
+                entity.CivilizationId == "A" &&
+                string.Equals(entity.BlueprintId, "scout", StringComparison.Ordinal));
+            var scoutId = scoutForCapture?.Id ?? new EntityId(1);
+            UpgradeFromWorkshop(scoutId);
             _workshop.SelectBlueprint("power");
-            _workshop.SelectInstance(new EntityId(1));
+            _workshop.SelectInstance(scoutId);
+            var upgradedScout = _world.FindEntity(scoutId);
             _workshop.SetStatus(
                 $"queued power v1 (t{_world.ConstructionOrders.FirstOrDefault()?.CompleteTick}) " +
-                $"· upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
+                $"· upgraded scout to v{upgradedScout?.BlueprintVersion ?? 0}",
                 false);
             _status = "workshop · paused";
         }
