@@ -19,6 +19,30 @@ internal static partial class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+        var observationBenchmarkIndex = Array.IndexOf(args, "--benchmark-observation");
+        if (observationBenchmarkIndex >= 0 &&
+            observationBenchmarkIndex + 1 < args.Length &&
+            int.TryParse(args[observationBenchmarkIndex + 1], out var observationDevices))
+        {
+            return RunObservationBenchmark(observationDevices);
+        }
+
+        var serializeBenchmarkIndex = Array.IndexOf(args, "--benchmark-serialize");
+        if (serializeBenchmarkIndex >= 0 &&
+            serializeBenchmarkIndex + 1 < args.Length &&
+            int.TryParse(args[serializeBenchmarkIndex + 1], out var serializeDevices))
+        {
+            return RunSerializeBenchmark(serializeDevices);
+        }
+
+        var jintBenchmarkIndex = Array.IndexOf(args, "--benchmark-jint");
+        if (jintBenchmarkIndex >= 0 &&
+            jintBenchmarkIndex + 1 < args.Length &&
+            int.TryParse(args[jintBenchmarkIndex + 1], out var jintDevices))
+        {
+            return RunJintBenchmark(jintDevices);
+        }
+
         if (args.Contains("--multi-region"))
         {
             return RunMultiRegionDemo();
