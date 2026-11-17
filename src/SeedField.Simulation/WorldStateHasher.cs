@@ -50,6 +50,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.MaterialRefundedTotal);
         Append(ref hash, world.Statistics.TradeMaterialSettledTotal);
         Append(ref hash, world.Statistics.TradeEnergySettledTotal);
+        Append(ref hash, world.Statistics.EnergyFlowedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -226,6 +227,7 @@ public static class WorldStateHasher
             Append(ref hash, link.MessagesPerTick);
             Append(ref hash, link.MaterialPerTick);
             Append(ref hash, link.EnergyPerTick);
+            Append(ref hash, link.PowerPerTick);
         }
 
         var blueprints = world.Workshop.GetAllVersions()

@@ -12,7 +12,8 @@ public sealed record RegionLink(
     int LatencyTicks,
     int MessagesPerTick = 0,
     int MaterialPerTick = 0,
-    int EnergyPerTick = 0)
+    int EnergyPerTick = 0,
+    int PowerPerTick = 0)
 {
     public bool Connects(string regionId) =>
         string.Equals(RegionA, regionId, StringComparison.Ordinal) ||

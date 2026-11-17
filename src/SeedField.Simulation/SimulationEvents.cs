@@ -264,6 +264,22 @@ public sealed record TradeExpired(
     long RefundedMaterial,
     long RefundedEnergy) : SimulationEvent(Tick);
 
+public sealed record PowerFlowed(
+    long Tick,
+    string CivilizationId,
+    string FromRegionId,
+    string ToRegionId,
+    long Amount) : SimulationEvent(Tick);
+
+public sealed record PowerShortfall(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    EntityId EntityId,
+    long Requested,
+    long Available,
+    string Source) : SimulationEvent(Tick);
+
 public sealed record TradeCountered(
     long Tick,
     long OriginalTradeOfferId,

@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -97,7 +97,8 @@ public static class WorldSaveSerializer
                 world.Statistics.ConstructionsCompletedTotal,
                 world.Statistics.MaterialRefundedTotal,
                 world.Statistics.TradeMaterialSettledTotal,
-                world.Statistics.TradeEnergySettledTotal),
+                world.Statistics.TradeEnergySettledTotal,
+                world.Statistics.EnergyFlowedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -107,7 +108,8 @@ public static class WorldSaveSerializer
                     link.LatencyTicks,
                     link.MessagesPerTick,
                     link.MaterialPerTick,
-                    link.EnergyPerTick))
+                    link.EnergyPerTick,
+                    link.PowerPerTick))
                 .ToArray(),
             world.InTransitMaterial
                 .OrderBy(shipment => shipment.Id)
@@ -377,7 +379,11 @@ public static class WorldSaveSerializer
                     $"Link '{linkData.Id}' must connect two distinct existing regions.");
             }
 
-            if (linkData.LatencyTicks < 0 || linkData.MessagesPerTick < 0)
+            if (linkData.LatencyTicks < 0 ||
+                linkData.MessagesPerTick < 0 ||
+                linkData.MaterialPerTick < 0 ||
+                linkData.EnergyPerTick < 0 ||
+                linkData.PowerPerTick < 0)
             {
                 throw Invalid("INVALID_LINK", $"Link '{linkData.Id}' has negative values.");
             }
@@ -391,7 +397,8 @@ public static class WorldSaveSerializer
                     linkData.LatencyTicks,
                     linkData.MessagesPerTick,
                     linkData.MaterialPerTick,
-                    linkData.EnergyPerTick));
+                    linkData.EnergyPerTick,
+                    linkData.PowerPerTick));
         }
 
         foreach (var blueprintData in data.Blueprints ?? Array.Empty<BlueprintSaveData>())
@@ -1174,6 +1181,7 @@ public static class WorldSaveSerializer
         world.Statistics.MaterialRefundedTotal = statistics.MaterialRefundedTotal;
         world.Statistics.TradeMaterialSettledTotal = statistics.TradeMaterialSettledTotal;
         world.Statistics.TradeEnergySettledTotal = statistics.TradeEnergySettledTotal;
+        world.Statistics.EnergyFlowedTotal = statistics.EnergyFlowedTotal;
     }
 
     /// <summary>

@@ -50,6 +50,8 @@ public partial class Main : Node2D
     private CanvasLayer _workshopLayer = null!;
     private DiplomacyPanel _diplomacy = null!;
     private CanvasLayer _diplomacyLayer = null!;
+    private PowerPanel _power = null!;
+    private CanvasLayer _powerLayer = null!;
     private string _deployedSourceA = string.Empty;
     private int _workshopSpawnIndex;
     private string _capturePath = "res://screenshots/m0-combat.png";
@@ -62,6 +64,7 @@ public partial class Main : Node2D
     private bool _captureWorkshop;
     private bool _captureDiplomacy;
     private bool _captureDiplomacyAi;
+    private bool _capturePower;
     private bool _captureVictory;
     private int _frame;
     private int _faultCount;
@@ -80,6 +83,7 @@ public partial class Main : Node2D
         BuildProgramEditor();
         BuildWorkshopPanel();
         BuildDiplomacyPanel();
+        BuildPowerPanel();
 
         if (arguments.Contains("--save-smoke"))
         {
@@ -109,12 +113,14 @@ public partial class Main : Node2D
         _captureWorkshop = arguments.Contains("--capture-workshop");
         _captureDiplomacy = arguments.Contains("--capture-diplomacy");
         _captureDiplomacyAi = arguments.Contains("--capture-diplomacy-ai");
+        _capturePower = arguments.Contains("--capture-power");
         _captureVictory = arguments.Contains("--capture-victory");
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
                   _captureWorkshop ||
                   _captureDiplomacy ||
                   _captureDiplomacyAi ||
+                  _capturePower ||
                   _captureVictory;
         _captureRequested = _paused;
         _capturePath = _captureEditor
@@ -125,9 +131,11 @@ public partial class Main : Node2D
                     ? "res://screenshots/m0-diplomacy-ai.png"
                     : _captureDiplomacy
                         ? "res://screenshots/m0-diplomacy.png"
-                        : _captureVictory
-                            ? "res://screenshots/m0-victory.png"
-                            : "res://screenshots/m0-combat.png";
+                        : _capturePower
+                            ? "res://screenshots/m0-power.png"
+                            : _captureVictory
+                                ? "res://screenshots/m0-victory.png"
+                                : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -176,6 +184,18 @@ public partial class Main : Node2D
                 $"NAP {(napAccepted ? "accepted" : "rejected")}",
                 false);
             _status = "diplomacy AI · paused";
+        }
+        else if (_capturePower)
+        {
+            OpenPower();
+            var frontier = _world.Regions["frontier"];
+            var stock = frontier.GetEnergy("A");
+            frontier.TryConsumeEnergy("A", stock);
+            RefreshPower();
+            _power.SetStatus(
+                "frontier grid drained · local buffers still active",
+                false);
+            _status = "power diagnostics · paused";
         }
         else if (_captureVictory)
         {
@@ -266,6 +286,13 @@ public partial class Main : Node2D
             return;
         }
 
+        if (key.Keycode == Key.F4)
+        {
+            TogglePower();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode == Key.F1)
         {
             ToggleProgramEditor();
@@ -287,7 +314,8 @@ public partial class Main : Node2D
             key.Echo ||
             _editorLayer.Visible ||
             _workshopLayer.Visible ||
-            _diplomacyLayer.Visible)
+            _diplomacyLayer.Visible ||
+            _powerLayer.Visible)
         {
             return;
         }
@@ -394,6 +422,78 @@ public partial class Main : Node2D
         RefreshDiplomacy();
     }
 
+    private void BuildPowerPanel()
+    {
+        _powerLayer = new CanvasLayer { Layer = 17, Visible = false };
+        AddChild(_powerLayer);
+
+        var dimmer = new ColorRect { Color = new Color(0, 0, 0, 0.55f) };
+        dimmer.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _powerLayer.AddChild(dimmer);
+
+        _power = new PowerPanel();
+        _power.CloseRequested += ClosePower;
+        _powerLayer.AddChild(_power);
+        RefreshPower();
+    }
+
+    private void TogglePower()
+    {
+        if (_powerLayer.Visible)
+        {
+            ClosePower();
+        }
+        else
+        {
+            OpenPower();
+        }
+    }
+
+    private void OpenPower()
+    {
+        if (_editorLayer.Visible)
+        {
+            CloseProgramEditor();
+        }
+
+        if (_workshopLayer.Visible)
+        {
+            CloseWorkshop();
+        }
+
+        if (_diplomacyLayer.Visible)
+        {
+            CloseDiplomacy();
+        }
+
+        _powerLayer.Visible = true;
+        RefreshPower();
+        _paused = true;
+        _status = "power grid · paused";
+        QueueRedraw();
+    }
+
+    private void ClosePower()
+    {
+        _powerLayer.Visible = false;
+        _paused = _captureRequested;
+        _status = _paused ? "capture" : "running";
+        QueueRedraw();
+    }
+
+    private void RefreshPower()
+    {
+        _power.Refresh(_world, "A");
+    }
+
+    private void RefreshPowerIfReady()
+    {
+        if (_power is not null)
+        {
+            RefreshPower();
+        }
+    }
+
     private void ToggleDiplomacy()
     {
         if (_diplomacyLayer.Visible)
@@ -416,6 +516,11 @@ public partial class Main : Node2D
         if (_workshopLayer.Visible)
         {
             CloseWorkshop();
+        }
+
+        if (_powerLayer.Visible)
+        {
+            ClosePower();
         }
 
         _diplomacyLayer.Visible = true;
@@ -584,6 +689,11 @@ public partial class Main : Node2D
             CloseDiplomacy();
         }
 
+        if (_powerLayer.Visible)
+        {
+            ClosePower();
+        }
+
         _workshopLayer.Visible = true;
         _workshop.Refresh(_world);
         _paused = true;
@@ -720,6 +830,11 @@ public partial class Main : Node2D
         if (_diplomacyLayer.Visible)
         {
             CloseDiplomacy();
+        }
+
+        if (_powerLayer.Visible)
+        {
+            ClosePower();
         }
 
         _editorLayer.Visible = true;
@@ -977,6 +1092,7 @@ public partial class Main : Node2D
                 _editor.Source = _deployedSourceA;
                 _workshop?.Refresh(_world);
                 RefreshDiplomacyIfReady();
+                RefreshPowerIfReady();
 
                 _status = $"loaded tick {_world.Tick} · A v{_slotA.Version}";
             }
@@ -1019,6 +1135,7 @@ public partial class Main : Node2D
 
         PreRunToCombat();
         RefreshDiplomacyIfReady();
+        RefreshPowerIfReady();
     }
 
     private void PreRunToCombat()
@@ -1496,7 +1613,7 @@ public partial class Main : Node2D
             new Vector2(24, 716),
             $"OPPONENT {_opponent.Manifest.PackageId} " +
             $"v{_opponent.Manifest.Version} · " +
-            "SPACE pause · N step · F1 program · F2 workshop · F3 diplomacy · F5 save · F9 load · F12 screenshot",
+            "SPACE pause · N step · F1 program · F2 workshop · F3 diplomacy · F4 power · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,
             11,
@@ -1532,7 +1649,9 @@ public partial class Main : Node2D
             or TradeRejected
             or TradeCancelled
             or TradeExpired
-            or TradeCountered;
+            or TradeCountered
+            or PowerFlowed
+            or PowerShortfall;
 
     private static Color EventColor(SimulationEvent simulationEvent) =>
         simulationEvent switch
@@ -1546,6 +1665,8 @@ public partial class Main : Node2D
             TreatyProposed or TreatyProposalExpired or TradeProposed or TradeCountered =>
                 new Color(0.75f, 0.66f, 0.40f),
             TradeCancelled or TradeExpired => Muted,
+            PowerFlowed => Cyan,
+            PowerShortfall => Red,
             _ => Text,
         };
 
@@ -1604,6 +1725,13 @@ public partial class Main : Node2D
                 $"{countered.NewTradeOfferId} countered by {countered.CivilizationId} " +
                 $"R{countered.Round} give M{countered.GiveMaterial}/E{countered.GiveEnergy} → " +
                 $"want M{countered.WantMaterial}/E{countered.WantEnergy}",
+            PowerFlowed flowed =>
+                $"t{flowed.Tick,4}  power {flowed.CivilizationId} " +
+                $"{flowed.FromRegionId} → {flowed.ToRegionId} +{flowed.Amount}E",
+            PowerShortfall shortfall =>
+                $"t{shortfall.Tick,4}  {shortfall.CivilizationId} power shortfall " +
+                $"{shortfall.EntityId} in {shortfall.RegionId}: need {shortfall.Requested}E, " +
+                $"have {shortfall.Available}E ({shortfall.Source})",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 

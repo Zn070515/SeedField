@@ -50,6 +50,8 @@ public sealed class SimulationStatistics
     public long TradeMaterialSettledTotal { get; internal set; }
 
     public long TradeEnergySettledTotal { get; internal set; }
+
+    public long EnergyFlowedTotal { get; internal set; }
 }
 
 /// <summary>

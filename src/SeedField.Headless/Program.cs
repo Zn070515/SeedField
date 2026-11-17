@@ -67,6 +67,11 @@ internal static class Program
             return RunDiplomacyNegotiationDemo();
         }
 
+        if (args.Contains("--power-grid"))
+        {
+            return RunPowerGridDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -650,6 +655,52 @@ internal static class Program
             $"proactiveTrade={proactiveTrade} tradeActive={tradeActive} " +
             $"proactiveOffer={proactiveOffer} rounds={counterRounds} " +
             $"counterAccepted={counterAccepted} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static int RunPowerGridDemo()
+    {
+        var flowWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddRegion("r2", 10_000, 10_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 1, powerPerTick: 100)
+            .AddLink("l12", "r1", "r2", latencyTicks: 1, powerPerTick: 100)
+            .Build();
+        flowWorld.Regions["r0"].AddEnergy("A", 90);
+        new SimulationEngine(flowWorld).Step(Array.Empty<Intent>());
+
+        var balanced =
+            flowWorld.Regions["r0"].GetEnergy("A") == 30 &&
+            flowWorld.Regions["r1"].GetEnergy("A") == 30 &&
+            flowWorld.Regions["r2"].GetEnergy("A") == 30 &&
+            flowWorld.Statistics.EnergyFlowedTotal == 60;
+        var flowDiagnostics = PowerGridDiagnosticsBuilder.Build(flowWorld, "A");
+
+        var blackoutWorld = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddRegion("r1", 10_000, 10_000)
+            .AddLink("l01", "r0", "r1", latencyTicks: 1, powerPerTick: 100)
+            .AddEntity(EnergyNode(1, "r0", 0))
+            .Build();
+        var blackoutDiagnostics = PowerGridDiagnosticsBuilder.Build(blackoutWorld, "A");
+        var blackout = blackoutDiagnostics.Regions.All(region => region.IsBlackedOut);
+        var shortfallStep = new SimulationEngine(blackoutWorld).Step(new Intent[]
+        {
+            new DrawEnergyIntent(new EntityId(1), 10),
+        });
+        var shortfall = shortfallStep.Events
+            .OfType<PowerShortfall>()
+            .Any(item => item.Source == "grid");
+
+        var ok = balanced && blackout && shortfall;
+        Console.WriteLine(
+            $"POWER_GRID balanced={balanced} flowed={flowWorld.Statistics.EnergyFlowedTotal} " +
+            $"grid={flowDiagnostics.TotalGridEnergy} " +
+            $"regions={flowDiagnostics.Regions.Count} " +
+            $"components={PowerGridTopology.BuildComponents(flowWorld).Count} " +
+            $"blackout={blackout} shortfall={shortfall} ok={ok}");
 
         return ok ? 0 : 1;
     }

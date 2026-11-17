@@ -107,7 +107,8 @@ public sealed record LinkSaveData(
     int LatencyTicks,
     int MessagesPerTick,
     int MaterialPerTick = 0,
-    int EnergyPerTick = 0);
+    int EnergyPerTick = 0,
+    int PowerPerTick = 0);
 
 public sealed record EnergyShipmentSaveData(
     long Id,
@@ -256,7 +257,8 @@ public sealed record StatisticsSaveData(
     long ConstructionsCompletedTotal = 0,
     long MaterialRefundedTotal = 0,
     long TradeMaterialSettledTotal = 0,
-    long TradeEnergySettledTotal = 0);
+    long TradeEnergySettledTotal = 0,
+    long EnergyFlowedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

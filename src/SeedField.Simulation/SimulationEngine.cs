@@ -137,6 +137,7 @@ public sealed class SimulationEngine
         var energyLinkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
 
         GeneratePower();
+        FlowPower(tick, events);
 
         if (intents is { Count: > 0 })
         {
@@ -1467,6 +1468,271 @@ public sealed class SimulationEngine
         }
     }
 
+    private void FlowPower(long tick, List<SimulationEvent> events)
+    {
+        if (World.Links.Values.All(link => link.PowerPerTick <= 0))
+        {
+            return;
+        }
+
+        var components = PowerGridTopology.BuildComponents(World);
+        var civilizations = CollectPowerCivilizations();
+        var linkUsage = new Dictionary<string, int>(StringComparer.Ordinal);
+        var flowAmounts =
+            new Dictionary<(string Civ, string From, string To), long>();
+
+        foreach (var civilizationId in civilizations)
+        {
+            foreach (var component in components)
+            {
+                if (component.Count < 2)
+                {
+                    continue;
+                }
+
+                FlowPowerComponent(
+                    civilizationId,
+                    component,
+                    linkUsage,
+                    flowAmounts);
+            }
+        }
+
+        foreach (var pair in flowAmounts
+                     .OrderBy(pair => pair.Key.Civ, StringComparer.Ordinal)
+                     .ThenBy(pair => pair.Key.From, StringComparer.Ordinal)
+                     .ThenBy(pair => pair.Key.To, StringComparer.Ordinal))
+        {
+            events.Add(new PowerFlowed(
+                tick,
+                pair.Key.Civ,
+                pair.Key.From,
+                pair.Key.To,
+                pair.Value));
+        }
+    }
+
+    private void FlowPowerComponent(
+        string civilizationId,
+        IReadOnlyList<string> component,
+        Dictionary<string, int> linkUsage,
+        Dictionary<(string Civ, string From, string To), long> flowAmounts)
+    {
+        var total = component.Sum(regionId =>
+            World.Regions[regionId].GetEnergy(civilizationId));
+        if (total <= 0)
+        {
+            return;
+        }
+
+        var target = total / component.Count;
+        var remainder = (int)(total % component.Count);
+        var desired = new Dictionary<string, long>(StringComparer.Ordinal);
+        var ordered = component
+            .OrderBy(regionId =>
+                World.Regions[regionId].GetEnergy(civilizationId))
+            .ThenBy(regionId => regionId, StringComparer.Ordinal)
+            .ToList();
+        for (var index = 0; index < ordered.Count; index++)
+        {
+            desired[ordered[index]] = target + (index < remainder ? 1 : 0);
+        }
+
+        var componentSet = new HashSet<string>(component, StringComparer.Ordinal);
+        var distances = ComputePowerDistances(
+            civilizationId,
+            componentSet,
+            desired,
+            linkUsage);
+        var deficits = component
+            .Where(regionId =>
+                World.Regions[regionId].GetEnergy(civilizationId) < desired[regionId])
+            .OrderBy(regionId =>
+                distances.TryGetValue(regionId, out var distance)
+                    ? distance
+                    : int.MaxValue)
+            .ThenBy(regionId => regionId, StringComparer.Ordinal)
+            .ToList();
+
+        foreach (var deficitRegionId in deficits)
+        {
+            while (true)
+            {
+                var deficit = desired[deficitRegionId] -
+                              World.Regions[deficitRegionId].GetEnergy(civilizationId);
+                if (deficit <= 0)
+                {
+                    break;
+                }
+
+                var path = FindPowerPath(
+                    civilizationId,
+                    deficitRegionId,
+                    componentSet,
+                    desired,
+                    linkUsage);
+                if (path is null)
+                {
+                    break;
+                }
+
+                var sourceEnergy =
+                    World.Regions[path.SourceRegionId].GetEnergy(civilizationId);
+                var sourceSurplus = sourceEnergy - desired[path.SourceRegionId];
+                var pathCapacity = path.Links.Min(link =>
+                    link.PowerPerTick - linkUsage.GetValueOrDefault(link.Id));
+                var amount = Math.Min(
+                    Math.Min(sourceSurplus, deficit),
+                    pathCapacity);
+                if (amount <= 0)
+                {
+                    break;
+                }
+
+                if (!World.Regions[path.SourceRegionId]
+                        .TryConsumeEnergy(civilizationId, amount))
+                {
+                    break;
+                }
+
+                World.Regions[deficitRegionId].AddEnergy(civilizationId, amount);
+                World.Statistics.EnergyFlowedTotal += amount;
+
+                foreach (var link in path.Links)
+                {
+                    linkUsage[link.Id] =
+                        linkUsage.GetValueOrDefault(link.Id) + (int)amount;
+                }
+
+                var key = (civilizationId, path.SourceRegionId, deficitRegionId);
+                flowAmounts[key] = flowAmounts.GetValueOrDefault(key) + amount;
+            }
+        }
+    }
+
+    private Dictionary<string, int> ComputePowerDistances(
+        string civilizationId,
+        HashSet<string> componentSet,
+        IReadOnlyDictionary<string, long> desired,
+        Dictionary<string, int> linkUsage)
+    {
+        var distances = new Dictionary<string, int>(StringComparer.Ordinal);
+        var pending = new Queue<string>();
+
+        foreach (var regionId in componentSet.OrderBy(regionId => regionId, StringComparer.Ordinal))
+        {
+            if (World.Regions[regionId].GetEnergy(civilizationId) > desired[regionId])
+            {
+                distances[regionId] = 0;
+                pending.Enqueue(regionId);
+            }
+        }
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Dequeue();
+            var nextDistance = distances[current] + 1;
+
+            foreach (var link in PowerLinks(current, componentSet, linkUsage))
+            {
+                var next = link.Other(current);
+                if (distances.ContainsKey(next))
+                {
+                    continue;
+                }
+
+                distances[next] = nextDistance;
+                pending.Enqueue(next);
+            }
+        }
+
+        return distances;
+    }
+
+    private PowerPath? FindPowerPath(
+        string civilizationId,
+        string deficitRegionId,
+        HashSet<string> componentSet,
+        IReadOnlyDictionary<string, long> desired,
+        Dictionary<string, int> linkUsage)
+    {
+        var parents = new Dictionary<string, (string Previous, RegionLink Link)>(
+            StringComparer.Ordinal);
+        var visited = new HashSet<string>(StringComparer.Ordinal) { deficitRegionId };
+        var pending = new Queue<string>();
+        pending.Enqueue(deficitRegionId);
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Dequeue();
+
+            if (!string.Equals(current, deficitRegionId, StringComparison.Ordinal) &&
+                World.Regions[current].GetEnergy(civilizationId) > desired[current])
+            {
+                var links = new List<RegionLink>();
+                var node = current;
+                while (parents.TryGetValue(node, out var parent))
+                {
+                    links.Add(parent.Link);
+                    node = parent.Previous;
+                }
+
+                links.Reverse();
+                return new PowerPath(current, links);
+            }
+
+            foreach (var link in PowerLinks(current, componentSet, linkUsage))
+            {
+                var next = link.Other(current);
+                if (!visited.Add(next))
+                {
+                    continue;
+                }
+
+                parents[next] = (current, link);
+                pending.Enqueue(next);
+            }
+        }
+
+        return null;
+    }
+
+    private IEnumerable<RegionLink> PowerLinks(
+        string regionId,
+        HashSet<string> componentSet,
+        Dictionary<string, int> linkUsage) =>
+        World.Links.Values
+            .Where(link =>
+                link.PowerPerTick > 0 &&
+                link.Connects(regionId) &&
+                componentSet.Contains(link.Other(regionId)) &&
+                link.PowerPerTick - linkUsage.GetValueOrDefault(link.Id) > 0)
+            .OrderBy(link => link.Id, StringComparer.Ordinal)
+            .ThenBy(link => link.Other(regionId), StringComparer.Ordinal);
+
+    private IReadOnlyList<string> CollectPowerCivilizations()
+    {
+        var civilizations = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var region in World.Regions.Values)
+        {
+            foreach (var civilizationId in region.Stocks.Keys)
+            {
+                civilizations.Add(civilizationId);
+            }
+
+            foreach (var entity in region.Entities.Values)
+            {
+                civilizations.Add(entity.CivilizationId);
+            }
+        }
+
+        return civilizations.ToList();
+    }
+
+    private sealed record PowerPath(
+        string SourceRegionId,
+        IReadOnlyList<RegionLink> Links);
+
     private void ProcessMove(
         EntityState entity,
         RegionState region,
@@ -1498,6 +1764,7 @@ public sealed class SimulationEngine
         var cost = entity.Drive.EnergyCostPerMove;
         if (entity.Energy < cost)
         {
+            AddPowerShortfall(entity, region.Id, cost, entity.Energy, "local", tick, events);
             Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to move.", tick, events, results);
             return;
         }
@@ -1578,6 +1845,7 @@ public sealed class SimulationEngine
         var cost = entity.Weapon.EnergyCost;
         if (entity.Energy < cost)
         {
+            AddPowerShortfall(entity, region.Id, cost, entity.Energy, "local", tick, events);
             Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to fire.", tick, events, results);
             return;
         }
@@ -1753,6 +2021,7 @@ public sealed class SimulationEngine
         var cost = entity.Comm.EnergyCostPerMessage;
         if (entity.Energy < cost)
         {
+            AddPowerShortfall(entity, entity.RegionId, cost, entity.Energy, "local", tick, events);
             Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy to send.", tick, events, results);
             return;
         }
@@ -2014,6 +2283,14 @@ public sealed class SimulationEngine
 
         if (entity.Energy < intent.Amount)
         {
+            AddPowerShortfall(
+                entity,
+                sourceRegion.Id,
+                intent.Amount,
+                entity.Energy,
+                "local",
+                tick,
+                events);
             Reject(intent, SimulationErrorCode.NoEnergy, "Not enough local energy.", tick, events, results);
             return;
         }
@@ -2132,6 +2409,14 @@ public sealed class SimulationEngine
 
         if (!region.TryConsumeEnergy(entity.CivilizationId, intent.Amount))
         {
+            AddPowerShortfall(
+                entity,
+                region.Id,
+                intent.Amount,
+                region.GetEnergy(entity.CivilizationId),
+                "grid",
+                tick,
+                events);
             Reject(
                 intent,
                 SimulationErrorCode.NoEnergy,
@@ -2608,6 +2893,23 @@ public sealed class SimulationEngine
 
     private static BootstrapResult BootstrapFailure(SimulationErrorCode code, string message) =>
         new(false, null, code, message, null);
+
+    private static void AddPowerShortfall(
+        EntityState entity,
+        string regionId,
+        long requested,
+        long available,
+        string source,
+        long tick,
+        List<SimulationEvent> events) =>
+        events.Add(new PowerShortfall(
+            tick,
+            entity.CivilizationId,
+            regionId,
+            entity.Id,
+            requested,
+            available,
+            source));
 
     private static void Accept(Intent intent, string message, List<IntentResult> results) =>
         results.Add(new IntentResult(intent, true, SimulationErrorCode.None, message));
