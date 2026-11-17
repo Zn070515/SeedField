@@ -60,7 +60,7 @@ assets/
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "assetId": "seed_core.oblique.v0",
   "kind": "style-test",
   "route": "oblique",
@@ -74,7 +74,17 @@ assets/
     {
       "path": "style_oblique/seed_core_oblique_000.png",
       "sha256": "...",
-      "alphaBBox": [62, 138, 450, 431]
+      "alphaBBox": [62, 138, 450, 431],
+      "normal": {
+        "path": "style_oblique/seed_core_oblique_000_normal.png",
+        "sha256": "...",
+        "alphaBBox": [62, 138, 450, 431]
+      },
+      "emissive": {
+        "path": "style_oblique/seed_core_oblique_000_emissive.png",
+        "sha256": "...",
+        "alphaBBox": [62, 138, 450, 431]
+      }
     }
   ],
   "states": ["idle", "regenerating", "bootstrap", "besieged"],
@@ -83,7 +93,8 @@ assets/
 ```
 
 `pivot` 是归一化锚点：斜俯视取正面帧 alpha 底边中心，严格俯视取画布中心。
-`alphaBBox`、尺寸、方向帧与状态必须和实际导出一致，由
+`state` 用于核心四态；`normal`/`emissive` 为可选正面帧 pass。
+`alphaBBox`、尺寸、方向帧、pivot 与 pass 哈希必须和实际导出一致，由
 `ArtAssetTests` 解码 PNG 校验；不要让 Agent 随机指定参考图片像素当实际资产坐标。
 清单由 `python tools/build_art_manifest.py` 生成，不手工抄哈希。
 

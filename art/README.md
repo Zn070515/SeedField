@@ -1,21 +1,22 @@
 # SeedField Art Vertical Slice (v0)
 
-> 状态：`[PROPOSED]` Gate 2 进行中。Gate 1 已选 **A 斜俯视 35°** 作为主路线，
+> 状态：`[PROPOSED]` Gate 2 样片完成。Gate 1 已选 **A 斜俯视 35°**；
 > B 严格俯视保留为对照证据；仍不是正式美术验收。
 > 不改 SimulationCore / 存档 / Jint / 离线包安全契约。
-> 工作分支：`art/visual-slice`；决策见 ADR-0024。
+> 工作分支：`art/visual-slice`；决策见 ADR-0024、ADR-0025。
 
 ## 1. 本轮交付
 
 | 样片 | 内容 |
 |---|---|
-| Blender 资产 | 电力设施、种子核心、模块工体；斜俯视 35° 与严格俯视 90° |
-| 真实 Godot 场景 | `Scenes/StyleTest.tscn`：世界空间地形 + 真实 Camera2D + 默认/选中/战术/调试层 |
-| 截图 | `game/SeedField.Game/screenshots/art-{route}-{zoom}-{overlay}.png` |
-| 对比表 | `art/renders/camera-ab-layers.png`、`camera-ab-zoom.png` |
-| 概念参考 | `art/reference/concepts/`（Flux.1-dev；只作参考，不是正式资产） |
-| 资产清单 | `game/SeedField.Game/Art/manifest.json`（schemaVersion 2）+ `ArtAssetTests` 门禁 |
-| 清单生成 | `python tools/build_art_manifest.py`（哈希/alpha 包围盒/pivot） |
+| Blender 资产 | 电力、核心四态、工体空插槽/钻臂/传感；A 斜俯视 + B 对照 |
+| 方向 | 工体 8 方向；16 方向探针只用于 4/8/16 对比 |
+| 真实 Godot | `StyleTest` 世界空间相机；真实 `Main` 精灵/核心/战术/调试层 |
+| 截图 | `art-{route}-{zoom}-{overlay}.png`、`art-main-*.png`、`art-core-*.png` |
+| 对比表 | `camera-ab-layers/zoom`、`direction-4-8-16`、`core-states`、`module-swap`、`mask-sheet` |
+| 概念参考 | `art/reference/concepts/`（Flux.1-dev；只作参考） |
+| 资产清单 | `Art/manifest.json`（schemaVersion 3）+ `ArtAssetTests` |
+| 清单生成 | `python tools/build_art_manifest.py`（哈希/alpha/pivot/pass） |
 
 ## 2. A/B 结果与路线选择
 
@@ -28,13 +29,29 @@
 | 单位旋转 | 需要多方向图集 | 单图旋转 |
 | 本机渲染 | 10 帧约 8s（CPU Cycles 64spp） | 3 帧约 4s |
 
-**决定（ADR-0024）**：Gate 2 以 A 为主。理由是玩家长期在建/升级/装配设备，
-需要看见机械立面、模块和材质；B 的电力/核心容易都变成同心圆。
-A 的方向帧成本真实存在，移动单位先验证 4/8/16 方向再锁定图集。
+**决定（ADR-0024/0025）**：Gate 2 以 A 为主；移动单位锁定 **8 方向**。
+16 方向探针用于比较后不量产：4 方向 422 KB、8 方向 882 KB、16 方向 1795 KB
+（512px 子集），8 方向在旋转连续性与体积之间更合适。
 
 **未测**：真实帧时/显存/最低配置；渲染耗时只证明管线可跑，不代表美术工时。
 
-## 3. Gate 2 世界空间改动
+## 3. Gate 2 新增资产与状态
+
+| 资产 | 内容 |
+|---|---|
+| `worker_frame` | 空模块插槽，8 方向 |
+| `worker_frame_drill` | 挖掘臂模块，8 方向 |
+| `worker_frame_sensor` | 桅杆/传感阵列，8 方向 |
+| `seed_core` | idle，2 方向 |
+| `seed_core_regenerating/bootstrap/besieged` | 各 1 方向，共享 pivot/footprint |
+| `direction_probe` | drill 工体 16 方向，只用于对比 |
+
+- 模块切换走现有 `UpgradeCommand`：scout v1（sensor）→ Mk3（sensor+weapon），
+  Main 精灵从 sensor 变为 drill；`--module-swap-smoke` 断言。
+- 核心四态由 `CoreVisualStateRules` 分类：Besieged > Bootstrap > Regenerating > Idle。
+- 默认 PvE 场景真实处于 besieged；idle/regenerating/bootstrap 截图使用 peaceful 场景。
+
+## 4. Gate 2 世界空间改动
 
 - `StyleTest` 不再用屏幕空间 `_scale` 缩放贴图；世界固定 2400×1500，
   地形、设施、道路、网络、选中环都在世界坐标。
@@ -50,7 +67,7 @@ A 的方向帧成本真实存在，移动单位先验证 4/8/16 方向再锁定�
 - 模块工体：不对称履带机架、前右挖掘臂、后左传感桅杆、背部空模块插槽。
 - 电力塔：保持用户认可的 v2 造型。
 
-## 4. 复现命令
+## 5. 复现命令
 
 ```powershell
 # Blender A/B 资产
@@ -68,21 +85,36 @@ godot --headless --path game/SeedField.Game --import
 # 真实 Godot 截图
 godot --path game/SeedField.Game res://Scenes/StyleTest.tscn -- --route=oblique --zoom=mid --overlay=default --capture-art
 godot --path game/SeedField.Game res://Scenes/StyleTest.tscn -- --route=topdown --zoom=near --overlay=tactical --capture-art
+
+# Main 视觉层 + 核心/模块 smoke
+godot --path game/SeedField.Game -- --capture-visual
+godot --path game/SeedField.Game -- --capture-tactical
+godot --path game/SeedField.Game -- --capture-debug
+godot --path game/SeedField.Game -- --module-swap-smoke
+godot --path game/SeedField.Game -- --core-state-smoke
+godot --path game/SeedField.Game -- --core-state=bootstrap
+godot --path game/SeedField.Game -- --classic-visuals --capture
+
+# mask / 性能
+godot --path game/SeedField.Game res://Scenes/VisualBench.tscn -- --devices=4 --masks=on --seconds=3 --shot=art-mask-normal.png
+godot --path game/SeedField.Game res://Scenes/VisualBench.tscn -- --devices=100 --masks=on --seconds=3
 ```
 
 参数：`--route=oblique|topdown`、`--zoom=far|mid|near`、`--overlay=default|selected|tactical|debug`。
 
-## 5. 资产约定与门禁
+## 6. 资产约定与门禁
 
 - 源：`art/blender/*.py`；生成：`art/generated/`（gitignore）。
 - 运行时：`game/SeedField.Game/Art/style_{route}/`；清单 `Art/manifest.json`。
 - 所有运行时 PNG：512×512、RGBA/8bit、SHA-256 与清单一致。
+- schemaVersion 3 增加 `state` 与逐帧 `normal`/`emissive` pass。
 - `ArtAssetTests` 解码 PNG，检查非空 alpha、4%–80% 覆盖率、四周留边、
-  `alphaBBox`、斜俯视 pivot 对齐 alpha 底边、俯视 pivot 居中、方向帧完整。
+  `alphaBBox`、斜俯视 pivot 对齐 alpha 底边、俯视 pivot 居中、方向帧完整、
+  core 四态共享 pivot/footprint、pass 哈希/尺寸/alphaBBox。
 - `status` 固定 `style-test-not-final`；不得当正式美术。
 - `.gitignore` 覆盖 `__pycache__/`、`*.pyc`、`*.pyo`；Python 缓存不得入库。
 
-## 6. Flux 概念参考与许可
+## 7. Flux 概念参考与许可
 
 本机 ComfyUI：`C:\Users\16275\AppData\Local\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI`
 实际 Python 环境：该目录下 `.venv`（torch 2.12.1+cu130；Desktop 的 `standalone-env` 不是运行环境）。
@@ -94,7 +126,7 @@ godot --path game/SeedField.Game res://Scenes/StyleTest.tscn -- --route=topdown 
   需先核实 Black Forest Labs 的具体授权条件并记录在 `docs/art/SOURCE.md`。
 - 尚未安装 LayerDiffuse/3D-Pack；当前 Flux 出图不带透明 alpha，也不需要。
 
-## 7. 可借用的工具/技能
+## 8. 可借用的工具/技能
 
 ### 已在本机可用/免费
 - Blender 5.2 Cycles + 本仓库程序化脚本（可复现、无插件依赖）。
@@ -115,11 +147,10 @@ godot --path game/SeedField.Game res://Scenes/StyleTest.tscn -- --route=topdown 
 
 当前没有购买任何技能；如需其一，告诉我，我会先确认价格/余额再加载。
 
-## 8. 下一步 Gate
+## 9. 下一步 Gate
 
-1. 移动单位方向数验证：先做一台明显不对称的战构体 4/8/16 方向对比，再锁图集。
-2. 种子核心 `idle/regenerating/bootstrap/besieged` 四态；断电、围困来自真实状态。
-3. 模块插槽可见：机架 + 至少两种模块，切换后剪影明显变化。
-4. 把 `EntityVisual`/`TacticalOverlay` 接进真实 `Main`；默认关闭范围圈/ID，
-   保留 F 键调试层；事件只回放，不写状态。
-5. 法线/发光 mask 与 `CanvasTexture` 实机验证；记录 1/10/50/100 设备 FPS。
+1. 正式量产前补齐工体 8 方向法线/发光，而不是只做正面帧。
+2. 生产构建仍不启用 Main 2D 灯光；先在目标 GPU/最低配置上复测。
+3. 接入真实事件动画：射击、断电、围困、核心恢复、模块升级的逐帧回放。
+4. 工坊/程序编辑器的大预览使用真实模块组合，而不是单张概念图。
+5. 记录目标硬件 1/10/50/100 设备 FPS；VisualBench 开发机数据不能当最低配置。

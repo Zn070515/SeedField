@@ -2,6 +2,8 @@
 
 关联：`docs/design-bible/v1.9-rev2/05-PRESENTATION/ART_DIRECTION_AND_VFX.md`、
 `docs/art/VISUAL_LANGUAGE_V0_1.md`、`docs/art/VERTICAL_SLICE_EXECUTION.md`。
+Gate 2 五项收口见 `2026-11-17-art-gate2-complete.md` 与
+`2026-11-17-art-gate2-masks-benchmark.md`。
 
 ## 1. 范围
 
