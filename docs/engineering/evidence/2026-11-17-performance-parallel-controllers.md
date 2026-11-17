@@ -6,6 +6,33 @@
 - 构建：`dotnet build SeedField.slnx -c Release`
 - 运行：`dotnet run --project src/SeedField.Headless -c Release --no-build`
 
+## 0. 第二轮结果（Server GC、默认 DOF、预编译脚本）
+
+在 PR #7 的并行批处理之上继续实验，全部保持脚本调用频率与 Intent 顺序不变：
+
+| 场景 | PR #7 | 本轮 | 提升 |
+|---|---:|---:|---:|
+| 100 台 | 7.73 ms | **4.12 ms** | 1.9× |
+| 1000 台 | 118.42 ms | **60.12 ms** | 2.0× |
+| 1000 台启动 | ~205 ms | **~127 ms** | 1.6× |
+| 1000 台启动内存 | ~77 MiB | **~50 MiB** | -35% |
+
+- **Server GC**：Headless 通过 csproj 启用；Godot 宿主忽略项目 runtimeconfig，
+  需 `DOTNET_gcServer=1`（smoke workflow 已设置，`gcServer=True` 已验证）。
+- **默认 DOF**：`Environment.ProcessorCount`；server GC 下 32 线程在 1000 台
+  优于 16 线程，100 台也从 ~5.9 降到 ~4.1 ms。
+- **预编译脚本**：`Engine.PrepareScript` 跨引擎共享，1000 台启动 205→127 ms，
+  内存 77→50 MiB。
+- 1000 台峰值工作集约 335 MiB（server GC 的代价；workstation 约 250 MiB）。
+
+### 未采用的实验
+
+- 直接读取 JS 返回值、跳过 `JSON.stringify` + `JsonDocument.Parse`：输出只有
+  1–2 个 intent，收益小于复杂度与契约风险。
+- 手写观察 JSON 序列化：序列化已随 decide 并行，wall-time 占比低；
+  自定义转义/字段顺序的风险高于收益。
+- 共享观察 DTO 快照：观测仅占 1000 台的约 7 ms，收益有限，暂不做。
+
 ## 1. 探针结论（仓库外，Jint 4.18.0）
 
 在 `%TEMP%` 的独立探针中复现 100 个独立 `Engine` 与真实观测尺寸：

@@ -77,25 +77,44 @@ ms/tick；1000 台约 180 ms/tick。分阶段计时显示瓶颈已从观测构�
 - 部署/编辑只在 Tick 之间由主线程执行，不与批处理重叠；
 - 脚本仍只收到 JSON 文本，worker 隔离路径不变。
 
+### 5. Server GC
+
+- `SeedField.Headless` 启用 `<ServerGarbageCollection>true</ServerGarbageCollection>`；
+- Godot 宿主使用自己的 runtimeconfig，项目属性不生效；启动时需设置
+  `DOTNET_gcServer=1`（`godot-smoke.yml` 已设置并验证 `gcServer=True`）；
+- Jint 每设备独立堆、分配密集，server GC 的并行回收把 1000 台从约 104 ms
+  降到约 60 ms；代价是 1000 台峰值工作集约 335 MiB（workstation 约 250 MiB）；
+- 默认并行度改为 `Environment.ProcessorCount`；在 server GC 下 32 线程于
+  1000 台明显快于 16 线程，`--parallel-dof` 仍可覆盖。
+
+### 6. 预编译脚本
+
+`JsController` 使用 `Engine.PrepareScript` 解析/分析一次控制器源码，
+`Prepared<Script>` 跨引擎共享（线程安全）；按源码缓存，超过 128 条时清空。
+1000 台控制器启动从约 205 ms 降到约 127 ms，峰值内存从约 77 MiB 降到
+约 50 MiB；每 Tick 行为不变。
+
 ## 验证
 
 - 顺序与并行执行同一脚本化战斗 20 Tick：事件序列与
   `WorldStateHasher` 哈希完全一致。
 - 批次输出顺序、单控制器故障隔离、并行观测与串行观测一致性均有测试。
-- 336+ 测试通过；黄金场景哈希不变。
+- 342+ 测试通过；黄金场景哈希不变。
 
-基准（Release，AMD Ryzen 9 9950X，32 逻辑核，DOF 16）：
+基准（Release，AMD Ryzen 9 9950X，32 逻辑核，默认 DOF = 逻辑核数）：
 
-| 场景 | 前 | 后 | 提升 |
+| 场景 | 前（ADR-0027） | 并行批次 | + Server GC/预编译 |
 |---|---:|---:|---:|
-| 100 台 | 33.96 ms | 7.46 ms | 4.6× |
-| 1000 台 | 180.36 ms | 103.71 ms | 1.7× |
+| 100 台 | 33.96 ms | 7.46 ms | **4.12 ms** |
+| 1000 台 | 180.36 ms | 103.71 ms | **60.12 ms** |
 
-100 台约 134 ticks/s，1000 台约 9.6 ticks/s；1000 台峰值工作集约 253 MiB。
+100 台约 240 ticks/s，1000 台约 16.6 ticks/s；1000 台峰值工作集约 335 MiB；
+1000 台控制器启动约 127 ms / 50 MiB。
 
 ## 后果
 
-- 控制器阶段会占用多个核心；默认 16 线程，可用 `--parallel-dof` 覆盖。
+- 控制器阶段会占用多个核心；默认 `Environment.ProcessorCount`，可用
+  `--parallel-dof` 覆盖。CI 门禁使用 100 台 `--budget-ms 40`。
 - 脚本若依赖真实墙钟或跨设备共享可变全局，本来就不满足确定性契约；并行不改变
   这一点，也不提供跨设备共享状态。
 - WorkerController 走独立进程/IPC，不进入此批处理；其隔离边界保持不变。
