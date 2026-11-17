@@ -44,6 +44,9 @@ dotnet test SeedField.slnx
 
 **CI 绿 ≠ 游戏可玩；未执行的测试不能标成通过。**
 
+分层测试（单元、黄金场景、不变量 fuzz、worker/包、Godot 冒烟）与结构门禁（篇幅、
+架构、ADR/链接、运行产物、测试质量）见 [`TESTING.md`](TESTING.md)。
+
 ## 4. 确定性
 
 - 仿真位置与结算使用整数；不使用浮点。

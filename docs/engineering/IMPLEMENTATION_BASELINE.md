@@ -367,6 +367,34 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 第三方对手包未导入 | 内置包 + Phase 1 worker/IPC/Job Object + Phase 2a 签名/同意/CPU/磁盘/fuzz 已可用；AppContainer/OS 网络文件拒绝/独立审查未完成 | 继续按 ADR-0020 的 12 项门禁推进 Phase 2b，未全绿前保持关闭 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
+## ADR 索引
+
+| ADR | 主题 |
+|---|---|
+| [ADR-0001](adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10 运行时目标 |
+| [ADR-0002](adr/ADR-0002-m0-headless-slice-assumptions.md) | M0 切片简化假设 |
+| [ADR-0003](adr/ADR-0003-prototype-economy-semantics.md) | 原型经济语义 |
+| [ADR-0004](adr/ADR-0004-region-activity-and-offscreen-simulation.md) | 区域活动与离屏仿真 |
+| [ADR-0005](adr/ADR-0005-cross-civilization-message-boundary.md) | 跨文明消息边界 |
+| [ADR-0006](adr/ADR-0006-stateless-message-acl.md) | 无状态消息 ACL |
+| [ADR-0007](adr/ADR-0007-treaty-and-trade-protocol.md) | 条约与贸易协议 |
+| [ADR-0008](adr/ADR-0008-opponent-diplomacy-responder.md) | 对手外交响应 |
+| [ADR-0009](adr/ADR-0009-proactive-and-counter-negotiation.md) | 主动提议与多轮反提议 |
+| [ADR-0010](adr/ADR-0010-power-flow-and-diagnostics.md) | 自动电力潮流与诊断 |
+| [ADR-0011](adr/ADR-0011-power-overflow-autodraw-latency-recovery.md) | 电力溢出、自动取电与恢复 |
+| [ADR-0012](adr/ADR-0012-grid-capacity-priority-loss-breaker.md) | 电网容量、优先级与断路器 |
+| [ADR-0013](adr/ADR-0013-power-preemption-breaker-maintenance.md) | 抢占式取电与断路器维护 |
+| [ADR-0014](adr/ADR-0014-deterministic-random-breaker-fault.md) | 确定性随机与随机故障 |
+| [ADR-0015](adr/ADR-0015-core-recovery-quota.md) | 核心区恢复配额 |
+| [ADR-0016](adr/ADR-0016-core-shell-anchors-and-siege.md) | 外壳锚点与围困 |
+| [ADR-0017](adr/ADR-0017-device-wrecks-and-salvage.md) | 设备残骸与回收 |
+| [ADR-0018](adr/ADR-0018-offline-ruin-snapshots.md) | 离线文明废墟快照 |
+| [ADR-0019](adr/ADR-0019-recovery-panel-and-core-maintenance.md) | 恢复面板与核心维护 |
+| [ADR-0020](adr/ADR-0020-offline-package-isolation-gate.md) | 离线包隔离门禁与威胁模型 |
+| [ADR-0021](adr/ADR-0021-worker-isolation-phase1.md) | 离线包隔离 Phase 1 |
+| [ADR-0022](adr/ADR-0022-package-trust-and-phase2-gates.md) | 签名包与 Phase 2a 门禁 |
+| [ADR-0023](adr/ADR-0023-test-strategy-and-structural-gates.md) | 测试分层、黄金场景与结构门禁 |
+
 ## 8. 下一步（按依赖顺序）
 
 1. 离线包隔离 Phase 2b：AppContainer/低完整性、OS 网络/文件拒绝、只读挂载、OS 磁盘配额、完整 fuzz/红队、发布签名密钥与独立安全审查（仍不开放导入）；废墟实体/占领/清理；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。

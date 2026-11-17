@@ -183,6 +183,14 @@ dotnet run --project src/SeedField.Headless -- --package-check <temp-package> --
 
 ---
 
+## Verification
+
+- `dotnet build SeedField.slnx` and `dotnet test SeedField.slnx` are green.
+- `--worker-opponent` still matches the in-process 600 Tick hash.
+- `--package-check` rejects missing consent and shows `EXECUTION_DISABLED`.
+- `ThirdPartyImportEnabled` remains `false`; PackageHost has no network/process API.
+- All `.cs`/`.md` files stay at or below 600 lines.
+
 ## Hard stop
 
 Do **not** set `ThirdPartyImportEnabled = true`. AppContainer, OS network/file denial,
