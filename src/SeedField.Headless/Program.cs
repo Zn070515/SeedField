@@ -18,63 +18,9 @@ internal static partial class Program
     private static int Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-startup",
-                out var startupDevices,
-                out var startupInvalid))
+        if (TryRunBenchmark(args, out var benchmarkExit))
         {
-            return startupInvalid ? 2 : RunStartupBenchmark(startupDevices);
-        }
-
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-observation",
-                out var observationDevices,
-                out var observationInvalid))
-        {
-            return observationInvalid ? 2 : RunObservationBenchmark(observationDevices);
-        }
-
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-serialize",
-                out var serializeDevices,
-                out var serializeInvalid))
-        {
-            return serializeInvalid ? 2 : RunSerializeBenchmark(serializeDevices);
-        }
-
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-jint",
-                out var jintDevices,
-                out var jintInvalid))
-        {
-            return jintInvalid ? 2 : RunJintBenchmark(jintDevices);
-        }
-
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-jint-parallel",
-                out var parallelDevices,
-                out var parallelInvalid))
-        {
-            var dof = ReadIntFlag(args, "--parallel-dof", 0);
-            var budget = ReadDoubleFlag(args, "--budget-ms", 0);
-            var ticks = ReadIntFlag(args, "--ticks", 10);
-            return parallelInvalid
-                ? 2
-                : RunParallelJintBenchmark(parallelDevices, dof, budget, ticks);
-        }
-
-        if (TryReadBenchmarkDevices(
-                args,
-                "--benchmark-jint-full",
-                out var jintFullDevices,
-                out var jintFullInvalid))
-        {
-            return jintFullInvalid ? 2 : RunJintBenchmark(jintFullDevices, compact: false);
+            return benchmarkExit;
         }
 
         if (args.Contains("--multi-region"))
