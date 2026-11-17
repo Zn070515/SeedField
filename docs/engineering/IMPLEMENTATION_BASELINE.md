@@ -394,6 +394,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0021](adr/ADR-0021-worker-isolation-phase1.md) | 离线包隔离 Phase 1 |
 | [ADR-0022](adr/ADR-0022-package-trust-and-phase2-gates.md) | 签名包与 Phase 2a 门禁 |
 | [ADR-0023](adr/ADR-0023-test-strategy-and-structural-gates.md) | 测试分层、黄金场景与结构门禁 |
+| [ADR-0027](adr/ADR-0027-spatial-observation-controller-view.md) | 空间索引、共享观测与控制器观测视图 |
 | [ADR-0024](adr/ADR-0024-art-camera-route-world-space.md) | 美术相机路线 A 与世界空间样片 |
 | [ADR-0025](adr/ADR-0025-art-gate2-direction-modules-masks.md) | 方向数、模块剪影、核心四态与 mask 验证 |
 
