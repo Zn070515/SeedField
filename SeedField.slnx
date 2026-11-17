@@ -10,6 +10,7 @@
     <Project Path="src/SeedField.Simulation/SeedField.Simulation.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/SeedField.Repository.Tests/SeedField.Repository.Tests.csproj" />
     <Project Path="tests/SeedField.Runtime.Js.Tests/SeedField.Runtime.Js.Tests.csproj" />
     <Project Path="tests/SeedField.Simulation.Tests/SeedField.Simulation.Tests.csproj" />
   </Folder>

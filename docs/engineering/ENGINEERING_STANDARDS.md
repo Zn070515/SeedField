@@ -79,7 +79,20 @@ dotnet test SeedField.slnx
 - tag 只从 `main` 打；发布前必须：全量测试、保存迁移、Godot 真实截图、导出模板验证、CHANGELOG 更新。
 - 发布产物必须可追溯到提交 SHA 与依赖版本。
 
-## 8. 评审清单
+## 8. 文件篇幅与自动 Lint
+
+- 单个 `.cs` 文件 ≤ **600 行**；单个 `.md` 文件 ≤ **600 行**。
+- 超限按职责拆分：仿真/存档等大类用 `partial class` 按领域分文件，测试按场景分组，
+  不按行数硬切。
+- 由 `tests/SeedField.Repository.Tests` 自动校验，`dotnet test SeedField.slnx` 即执行：
+  - C# / Markdown 行数上限；
+  - 所有项目目标框架为 `net10.0`；
+  - `SeedField.Simulation` 不得引用 Godot；
+  - `docs/engineering/adr/` 命名与编号唯一；
+  - 设计基线 `MANIFEST.json` 的文件清单、size、SHA-256 与实际文件一致。
+- 文档改动后运行 `python tools/refresh_design_manifest.py`，再跑测试确认清单同步。
+
+## 9. 评审清单
 
 - [ ] 没有第二套仿真/战斗/资源逻辑
 - [ ] 没有绕过 `Observation / Intent / Validation`
