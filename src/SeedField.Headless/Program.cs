@@ -102,6 +102,11 @@ internal static partial class Program
             return RunRecoveryQuotaDemo();
         }
 
+        if (args.Contains("--core-siege"))
+        {
+            return RunCoreSiegeDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 

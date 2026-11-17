@@ -92,7 +92,8 @@ public static partial class WorldSaveSerializer
                         ? null
                         : new StateModule(
                             entityData.State.ComputePerTick,
-                            entityData.State.StorageCapacity));
+                            entityData.State.StorageCapacity),
+                    entityData.IsCoreAnchor);
 
                 var entity = new EntityState(definition)
                 {
@@ -218,6 +219,10 @@ public static partial class WorldSaveSerializer
                 coreData.RecoveryStreak < 0 ||
                 coreData.LastRecoveryTick < -1 ||
                 coreData.RecoveryOverdraftCostPercent < 0 ||
+                coreData.AnchorTarget < 0 ||
+                coreData.AnchorRecoveryCostPercent < 0 ||
+                coreData.SiegeRecoveryCostPercent < 0 ||
+                coreData.SiegeQuotaPenalty < 0 ||
                 coreData.LastRecoveryTick > data.Tick ||
                 coreData.RecoveryWindowStartTick > data.Tick ||
                 (coreData.RecoveryWindowTicks > 0 &&
@@ -239,7 +244,10 @@ public static partial class WorldSaveSerializer
                 coreData.RecoveryQuotaPerWindow,
                 coreData.RecoveryCostGrowthPercent,
                 coreData.RecoveryStreakDecayTicks,
-                coreData.RecoveryOverdraftCostPercent);
+                coreData.RecoveryOverdraftCostPercent,
+                coreData.AnchorRecoveryCostPercent,
+                coreData.SiegeRecoveryCostPercent,
+                coreData.SiegeQuotaPenalty);
             config.Validate();
 
             var core = new SeedCoreState(
@@ -253,6 +261,7 @@ public static partial class WorldSaveSerializer
                 RecoveriesInWindow = coreData.RecoveriesInWindow,
                 RecoveryStreak = coreData.RecoveryStreak,
                 LastRecoveryTick = coreData.LastRecoveryTick,
+                AnchorTarget = coreData.AnchorTarget,
             };
 
             if (core.EnergyReserve < 0 ||
@@ -262,6 +271,10 @@ public static partial class WorldSaveSerializer
             {
                 throw Invalid("INVALID_CORE_RESERVE", "Core reserve is outside its cap.");
             }
+
+            core.AnchorTarget = Math.Max(
+                core.AnchorTarget,
+                CoreShellRules.CountAliveAnchors(world, core.CivilizationId));
 
             foreach (var productData in coreData.LatestProducts ?? Array.Empty<SeedCoreProductSaveData>())
             {

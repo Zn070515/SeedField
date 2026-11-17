@@ -115,10 +115,12 @@ public static class DeploymentService
             blueprint.Version,
             blueprint.ControllerProgramId,
             blueprint.Power,
-            blueprint.State);
+            blueprint.State,
+            blueprint.IsCoreAnchor);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
+        CoreShellRules.RegisterAnchor(world, entity);
         return entity;
     }
 
@@ -126,8 +128,12 @@ public static class DeploymentService
     /// Explicit upgrade. Existing health/energy are preserved and clamped to the new
     /// version's limits; position, id and civilization never change.
     /// </summary>
-    public static void Upgrade(EntityState entity, DeviceBlueprint blueprint)
+    public static void Upgrade(
+        WorldState world,
+        EntityState entity,
+        DeviceBlueprint blueprint)
     {
+        ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(entity);
         ArgumentNullException.ThrowIfNull(blueprint);
 
@@ -157,5 +163,7 @@ public static class DeploymentService
         entity.State = blueprint.State;
         entity.BlueprintVersion = blueprint.Version;
         entity.ControllerProgramId = blueprint.ControllerProgramId;
+        entity.IsCoreAnchor = blueprint.IsCoreAnchor;
+        CoreShellRules.RegisterAnchor(world, entity);
     }
 }

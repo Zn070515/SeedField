@@ -70,7 +70,7 @@ public sealed partial class SimulationEngine
         }
 
         var oldVersion = entity.BlueprintVersion;
-        DeploymentService.Upgrade(entity, upgrade.Blueprint);
+        DeploymentService.Upgrade(World, entity, upgrade.Blueprint);
         var upgraded = new EntityUpgraded(
             tick,
             entity.Id,

@@ -99,6 +99,7 @@ public static class WorldStateHasher
                 Append(ref hash, entity.BlueprintId ?? string.Empty);
                 Append(ref hash, entity.BlueprintVersion);
                 Append(ref hash, entity.ControllerProgramId ?? string.Empty);
+                Append(ref hash, entity.IsCoreAnchor);
 
                 AppendModule(ref hash, entity.Sensor);
                 AppendModule(ref hash, entity.Weapon);
@@ -373,6 +374,10 @@ public static class WorldStateHasher
             Append(ref hash, core.Config.RecoveryCostGrowthPercent);
             Append(ref hash, core.Config.RecoveryStreakDecayTicks);
             Append(ref hash, core.Config.RecoveryOverdraftCostPercent);
+            Append(ref hash, core.Config.AnchorRecoveryCostPercent);
+            Append(ref hash, core.Config.SiegeRecoveryCostPercent);
+            Append(ref hash, core.Config.SiegeQuotaPenalty);
+            Append(ref hash, core.AnchorTarget);
             Append(ref hash, core.RecoveryWindowStartTick);
             Append(ref hash, core.RecoveriesInWindow);
             Append(ref hash, core.RecoveryStreak);

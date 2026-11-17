@@ -21,7 +21,8 @@ public sealed record EntityDefinition(
     int BlueprintVersion = 0,
     string? ControllerProgramId = null,
     PowerModule? Power = null,
-    StateModule? State = null);
+    StateModule? State = null,
+    bool IsCoreAnchor = false);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -49,6 +50,7 @@ public sealed class EntityState
         ControllerProgramId = definition.ControllerProgramId;
         Power = definition.Power;
         State = definition.State;
+        IsCoreAnchor = definition.IsCoreAnchor;
     }
 
     public EntityId Id { get; }
@@ -91,6 +93,12 @@ public sealed class EntityState
 
     /// <summary>Optional compute/storage capability. Limits intents per tick.</summary>
     public StateModule? State { get; internal set; }
+
+    /// <summary>
+    /// A damageable shell anchor outside the protected core region. Losing anchors
+    /// raises recovery costs; the permanent core itself is never an anchor.
+    /// </summary>
+    public bool IsCoreAnchor { get; internal set; }
 
     /// <summary>First tick on which the weapon may fire again.</summary>
     public long NextWeaponReadyTick { get; internal set; }

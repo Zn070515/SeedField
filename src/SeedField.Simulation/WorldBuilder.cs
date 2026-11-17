@@ -326,6 +326,13 @@ public sealed class WorldBuilder
             throw new InvalidOperationException("A world needs at least one region.");
         }
 
+        foreach (var core in _world.Cores.Values)
+        {
+            core.AnchorTarget = Math.Max(
+                core.AnchorTarget,
+                CoreShellRules.CountAliveAnchors(_world, core.CivilizationId));
+        }
+
         return _world;
     }
 }

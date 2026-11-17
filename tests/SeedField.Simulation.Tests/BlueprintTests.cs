@@ -48,7 +48,7 @@ public sealed class BlueprintTests
             .Build();
         var entity = world.FindEntity(new EntityId(1))!;
 
-        DeploymentService.Upgrade(entity, version2);
+        DeploymentService.Upgrade(world, entity, version2);
 
         Assert.Equal(2, entity.BlueprintVersion);
         Assert.Equal(80, entity.MaxHealth);

@@ -41,7 +41,8 @@ public static partial class WorldSaveSerializer
                     blueprint.State.StorageCapacity),
             blueprint.ControllerProgramId,
             blueprint.MaterialCost,
-            blueprint.BuildTicks);
+            blueprint.BuildTicks,
+            blueprint.IsCoreAnchor);
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -82,7 +83,8 @@ public static partial class WorldSaveSerializer
                     blueprint.State.StorageCapacity),
             blueprint.ControllerProgramId,
             blueprint.MaterialCost,
-            blueprint.BuildTicks);
+            blueprint.BuildTicks,
+            blueprint.IsCoreAnchor);
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -143,7 +145,8 @@ public static partial class WorldSaveSerializer
                 ? null
                 : new StateSaveData(
                     entity.State.ComputePerTick,
-                    entity.State.StorageCapacity));
+                    entity.State.StorageCapacity),
+            entity.IsCoreAnchor);
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(
@@ -169,7 +172,11 @@ public static partial class WorldSaveSerializer
             core.RecoveriesInWindow,
             core.RecoveryStreak,
             core.LastRecoveryTick,
-            core.Config.RecoveryOverdraftCostPercent);
+            core.Config.RecoveryOverdraftCostPercent,
+            core.AnchorTarget,
+            core.Config.AnchorRecoveryCostPercent,
+            core.Config.SiegeRecoveryCostPercent,
+            core.Config.SiegeQuotaPenalty);
 
     private static MessageSaveData ToMessage(MessageEnvelope message) =>
         new(

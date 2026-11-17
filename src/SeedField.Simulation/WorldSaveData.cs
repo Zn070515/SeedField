@@ -205,7 +205,8 @@ public sealed record EntitySaveData(
     int BlueprintVersion = 0,
     string? ControllerProgramId = null,
     PowerSaveData? Power = null,
-    StateSaveData? State = null);
+    StateSaveData? State = null,
+    bool IsCoreAnchor = false);
 
 public sealed record SensorSaveData(int RangeMm);
 
@@ -239,7 +240,8 @@ public sealed record BlueprintSaveData(
     StateSaveData? State,
     string? ControllerProgramId,
     long MaterialCost = 0,
-    int BuildTicks = 0);
+    int BuildTicks = 0,
+    bool IsCoreAnchor = false);
 
 public sealed record SeedCoreProductSaveData(
     DeviceBranch Branch,
@@ -264,7 +266,11 @@ public sealed record CoreSaveData(
     int RecoveriesInWindow = 0,
     int RecoveryStreak = 0,
     long LastRecoveryTick = -1,
-    int RecoveryOverdraftCostPercent = 0);
+    int RecoveryOverdraftCostPercent = 0,
+    int AnchorTarget = 0,
+    int AnchorRecoveryCostPercent = 0,
+    int SiegeRecoveryCostPercent = 0,
+    int SiegeQuotaPenalty = 0);
 
 public sealed record MessageSaveData(
     long Id,

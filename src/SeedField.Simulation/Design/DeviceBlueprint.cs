@@ -30,7 +30,8 @@ public sealed record DeviceBlueprint(
     StateModule? State = null,
     string? ControllerProgramId = null,
     long MaterialCost = 0,
-    int BuildTicks = 0)
+    int BuildTicks = 0,
+    bool IsCoreAnchor = false)
 {
     public DeviceBranch Branches
     {

@@ -47,6 +47,67 @@ public sealed partial class SimulationEngine
         }
     }
 
+    /// <summary>
+    /// Shell pressure is derived, never stored: uncovered anchors add a per-anchor cost,
+    /// and a hostile (non-NAP) civilization in a directly linked shell region adds siege
+    /// cost and reduces the effective quota. Core regeneration itself is never reduced.
+    /// </summary>
+    private (int CostPercent, int QuotaPenalty) CorePressure(SeedCoreState core)
+    {
+        var costPercent = 0;
+        if (core.Config.AnchorRecoveryCostPercent > 0)
+        {
+            costPercent +=
+                CoreShellRules.CountUncoveredAnchors(World, core) *
+                core.Config.AnchorRecoveryCostPercent;
+        }
+
+        var quotaPenalty = 0;
+        if (IsCoreBesieged(core))
+        {
+            costPercent += core.Config.SiegeRecoveryCostPercent;
+            quotaPenalty = core.Config.SiegeQuotaPenalty;
+        }
+
+        return (costPercent, quotaPenalty);
+    }
+
+    private bool IsCoreBesieged(SeedCoreState core)
+    {
+        foreach (var link in World.Links.Values)
+        {
+            if (!link.Connects(core.RegionId))
+            {
+                continue;
+            }
+
+            var otherRegionId = link.Other(core.RegionId);
+            if (!World.Regions.TryGetValue(otherRegionId, out var region))
+            {
+                continue;
+            }
+
+            foreach (var entity in region.Entities.Values)
+            {
+                if (string.Equals(
+                        entity.CivilizationId,
+                        core.CivilizationId,
+                        StringComparison.Ordinal) ||
+                    HasActiveTreaty(
+                        TreatyKind.NonAggression,
+                        entity.CivilizationId,
+                        core.CivilizationId))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static long ScaleRecoveryCost(long cost, long percent)
     {
         if (cost <= 0 || percent <= 100)

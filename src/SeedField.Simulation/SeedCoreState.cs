@@ -13,7 +13,10 @@ public sealed record SeedCoreConfig(
     int RecoveryQuotaPerWindow = 0,
     int RecoveryCostGrowthPercent = 0,
     long RecoveryStreakDecayTicks = 0,
-    int RecoveryOverdraftCostPercent = 0)
+    int RecoveryOverdraftCostPercent = 0,
+    int AnchorRecoveryCostPercent = 0,
+    int SiegeRecoveryCostPercent = 0,
+    int SiegeQuotaPenalty = 0)
 {
     /// <summary>Zero window or quota disables the fast-recovery limit.</summary>
     public bool HasRecoveryQuota =>
@@ -74,6 +77,21 @@ public sealed record SeedCoreConfig(
         {
             throw new ArgumentOutOfRangeException(nameof(RecoveryOverdraftCostPercent));
         }
+
+        if (AnchorRecoveryCostPercent < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(AnchorRecoveryCostPercent));
+        }
+
+        if (SiegeRecoveryCostPercent < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(SiegeRecoveryCostPercent));
+        }
+
+        if (SiegeQuotaPenalty < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(SiegeQuotaPenalty));
+        }
     }
 }
 
@@ -115,6 +133,9 @@ public sealed class SeedCoreState
 
     /// <summary>Tick of the last successful recovery; -1 before the first one.</summary>
     public long LastRecoveryTick { get; internal set; } = -1;
+
+    /// <summary>Largest number of shell anchors ever registered for this core.</summary>
+    public int AnchorTarget { get; internal set; }
 
     /// <summary>Latest confirmed design version per branch.</summary>
     public SortedDictionary<DeviceBranch, SeedCoreProduct> LatestProducts { get; } = new();
@@ -162,16 +183,22 @@ public sealed class SeedCoreState
     /// </summary>
     internal RecoveryQuotaDecision EvaluateRecoveryQuota(
         long tick,
-        out long resetsInTicks)
+        int quotaPenalty,
+        out long resetsInTicks,
+        out int effectiveLimit)
     {
         resetsInTicks = 0;
         if (!Config.HasRecoveryQuota)
         {
+            effectiveLimit = Config.RecoveryQuotaPerWindow;
             return RecoveryQuotaDecision.WithinQuota;
         }
 
+        effectiveLimit = Math.Max(
+            1,
+            Config.RecoveryQuotaPerWindow - Math.Max(0, quotaPenalty));
         RefreshRecoveryWindow(tick);
-        if (RecoveriesInWindow < Config.RecoveryQuotaPerWindow)
+        if (RecoveriesInWindow < effectiveLimit)
         {
             return RecoveryQuotaDecision.WithinQuota;
         }
@@ -188,7 +215,10 @@ public sealed class SeedCoreState
     }
 
     /// <summary>Cost multiplier in percent; 100 means the base cost.</summary>
-    internal long RecoveryCostMultiplierPercent(long tick, bool overdraft)
+    internal long RecoveryCostMultiplierPercent(
+        long tick,
+        bool overdraft,
+        int siegeCostPercent)
     {
         RefreshRecoveryDebt(tick);
         var percent = 100L;
@@ -202,6 +232,7 @@ public sealed class SeedCoreState
             percent += Config.RecoveryOverdraftCostPercent;
         }
 
+        percent += Math.Max(0, siegeCostPercent);
         return Math.Min(percent, 1_000_000L);
     }
 
