@@ -19,6 +19,7 @@ public sealed class RepositoryHygieneTests
         ".idea/",
         ".godot/",
         "game/.godot/",
+        "__pycache__/",
     };
 
     private static readonly string[] ForbiddenSuffixes =
@@ -32,6 +33,8 @@ public sealed class RepositoryHygieneTests
         ".zip",
         ".user",
         ".suo",
+        ".pyc",
+        ".pyo",
     };
 
     [Fact]
@@ -70,6 +73,8 @@ public sealed class RepositoryHygieneTests
                      "*.suo",
                      "*.log",
                      "*.tmp",
+                     "__pycache__/",
+                     "*.pyc",
                  })
         {
             Assert.True(
