@@ -35,6 +35,30 @@ public sealed class OpponentPackageTests
     }
 
     [Fact]
+    public void ThirdPartyImportStaysClosedUntilIsolationGatesPass()
+    {
+        Assert.False(OpponentPackage.ThirdPartyImportEnabled);
+    }
+
+    [Fact]
+    public void BuiltInOpponentsRemainTrustedBuiltIns()
+    {
+        Assert.Equal(2, BuiltInOpponents.All.Count);
+        Assert.All(
+            BuiltInOpponents.All,
+            package => Assert.StartsWith(
+                "builtin.",
+                package.Manifest.PackageId,
+                StringComparison.Ordinal));
+        Assert.All(
+            BuiltInOpponents.All,
+            package => Assert.DoesNotContain(
+                "require(",
+                package.ProgramSource,
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void UnsafeEntryPointPathIsRejected()
     {
         var exception = Assert.Throws<OpponentPackageValidationException>(() =>

@@ -36,6 +36,12 @@ public sealed class OpponentPackage
     public const int MaxTotalBytes = 1024 * 1024;
     public const int MaxProgramFiles = 32;
 
+    /// <summary>
+    /// Hard gate: arbitrary third-party executable packages stay closed until the
+    /// process-isolation, IPC and resource-limit gates in ADR-0020 are complete.
+    /// </summary>
+    public const bool ThirdPartyImportEnabled = false;
+
     private OpponentPackage(
         OpponentPackageManifest manifest,
         IReadOnlyDictionary<string, string> programs)
