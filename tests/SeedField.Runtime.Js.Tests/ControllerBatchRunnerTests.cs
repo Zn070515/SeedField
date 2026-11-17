@@ -38,6 +38,18 @@ public sealed class ControllerBatchRunnerTests
     }
 
     [Fact]
+    public void RejectsNonPositiveExecutionBounds()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ControllerBatchRunner(new ControllerExecutionOptions { MinBatchSize = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new ControllerBatchRunner(new ControllerExecutionOptions
+            {
+                MaxDegreeOfParallelism = 0,
+            }));
+    }
+
+    [Fact]
     public void ParallelBatchKeepsOrderAndIsolatesFaults()
     {
         var builder = new WorldBuilder().AddRegion("r0", 10_000, 10_000);
