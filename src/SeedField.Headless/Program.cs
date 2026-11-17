@@ -18,7 +18,6 @@ internal static partial class Program
     private static int Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-
         if (TryReadBenchmarkDevices(
                 args,
                 "--benchmark-startup",
