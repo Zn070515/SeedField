@@ -54,7 +54,6 @@ game/SeedField.Game/screenshots/art-topdown-near-default.png
 ```text
 art/renders/camera-ab-layers.png
 art/renders/camera-ab-zoom.png
-art/renders/power_node_sheet.png
 art/renders/concept_sheet.png
 ```
 
