@@ -99,6 +99,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 恢复面板与核心维护：`CoreRecoveryDiagnosticsBuilder`；F6 面板显示配额/债务/锚点/围困并执行 RECOVER/MAINTAIN；`MaintainCoreCommand` 扣材料清配额/债务；存档 v17（ADR-0019）。
 - 离线包安全门禁：第三方面向可执行包仍关闭；`ThirdPartyImportEnabled=false`；仓库 Lint 禁止对手包命名空间出现文件/网络/进程/程序集 API；威胁模型、目标工作进程/IPC/Job Object 架构与 12 项开放门禁见 ADR-0020。
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
+- 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
@@ -107,7 +108,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、随机战斗命中/掉落、维护时长、多电压/潮流方程。
 - 存档迁移（v1 → 后续）、回放、完整离线文明包（可执行 AI/脚本）。
 - 废墟实体/占领/清理、快照签名/来源认证、Workshop 流程、残骸老化/掠夺。
-- 离线包隔离剩余门禁：AppContainer/低完整性、OS 网络/文件系统拒绝、磁盘配额、CPU Job 时间、完整 IPC fuzz、签名包；第三方 JS 导入仍关闭。
+- 离线包隔离剩余门禁：AppContainer/低完整性、OS 网络/文件系统拒绝、只读挂载、OS 磁盘配额、完整 fuzz/红队、发布签名密钥/Workshop、独立安全审查；第三方 JS 导入仍关闭。
 - 随机战斗命中/掉落、正式平衡数值。
 - PvE 对手、教程/科技树/终局与正式美术。
 
@@ -363,12 +364,12 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 残骸/废墟模型是原型 | 设备残骸与离线快照切片已可回收；无残骸老化/消失，无废墟实体/占领，快照无签名 | 后续 ADR 定义残骸老化、废墟实体与来源认证 |
 | 废墟快照是数据-only | 不支持导入可执行 AI/脚本；第三方可执行包仍关闭 | 完整离线文明包必须等进程隔离/IPC |
 | 外壳围困是原型 | 锚点目标只增不减；多跳围困、锚点占领、仓储/产出加成未做 | 先验证单跳围困手感，再扩展拓扑与占领 |
-| 第三方对手包未导入 | 内置包 + Phase 1 worker/IPC/Job Object 已可用；数据-only 废墟快照可用；AppContainer/网络/文件/磁盘/签名未完成 | 继续按 ADR-0020 的 12 项门禁推进 Phase 2，未全绿前保持关闭 |
+| 第三方对手包未导入 | 内置包 + Phase 1 worker/IPC/Job Object + Phase 2a 签名/同意/CPU/磁盘/fuzz 已可用；AppContainer/OS 网络文件拒绝/独立审查未完成 | 继续按 ADR-0020 的 12 项门禁推进 Phase 2b，未全绿前保持关闭 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
 ## 8. 下一步（按依赖顺序）
 
-1. 离线包隔离 Phase 2：AppContainer/低完整性、OS 网络/文件拒绝、磁盘配额、CPU Job 时间、IPC fuzz、签名包与用户授权（仍不开放导入）；废墟实体/占领/清理；快照签名/Workshop；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。
+1. 离线包隔离 Phase 2b：AppContainer/低完整性、OS 网络/文件拒绝、只读挂载、OS 磁盘配额、完整 fuzz/红队、发布签名密钥与独立安全审查（仍不开放导入）；废墟实体/占领/清理；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。
 4. 用 `DeterministicRandom` 实现可复现的命中/损伤变体与掉落；补随机流回放测试。

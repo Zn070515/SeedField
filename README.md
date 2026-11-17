@@ -98,6 +98,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --core-
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --wrecks
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --package-check <dir> --allow-unsigned --confirm
 
 godot --path game/SeedField.Game                      # 实时；F1 程序，F2 工坊，F3 外交，F4 电网，F6 恢复
 godot --path game/SeedField.Game -- --capture         # 战斗截图
@@ -156,6 +157,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`code review medium`](docs/engineering/reviews/2026-11-17-code-review-medium.md) | 审查 8 项修复、2 项保留与回归测试 |
 | [`offline package security`](docs/engineering/security/2026-11-17-offline-package-threat-model.md) | 离线文明包威胁模型、隔离架构与 12 项开放门禁 |
 | [`worker isolation`](docs/engineering/evidence/2026-11-17-worker-isolation.md) | Phase 1 工作进程、IPC、Job Object 与双跑哈希证据 |
+| [`package trust`](docs/engineering/evidence/2026-11-17-package-trust.md) | 签名包、信任存储、显式同意、CPU/磁盘限额与 IPC fuzz 证据 |
 | [`recovery quota`](docs/engineering/evidence/2026-11-17-recovery-quota.md) | 恢复配额、恢复债务、慢速模式与 v14 证据 |
 | [`core shell & siege`](docs/engineering/evidence/2026-11-17-core-shell-siege.md) | 外壳锚点、覆盖缺口、围困成本/配额与 v15 证据 |
 | [`device wrecks`](docs/engineering/evidence/2026-11-17-device-wrecks.md) | 设备残骸、原主/在场回收、v16 证据 |
@@ -176,4 +178,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，但锚点占领、仓储/产出加成、多跳围困、残骸老化/掠夺、废墟实体/占领、快照签名/Workshop 流程未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗仍无随机命中/伤害；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手已有内置包与 Phase 1 工作进程隔离，但 AppContainer/网络与文件系统 OS 拒绝、签名包、第三方可执行包导入、TypeScript `.d.ts`、导出模板与正式平衡数值仍未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，但锚点占领、仓储/产出加成、多跳围困、残骸老化/掠夺、废墟实体/占领、快照签名/Workshop 流程未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗仍无随机命中/伤害；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手已有内置包、Phase 1 工作进程隔离与 Phase 2a 签名/同意/CPU/磁盘限额，但 AppContainer/网络与文件系统 OS 拒绝、OS 磁盘配额、发布签名密钥/Workshop、第三方可执行包导入、TypeScript `.d.ts`、导出模板与正式平衡数值仍未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

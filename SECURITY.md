@@ -28,8 +28,11 @@
   `tests/SeedField.Repository.Tests` 禁止对手包命名空间出现文件/网络/进程/程序集 API。
 - Phase 1（ADR-0021）已实现：独立工作进程、长度前缀 IPC、Windows Job Object
   （内存/单进程/kill-on-close）、控制器工厂、Headless 双跑哈希验证。
-- **仍未实现**：AppContainer/低完整性令牌、OS 网络与文件系统拒绝、磁盘配额、
-  CPU Job 时间、完整 IPC fuzz、签名包、用户授权 UI。因此第三方可执行包导入继续关闭。
+- Phase 2a（ADR-0022）已实现：ECDSA P-256 签名包、内容哈希、信任存储、显式同意、
+  Job Object CPU 时间、磁盘看门狗、IPC fuzz、`--package-check` 验证 CLI。
+- **仍未实现**：AppContainer/低完整性令牌、OS 网络与文件系统拒绝、只读挂载、
+  OS 磁盘配额、完整 fuzz/红队、发布签名密钥、独立安全审查。因此第三方可执行包
+  导入继续关闭。
 - 开放第三方可执行包前，必须逐项通过威胁模型第 5 节的 12 项硬门禁。
 
 ## 已知边界
