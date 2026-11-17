@@ -17,6 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SeedField.Runtime.Js\SeedField.Runtime.Js.csproj" />
     <ProjectReference Include="..\..\src\SeedField.Simulation\SeedField.Simulation.csproj" />
+    <ProjectReference Include="..\..\src\SeedField.Worker\SeedField.Worker.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
