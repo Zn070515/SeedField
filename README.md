@@ -57,7 +57,7 @@
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
 | 验证 | 177 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
-| 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
+| 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
 ## 工程结构
 
@@ -67,6 +67,7 @@
 | 工程文档 | [`docs/engineering`](docs/engineering) | 实现基线、ADR、验收证据 |
 | 仿真核心 | [`src/SeedField.Simulation`](src/SeedField.Simulation) | 唯一权威 `WorldState`、Tick、验证、事件、哈希 |
 | 脚本运行时 | [`src/SeedField.Runtime.Js`](src/SeedField.Runtime.Js) | Jint 4.18.0；JSON 进/JSON 出，不暴露 CLR |
+| 本地目录 | [`src/SeedField.Catalog`](src/SeedField.Catalog) | SQLite 派生索引：回放/存档/基准；可删可重建，不参与 Tick |
 | Headless | [`src/SeedField.Headless`](src/SeedField.Headless) | 双文明纵切片 Runner |
 | 客户端 | [`game/SeedField.Game`](game/SeedField.Game) | Godot 4.7.2 Mono 可视切片、程序编辑器与工坊；只渲染 `SimulationEvent` |
 
@@ -101,6 +102,10 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --repla
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --replay-play replay.json
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-scale
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --sandbox-check
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-rebuild logs --catalog-db catalog.db
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-list --catalog-db catalog.db
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --catalog-check --catalog-db catalog.db
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --benchmark-jint-parallel 100 --catalog-db catalog.db
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent-appcontainer
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
