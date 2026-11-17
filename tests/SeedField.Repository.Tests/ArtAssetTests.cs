@@ -395,6 +395,9 @@ public sealed class ArtAssetTests
                      "power_node.topdown.v0",
                      "seed_core.topdown.v0",
                      "worker_frame.topdown.v0",
+                     "ruin_block.topdown.v0",
+                     "pipe_junction.topdown.v0",
+                     "wreck_hauler.topdown.v0",
                  })
         {
             if (!ids.Contains(expected, StringComparer.Ordinal))

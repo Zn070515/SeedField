@@ -30,8 +30,15 @@ ASSETS = (
     "worker_frame_sensor",
     "worker_frame_weapon",
     "direction_probe",
+    "ruin_block",
+    "pipe_junction",
+    "wreck_hauler",
 )
-TOPDOWN_ASSETS = {"power_node", "seed_core", "worker_frame"}
+TOPDOWN_ASSETS = {
+    "power_node", "seed_core", "worker_frame",
+    "ruin_block", "pipe_junction", "wreck_hauler",
+}
+TOPDOWN_ONLY = {"ruin_block", "pipe_junction", "wreck_hauler"}
 ROUTES = ("oblique", "topdown")
 FOOTPRINTS = {
     "power_node": 300,
@@ -44,6 +51,9 @@ FOOTPRINTS = {
     "worker_frame_sensor": 260,
     "worker_frame_weapon": 260,
     "direction_probe": 260,
+    "ruin_block": 220,
+    "pipe_junction": 240,
+    "wreck_hauler": 200,
 }
 STATES = {
     "seed_core": "idle",
@@ -167,6 +177,8 @@ def build_manifest(repo: Path) -> dict:
             )
             if not runtime_files:
                 if route == "topdown" and name not in TOPDOWN_ASSETS:
+                    continue
+                if route == "oblique" and name in TOPDOWN_ONLY:
                     continue
                 raise FileNotFoundError(
                     f"missing runtime assets: {folder}/{name}_{route}_*.png"

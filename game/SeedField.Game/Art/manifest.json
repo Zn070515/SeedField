@@ -1008,6 +1008,96 @@
           ]
         }
       ]
+    },
+    {
+      "assetId": "ruin_block.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/ruin_block_topdown_000.png",
+          "sha256": "67539575282f6c0ae80b8cd8e57b9872880f3e230f248dbbaf38b73925d09390",
+          "alphaBBox": [
+            71,
+            111,
+            440,
+            400
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "pipe_junction.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/pipe_junction_topdown_000.png",
+          "sha256": "49c209a6682f3eed9354761cac81e458e2f82fafb6fc307364714bc522c2d571",
+          "alphaBBox": [
+            74,
+            74,
+            437,
+            437
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "wreck_hauler.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 200,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_style_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/wreck_hauler_topdown_000.png",
+          "sha256": "c4da1bbfa242be0ee4166d88d39a5c530e8753f6c0e8e2c52d182206e00c1ecb",
+          "alphaBBox": [
+            81,
+            128,
+            504,
+            370
+          ]
+        }
+      ]
     }
   ]
 }
