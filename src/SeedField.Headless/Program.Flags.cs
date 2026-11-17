@@ -11,6 +11,15 @@ internal static partial class Program
             : fallback;
     }
 
+    private static string? ReadStringFlag(string[] args, string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && index + 1 < args.Length &&
+               !args[index + 1].StartsWith("--", StringComparison.Ordinal)
+            ? args[index + 1]
+            : null;
+    }
+
     private static double ReadDoubleFlag(string[] args, string flag, double fallback)
     {
         var index = Array.IndexOf(args, flag);
