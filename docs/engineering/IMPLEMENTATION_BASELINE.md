@@ -101,13 +101,13 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
+- TypeScript 控制器契约：`contracts/seedfield-controller.d.ts` + 示例 + 严格 tsconfig；CI `tsc` 与 C# 字段漂移测试（ADR-0031）。
 - 确定性回放：`ReplayRecorder`/`ReplayPlayer` 以 Intent 为边界记录初始世界、每 Tick 意图与执行后哈希；16MiB/100k Tick/10k Intent 限额；首个分叉 Tick 可定位；`--replay-record`/`--replay-play`（ADR-0030）。
 - 确定性战斗随机：`CombatHitChancePercent`/`CombatDamageVariancePercent`/`CombatLootChancePercent`/`CombatLootMaterial` 场景配置；固定抽取顺序命中→伤害→掉落，0%/100% 不消耗随机值；`ShotMissed`/`CombatLootGranted` 事件与 `ShotsMissed`/`MaterialLootedTotal` 统计；存档 v18；`--combat-rng` 演示（ADR-0029）。
 - 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；默认 DOF = 逻辑核数；Headless Server GC；`Engine.PrepareScript` 跨引擎复用；进程内 `Decide` 用 `JsObject.Create` + 共享布局直接构造观测对象，worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试；100 台 33.96→1.18 ms/tick、1000 台 180.36→7.9 ms/tick（3000 Tick 稳态），1000 台启动 205→127 ms；`--benchmark-jint-parallel`、`--benchmark-jint-preserialized`、`--benchmark-startup`、`--ticks`、`--chunk-size` 与 `--budget-ms` 门禁（ADR-0028）。
 
 ### 尚未实现
 
-- TypeScript `.d.ts` 编辑契约。
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、维护时长、多电压/潮流方程。
 - 存档迁移（v1 → 后续）、完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
 - 废墟实体/占领/清理、快照签名/来源认证、Workshop 流程、残骸老化/掠夺。
@@ -406,6 +406,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0028](adr/ADR-0028-parallel-controller-batch.md) | 并行控制器批处理与观测批次 |
 | [ADR-0029](adr/ADR-0029-deterministic-combat-randomness-and-loot.md) | 确定性战斗随机、伤害变体与掉落 |
 | [ADR-0030](adr/ADR-0030-deterministic-replay-format.md) | 确定性回放格式与逐 Tick 校验 |
+| [ADR-0031](adr/ADR-0031-typescript-controller-contract.md) | TypeScript 控制器契约 |
 
 ## 8. 下一步（按依赖顺序）
 
