@@ -127,22 +127,30 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- `
 Godot 4.7.2、1280×720、vsync off、Server GC、真实 `program.scout.v1` +
 渲染 + 通信/战斗，测量 2 s（跳过 1.5 s 预热）：
 
-| 设备 | avgTick | p95Tick | FPS | alloc/Tick | Fault |
-|---:|---:|---:|---:|---:|---:|
-| 100 | 1.91 ms | 3.24 | 154 | 11.9 MB | 0 |
-| 500 | 9.82 ms | 15.48 | 62 | 42.0 MB | 0 |
-| 1000 | 27.96 ms | 34.38 | 28 | 92.1 MB | 0 |
+| 设备 | avgTick | p95Tick | FPS | Draw Calls | alloc/Tick | Fault |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100（完整绘制） | 1.39 ms | 2.76 | 158.6 | 1169 | 11.9 MB | 0 |
+| 500（LOD） | 4.80 ms | 8.35 | 505.1 | 514 | 38.5 MB | 0 |
+| 1000（LOD） | **10.24 ms** | **12.05** | **371.9** | **722** | 88.6 MB | 0 |
 
-修复前（完整收件箱进入每个观测）：
+优化链（1000 台）：
 
-| 设备 | avgTick | p95Tick | FPS | alloc/Tick | Fault |
-|---:|---:|---:|---:|---:|---:|
-| 500 | 137.03 ms | 174.95 | 14 | 1087 MB | 24 timeout |
-| 1000 | 309.32 ms | 372.63 | 5 | 2891 MB | 24 timeout |
+| 阶段 | avgTick | FPS | Draw Calls | Fault |
+|---|---:|---:|---:|---:|
+| 完整收件箱广播 | 309.32 ms | 5.3 | 5065 | 24 timeout |
+| + 观测消息最近 32 条（ADR-0037） | 27.96 ms | 28.4 | 4612 | 0 |
+| + 消息投递批缓存 | 9.85 ms | 590 | 240 | 0 |
+| + 人群 LOD（保留 8 方向） | 10.24 ms | 372 | 722 | 0 |
 
-根因与修复见 ADR-0037：观测消息历史限制为最近 32 条；收件箱容量/世界状态/
-存档/哈希不变。quiet 脚本 1000 台约 5.2 ms/Tick、33 FPS，证明剩余成本在
-渲染/呈现层。
+根因与修复见 ADR-0037/0038：
+
+- 收件箱消息广播放大 → 观测最近 32 条；
+- 每条消息都扫描全世界算存储容量 → 每批每文明缓存；
+- 1000 台按完整细节绘制约 4600 draw calls → 人群 LOD 只画朝向四边形，
+  视口裁剪，完整绘制保留给 400 以下/近景/调试。
+
+1000 台 p95 Tick 12.05 ms、p99 帧 14.27 ms，已进入 60 FPS 帧预算；
+quiet 脚本 1000 台约 5.2 ms/Tick 作为对照。
 
 ## 5. GC 发行要求
 
@@ -201,8 +209,9 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 按优先级：
 
 1. **正式客户端混合负载**：已加入 `--benchmark-mixed`，并修复观测消息放大
-   （ADR-0037）；1000 台约 28 ms/Tick、28 FPS。仍需正式导出、真实 GPU/
-   低端硬件与更长窗口验收。
+   与消息投递扫描、加入人群 LOD（ADR-0037/0038）；1000 台约 10.2 ms/Tick、
+   p95 12.1 ms、372 FPS（vsync off）。仍需正式导出、真实 GPU/低端硬件与
+   更长窗口验收。
 2. **真实 4/6/8 核硬件**：当前只有 `DOTNET_PROCESSOR_COUNT` 模拟；
    需要低端 CPU、不同内存档位的真实数据。
 3. **长时间稳定性**：10k+ Tick 的内存增长、P99 尾部、GC 暂停与泄漏。
@@ -233,7 +242,9 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 - ADR-0035：本地 SQLite 派生目录
 - ADR-0036：墙钟超时宿主安全阀
 - ADR-0037：观测消息历史确定性上限
+- ADR-0038：客户端人群 LOD 与消息投递批缓存
 - 证据：`docs/engineering/evidence/2026-11-17-perf-release-acceptance.md`
 - 证据：`docs/engineering/evidence/2026-11-17-mixed-client-message-cap.md`
+- 证据：`docs/engineering/evidence/2026-11-17-mixed-client-lod-storage.md`
 - 基线：`docs/engineering/evidence/perf-baseline.json`
 - 工具：`tools/check_perf.py`、`tools/run-game.ps1`
