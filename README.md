@@ -31,7 +31,7 @@
 
 完整游戏离线可玩，不依赖开发者服务器；设计基线为 V1.9 Rev2。本仓库是正式工程，不是设计资料包。
 
-<p align="center"><img src="game/SeedField.Game/screenshots/art-main-combat.png" alt="Seed Field Gate 2 sprite slice" width="760"></p>
+<p align="center"><img src="game/SeedField.Game/screenshots/art-main-combat.png" alt="Seed Field Gate 3 industrial wasteland slice" width="760"></p>
 
 ## 项目现状
 

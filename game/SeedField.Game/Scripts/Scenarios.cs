@@ -11,6 +11,9 @@ internal static class Scenarios
     public const int WidthMm = 16_000;
     public const int HeightMm = 8_000;
 
+    public static readonly Vec2 AStagingPosition = new(2_000, 4_000);
+    public static readonly Vec2 BStagingPosition = new(13_000, 4_000);
+
     public static readonly RecoveryBlueprint EmergencyRecovery = new(
         "emergency-cell",
         RequiredEnergy: 40,
@@ -163,11 +166,11 @@ internal static class Scenarios
             ControllerProgramId: "program.scout.v1",
             MaterialCost: 65));
 
-        DeploymentService.Deploy(world, scoutV1, "A", "frontier", new Vec2(2_000, 4_000));
+        DeploymentService.Deploy(world, scoutV1, "A", "frontier", AStagingPosition);
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {
-            DeploymentService.Deploy(world, strike, "B", "frontier", new Vec2(13_000, 4_000));
+            DeploymentService.Deploy(world, strike, "B", "frontier", BStagingPosition);
         }
 
         return world;

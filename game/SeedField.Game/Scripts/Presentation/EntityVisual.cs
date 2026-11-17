@@ -8,7 +8,7 @@ namespace SeedField.Game;
 /// </summary>
 public sealed class EntityVisual
 {
-    public const float ScreenScale = 0.22f;
+    public const float ScreenScale = 0.26f;
 
     private readonly VisualAssetCatalog _catalog;
 
@@ -23,7 +23,12 @@ public sealed class EntityVisual
         Vector2 position,
         int direction,
         bool showId,
-        bool debug)
+        bool debug,
+        long tick,
+        bool moving,
+        bool hitFlash,
+        float visualScale,
+        bool showBars)
     {
         var frame = _catalog.Get(entity.VisualAssetName, direction);
         if (frame is null)
@@ -35,7 +40,7 @@ public sealed class EntityVisual
             return;
         }
 
-        var size = frame.Footprint * ScreenScale;
+        var size = frame.Footprint * ScreenScale * visualScale;
         var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
 
         VisualDraw.Ellipse(
@@ -44,28 +49,39 @@ public sealed class EntityVisual
             size * 0.28f,
             size * 0.10f,
             new Color(0f, 0f, 0f, 0.24f));
+        if (moving)
+        {
+            DrawTrackDust(canvas, position, size, direction, tick);
+        }
+
         canvas.DrawTextureRect(frame.Diffuse, rect, false);
 
-        var healthFraction = entity.MaxHealth <= 0
-            ? 0f
-            : (float)entity.Health / entity.MaxHealth;
-        var energyFraction = entity.EnergyCapacity <= 0
-            ? 0f
-            : (float)entity.Energy / entity.EnergyCapacity;
-        DrawBar(
-            canvas,
-            position + new Vector2(-15f, -size * 0.62f),
-            30f,
-            3f,
-            healthFraction,
-            new Color(0.35f, 0.95f, 0.50f));
-        DrawBar(
-            canvas,
-            position + new Vector2(-15f, size * 0.40f),
-            30f,
-            2.5f,
-            energyFraction,
-            new Color(0.35f, 0.75f, 1f));
+        if (showBars)
+        {
+            var healthFraction = entity.MaxHealth <= 0
+                ? 0f
+                : (float)entity.Health / entity.MaxHealth;
+            var energyFraction = entity.EnergyCapacity <= 0
+                ? 0f
+                : (float)entity.Energy / entity.EnergyCapacity;
+            DrawBar(
+                canvas,
+                position + new Vector2(-15f, -size * 0.62f),
+                30f,
+                3f,
+                healthFraction,
+                new Color(0.35f, 0.95f, 0.50f));
+            if (entity.EnergyCapacity > 0)
+            {
+                DrawBar(
+                    canvas,
+                    position + new Vector2(-15f, size * 0.40f),
+                    30f,
+                    2.5f,
+                    energyFraction,
+                    new Color(0.35f, 0.75f, 1f));
+            }
+        }
 
         if (showId)
         {
@@ -77,6 +93,18 @@ public sealed class EntityVisual
                 -1,
                 11,
                 new Color(0.82f, 0.90f, 0.96f));
+        }
+
+        if (hitFlash)
+        {
+            canvas.DrawArc(
+                position,
+                size * 0.34f,
+                0,
+                Mathf.Tau,
+                40,
+                new Color(1f, 0.30f, 0.22f, 0.9f),
+                2.2f);
         }
 
         if (debug)
@@ -100,6 +128,27 @@ public sealed class EntityVisual
                 -1,
                 10,
                 new Color(0.90f, 0.72f, 0.40f));
+        }
+    }
+
+    private static void DrawTrackDust(
+        CanvasItem canvas,
+        Vector2 position,
+        float size,
+        int direction,
+        long tick)
+    {
+        var backAngle = (direction + 4) * Mathf.Tau / 8f;
+        var back = new Vector2(Mathf.Cos(backAngle), Mathf.Sin(backAngle));
+        for (var puff = 0; puff < 2; puff++)
+        {
+            var phase = Mathf.PosMod((float)tick + puff * 2f, 4f) / 4f;
+            VisualDraw.Ellipse(
+                canvas,
+                position + back * size * (0.34f + phase * 0.22f),
+                size * (0.07f + phase * 0.03f),
+                size * (0.035f + phase * 0.015f),
+                new Color(0.58f, 0.52f, 0.40f, 0.18f * (1f - phase)));
         }
     }
 

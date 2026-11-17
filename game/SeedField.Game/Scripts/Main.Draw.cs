@@ -9,9 +9,23 @@ public partial class Main : Node2D
     public override void _Draw()
     {
         DrawRect(new Rect2(0, 0, ViewWidth, ViewHeight), Background);
+        if (!_classicVisuals)
+        {
+            DrawWorldBackdrop();
+        }
 
         DrawGrid();
+        if (!_classicVisuals)
+        {
+            DrawWorldProps();
+        }
+
         DrawStagingZones();
+        if (!_classicVisuals)
+        {
+            DrawPresentationNetworks();
+        }
+
         DrawControlPoint();
         if (_classicVisuals)
         {
@@ -26,6 +40,7 @@ public partial class Main : Node2D
             DrawPresentationEntities();
             DrawTracers();
             DrawMessages();
+            DrawPresentationEffects();
             if (_debugVisible)
             {
                 DrawPresentationDebug();
@@ -64,24 +79,27 @@ public partial class Main : Node2D
             width: 1.6f,
             antialiased: true);
 
-        DrawString(
-            HudFont,
-            MapOrigin + new Vector2(0, -10),
-            "FRONTIER  ·  16 000 × 8 000 mm  ·  authoritative C# SimulationCore",
-            HorizontalAlignment.Left,
-            -1,
-            12,
-            Muted);
+        if (_zoom <= 1.1f)
+        {
+            DrawString(
+                HudFont,
+                MapOrigin + new Vector2(0, -10),
+                "FRONTIER  ·  16 000 × 8 000 mm  ·  authoritative C# SimulationCore",
+                HorizontalAlignment.Left,
+                -1,
+                12,
+                Muted);
+        }
     }
 
     private void DrawStagingZones()
     {
-        DrawArc(Map(new Vec2(2_000, 4_000)), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Cyan, 0.22f), 2f, true);
-        DrawArc(Map(new Vec2(13_000, 4_000)), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Orange, 0.22f), 2f, true);
+        DrawArc(Map(Scenarios.AStagingPosition), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Cyan, 0.22f), 2f, true);
+        DrawArc(Map(Scenarios.BStagingPosition), 1_500 * MapScale, 0, Mathf.Tau, 72, new Color(Orange, 0.22f), 2f, true);
 
         DrawString(
             HudFont,
-            Map(new Vec2(2_000, 4_000)) + new Vector2(-62, 74),
+            Map(Scenarios.AStagingPosition) + new Vector2(-62, 74),
             "A · STAGING",
             HorizontalAlignment.Left,
             -1,
@@ -89,7 +107,7 @@ public partial class Main : Node2D
             new Color(Cyan, 0.75f));
         DrawString(
             HudFont,
-            Map(new Vec2(13_000, 4_000)) + new Vector2(-62, 74),
+            Map(Scenarios.BStagingPosition) + new Vector2(-62, 74),
             "B · STAGING",
             HorizontalAlignment.Left,
             -1,
@@ -177,7 +195,7 @@ public partial class Main : Node2D
     {
         foreach (var item in _history)
         {
-            if (item.Event is not ShotFired shot)
+            if (item.Event is not ShotFired shot || !IsPlayerVisible(item.Event))
             {
                 continue;
             }
@@ -202,7 +220,9 @@ public partial class Main : Node2D
     {
         foreach (var item in _history)
         {
-            if (item.Event is not MessageQueued queued)
+            if (item.Event is not MessageQueued queued ||
+                !IsPlayerVisible(item.Event) ||
+                (!_classicVisuals && !_visibleEntityIds.Contains(queued.FromEntityId.Value)))
             {
                 continue;
             }
@@ -234,6 +254,7 @@ public partial class Main : Node2D
             var mate = _world.EnumerateEntities().FirstOrDefault(entity =>
                 entity.RegionId == "frontier" &&
                 entity.Id != sender.Id &&
+                (_classicVisuals || _visibleEntityIds.Contains(entity.Id.Value)) &&
                 string.Equals(entity.CivilizationId, sender.CivilizationId, StringComparison.Ordinal));
 
             if (mate is not null)
@@ -282,7 +303,7 @@ public partial class Main : Node2D
         DrawString(
             HudFont,
             new Vector2(24, 62),
-            "Gate 2 visual slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
+            "Gate 3 world slice — Godot 4.7.2 Mono · .NET 10 · Jint 4.18.0",
             HorizontalAlignment.Left,
             -1,
             12,
@@ -294,7 +315,8 @@ public partial class Main : Node2D
             $"tick {_world.Tick}   entities {_world.EnumerateEntities().Count()}   " +
             $"shots {stats.ShotsFired}   damage {stats.DamageDealt}   " +
             $"messages {stats.MessagesDelivered}   E spent {stats.EnergySpentTotal}   " +
-            $"faults {_faultCount}   A program v{_slotA.Version}",
+            $"faults {_faultCount}   A program v{_slotA.Version}   " +
+            $"view {_zoom:0.00} ({DetailTier})",
             HorizontalAlignment.Left,
             -1,
             13,
@@ -345,8 +367,16 @@ public partial class Main : Node2D
             10,
             ready ? Green : Amber);
 
-        DrawLegend();
-        DrawEventLog();
+        if (_tacticalVisible || _debugVisible)
+        {
+            DrawLegend();
+        }
+
+        if (_debugVisible)
+        {
+            DrawEventLog();
+        }
+
         DrawControls();
     }
 
@@ -380,7 +410,7 @@ public partial class Main : Node2D
         DrawString(HudFont, new Vector2(24, 612), "EVENT LOG · authoritative simulation events", HorizontalAlignment.Left, -1, 12, Muted);
 
         var entries = _history
-            .Where(item => IsLogworthy(item.Event))
+            .Where(item => IsLogworthy(item.Event) && IsPlayerVisible(item.Event))
             .TakeLast(5)
             .ToList();
 
