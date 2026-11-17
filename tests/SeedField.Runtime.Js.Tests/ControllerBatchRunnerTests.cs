@@ -109,7 +109,7 @@ public sealed class ControllerBatchRunnerTests
     }
 
     [Fact]
-    public void PoolThreadFallsBackToSequentialToAvoidStarvation()
+    public async Task PoolThreadFallsBackToSequentialToAvoidStarvation()
     {
         var builder = new WorldBuilder().AddRegion("r0", 10_000, 10_000);
         for (var id = 1L; id <= 8; id++)
@@ -134,11 +134,11 @@ public sealed class ControllerBatchRunnerTests
                 engine.BuildControllerObservation(controller.EntityId)))
             .ToList();
 
-        var degree = Task.Run(() =>
+        var degree = await Task.Run(() =>
         {
             runner.Run(items);
             return runner.LastUsedDegreeOfParallelism;
-        }).GetAwaiter().GetResult();
+        });
 
         Assert.Equal(1, degree);
         foreach (var controller in controllers)

@@ -19,9 +19,10 @@ public sealed class JsController : IController
 {
     public const int MaxObservationBytes = 4 * 1024 * 1024;
 
-    private const string Harness = """
+    private static readonly string Harness = ObservationExpander.Script + """
+
         function __seedfield_run(json) {
-            var result = decide(JSON.parse(json));
+            var result = decide(__seedfield_expand(JSON.parse(json)));
             if (result === undefined || result === null) {
                 throw new Error("decide() must return an intent array");
             }
@@ -97,10 +98,18 @@ public sealed class JsController : IController
             : ControllerDecision.Fault(run.FaultCode!, run.FaultMessage!);
     }
 
+    /// <summary>Compact controller payload; the trusted harness expands it.</summary>
     public static string SerializeObservation(Observation observation)
     {
         ArgumentNullException.ThrowIfNull(observation);
         return ObservationJson.Serialize(observation);
+    }
+
+    /// <summary>Object-shaped JSON for tests and tooling.</summary>
+    public static string SerializeFullObservation(Observation observation)
+    {
+        ArgumentNullException.ThrowIfNull(observation);
+        return ObservationJson.SerializeFull(observation);
     }
 
     public static ControllerDecision ParseDecisionJson(string json, string civilizationId) =>
