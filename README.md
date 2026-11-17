@@ -153,6 +153,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`power maintenance`](docs/engineering/evidence/2026-11-17-power-maintenance.md) | 抢占式取电、跳闸维护锁定、F4 MAINTAIN 与 v12 证据 |
 | [`deterministic random`](docs/engineering/evidence/2026-11-17-deterministic-random.md) | SplitMix64 世界随机流、随机断路器故障与 v13 证据 |
 | [`code review medium`](docs/engineering/reviews/2026-11-17-code-review-medium.md) | 审查 8 项修复、2 项保留与回归测试 |
+| [`offline package security`](docs/engineering/security/2026-11-17-offline-package-threat-model.md) | 离线文明包威胁模型、隔离架构与 12 项开放门禁 |
 | [`recovery quota`](docs/engineering/evidence/2026-11-17-recovery-quota.md) | 恢复配额、恢复债务、慢速模式与 v14 证据 |
 | [`core shell & siege`](docs/engineering/evidence/2026-11-17-core-shell-siege.md) | 外壳锚点、覆盖缺口、围困成本/配额与 v15 证据 |
 | [`device wrecks`](docs/engineering/evidence/2026-11-17-device-wrecks.md) | 设备残骸、原主/在场回收、v16 证据 |

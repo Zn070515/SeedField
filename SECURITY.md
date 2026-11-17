@@ -19,7 +19,17 @@
 - 第三方离线文明包：在完成进程隔离、IPC 校验与资源限额前，导入/执行保持关闭。
 - 构建链：依赖投毒、CI 权限、发布产物完整性。
 
+## 隔离门禁
+
+- 威胁模型与目标隔离架构：
+  [`docs/engineering/security/2026-11-17-offline-package-threat-model.md`](docs/engineering/security/2026-11-17-offline-package-threat-model.md)
+- 决策：[ADR-0020](docs/engineering/adr/ADR-0020-offline-package-isolation-gate.md)
+- 代码门禁：`OpponentPackage.ThirdPartyImportEnabled = false`；
+  `tests/SeedField.Repository.Tests` 禁止对手包命名空间出现文件/网络/进程/程序集 API。
+- 开放第三方可执行包前，必须逐项通过威胁模型第 5 节的 12 项硬门禁。
+
 ## 已知边界
 
 - 当前没有发布二进制；Godot 导出模板尚未安装。
 - 当前只有内置可信脚本参与运行；任意第三方代码导入未开放。
+- 数据-only 废墟快照（ADR-0018）不是可执行包；它只能生成残骸，不执行代码。

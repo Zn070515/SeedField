@@ -97,6 +97,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 设备残骸：`WreckRecoveryPercent` 场景规则；摧毁蓝图实例留下按成本比例计算的残骸；原主可回收，其他文明需在区域有实体；`MaterialSalvagedTotal`；存档 v16（ADR-0017）。
 - 离线废墟快照：数据-only JSON、1MB/2000 条限额、非核心区导入、RNG 切片、老化/掠夺后生成残骸；未知蓝图只变残骸；`--ruins`（ADR-0018）。
 - 恢复面板与核心维护：`CoreRecoveryDiagnosticsBuilder`；F6 面板显示配额/债务/锚点/围困并执行 RECOVER/MAINTAIN；`MaintainCoreCommand` 扣材料清配额/债务；存档 v17（ADR-0019）。
+- 离线包安全门禁：第三方面向可执行包仍关闭；`ThirdPartyImportEnabled=false`；仓库 Lint 禁止对手包命名空间出现文件/网络/进程/程序集 API；威胁模型、目标工作进程/IPC/Job Object 架构与 12 项开放门禁见 ADR-0020。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
 
 ### 尚未实现
@@ -361,12 +362,12 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | 残骸/废墟模型是原型 | 设备残骸与离线快照切片已可回收；无残骸老化/消失，无废墟实体/占领，快照无签名 | 后续 ADR 定义残骸老化、废墟实体与来源认证 |
 | 废墟快照是数据-only | 不支持导入可执行 AI/脚本；第三方可执行包仍关闭 | 完整离线文明包必须等进程隔离/IPC |
 | 外壳围困是原型 | 锚点目标只增不减；多跳围困、锚点占领、仓储/产出加成未做 | 先验证单跳围困手感，再扩展拓扑与占领 |
-| 第三方对手包未导入 | 只有内置受信任包 | 先完成进程隔离与 IPC 校验 |
+| 第三方对手包未导入 | 只有内置受信任包；数据-only 废墟快照可用 | 按 ADR-0020 完成进程隔离、IPC、资源限额与 12 项门禁后再开放 |
 | 存档仅覆盖当前 schema | 尚未验证旧版本迁移 | 后续加入 v1→v2 迁移测试 |
 
 ## 8. 下一步（按依赖顺序）
 
-1. 完整离线文明包（可执行 AI/脚本，需进程隔离）；废墟实体/占领/清理；快照签名/Workshop；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。
+1. 离线包隔离 Phase 1：工作进程 + 长度前缀 IPC + Job Object/AppContainer + 资源限额（仍只白名单）；废墟实体/占领/清理；快照签名/Workshop；锚点占领/仓储/产出加成；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。
 4. 用 `DeterministicRandom` 实现可复现的命中/损伤变体与掉落；补随机流回放测试。
