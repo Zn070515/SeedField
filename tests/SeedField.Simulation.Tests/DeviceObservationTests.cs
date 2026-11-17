@@ -68,6 +68,44 @@ public sealed class DeviceObservationTests
     }
 
     [Fact]
+    public void ParallelObservationBatchMatchesSerial()
+    {
+        var builder = new WorldBuilder().AddRegion("r0", 20_000, 20_000);
+        for (var id = 1L; id <= 16; id++)
+        {
+            builder.AddEntity(Unit(id, "A", new Vec2(1_000 + (int)id * 100, 1_000), sensor: 6_000));
+            builder.AddEntity(Unit(100 + id, "B", new Vec2(2_000 + (int)id * 100, 1_000), sensor: null));
+        }
+
+        var world = builder.Build();
+        var engine = new SimulationEngine(world);
+        var ids = world.EnumerateEntities()
+            .Where(entity => entity.CivilizationId == "A")
+            .Select(entity => entity.Id)
+            .ToList();
+
+        var serial = ids
+            .Select(id => engine.BuildControllerObservation(id))
+            .ToList();
+        var parallel = engine.BuildControllerObservations(ids, maxDegreeOfParallelism: 4);
+
+        Assert.Equal(serial.Count, parallel.Length);
+        for (var index = 0; index < serial.Count; index++)
+        {
+            Assert.Equal(serial[index].ViewerEntityId, parallel[index].ViewerEntityId);
+            Assert.Equal(
+                serial[index].Entities.Select(entity => entity.EntityId),
+                parallel[index].Entities.Select(entity => entity.EntityId));
+            Assert.Equal(
+                serial[index].Messages.Select(message => message.MessageId),
+                parallel[index].Messages.Select(message => message.MessageId));
+            Assert.Equal(
+                serial[index].ControlPoints?.Count,
+                parallel[index].ControlPoints?.Count);
+        }
+    }
+
+    [Fact]
     public void DeploymentAfterAnObservationRefreshesTheCachedView()
     {
         var world = new WorldBuilder()

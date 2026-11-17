@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Jint;
+using Jint.Native;
 using Jint.Runtime;
 using SeedField.Simulation;
 
@@ -27,6 +28,7 @@ public sealed class JsController : IController
         """;
 
     private readonly Engine _engine;
+    private JsValue _runFunction = JsValue.Undefined;
 
     public JsController(string civilizationId, string script, JsControllerOptions? options = null)
     {
@@ -51,6 +53,7 @@ public sealed class JsController : IController
         {
             _engine.Execute(script);
             _engine.Execute(Harness);
+            _runFunction = _engine.Evaluate("__seedfield_run");
 
             var hasDecide = _engine.Evaluate("typeof decide === 'function'").AsBoolean();
             if (!hasDecide)
@@ -112,7 +115,12 @@ public sealed class JsController : IController
                 "Observation JSON is empty.");
         }
 
-        if (System.Text.Encoding.UTF8.GetByteCount(observationJson) > MaxObservationBytes)
+        // UTF-8 never needs fewer bytes than UTF-16 code units, and never more than
+        // four per unit. Only the ambiguous middle band pays for a full count.
+        var length = observationJson.Length;
+        if (length > MaxObservationBytes ||
+            (length * 4L > MaxObservationBytes &&
+             System.Text.Encoding.UTF8.GetByteCount(observationJson) > MaxObservationBytes))
         {
             return ControllerRunResult.Fault(
                 ScriptFaultCodes.Fault,
@@ -121,7 +129,7 @@ public sealed class JsController : IController
 
         try
         {
-            var result = _engine.Invoke("__seedfield_run", observationJson);
+            var result = _engine.Invoke(_runFunction, observationJson);
             return ControllerRunResult.Ok(result.AsString());
         }
         catch (TimeoutException exception)

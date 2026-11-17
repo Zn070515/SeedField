@@ -51,6 +51,7 @@ public partial class Main : Node2D
     private ControllerSlot _slotA = null!;
     private ControllerSlot _slotB = null!;
     private readonly List<DeviceControllerSlot> _deviceControllers = new();
+    private readonly ControllerBatchRunner _controllerBatch = new();
     private OpponentPackage _opponent = BuiltInOpponents.Skirmisher;
     private DiplomacyProfile _opponentDiplomacy = OpponentDiplomacyProfiles.Default;
     private ProgramEditor _editor = null!;

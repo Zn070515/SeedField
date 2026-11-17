@@ -48,6 +48,19 @@ internal static partial class Program
 
         if (TryReadBenchmarkDevices(
                 args,
+                "--benchmark-jint-parallel",
+                out var parallelDevices,
+                out var parallelInvalid))
+        {
+            var dof = ReadIntFlag(args, "--parallel-dof", 0);
+            var budget = ReadDoubleFlag(args, "--budget-ms", 0);
+            return parallelInvalid
+                ? 2
+                : RunParallelJintBenchmark(parallelDevices, dof, budget);
+        }
+
+        if (TryReadBenchmarkDevices(
+                args,
                 "--benchmark-jint-full",
                 out var jintFullDevices,
                 out var jintFullInvalid))

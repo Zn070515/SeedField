@@ -26,6 +26,20 @@ public sealed class JsControllerTests
     }
 
     [Fact]
+    public void RejectsObservationAboveByteLimitBeforeParsing()
+    {
+        using var controller = new JsController(
+            "A",
+            "function decide(obs) { return []; }");
+        var oversized = new string('x', JsController.MaxObservationBytes + 1);
+
+        var result = controller.RunJson(oversized);
+
+        Assert.False(result.Success);
+        Assert.Equal(ScriptFaultCodes.Fault, result.FaultCode);
+    }
+
+    [Fact]
     public void ScriptReceivesOnlyTheFilteredObservation()
     {
         var observation = CreateObservation();

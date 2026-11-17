@@ -343,8 +343,8 @@ public partial class Main : Node2D
 
     private void StepOnce()
     {
-        var intents = new List<Intent>();
-
+        var controllers = new List<DeviceControllerSlot>(_deviceControllers.Count);
+        var entityIds = new List<EntityId>(_deviceControllers.Count);
         foreach (var controller in _deviceControllers)
         {
             if (_world.FindEntity(controller.EntityId) is null)
@@ -352,8 +352,23 @@ public partial class Main : Node2D
                 continue;
             }
 
-            var decision = controller.Decide(
-                _engine.BuildControllerObservation(controller.EntityId));
+            controllers.Add(controller);
+            entityIds.Add(controller.EntityId);
+        }
+
+        var observations = _engine.BuildControllerObservations(
+            entityIds,
+            _controllerBatch.MaxDegreeOfParallelism);
+        var items = new List<ControllerBatchItem>(controllers.Count);
+        for (var index = 0; index < controllers.Count; index++)
+        {
+            items.Add(new ControllerBatchItem(index, controllers[index], observations[index]));
+        }
+
+        var decisions = _controllerBatch.Run(items);
+        var intents = new List<Intent>(decisions.Length);
+        foreach (var decision in decisions)
+        {
             intents.AddRange(decision.Intents);
             _faultCount += decision.Faults.Count;
         }

@@ -161,6 +161,54 @@ public sealed partial class SimulationEngine
             includeAllies: false);
 
     /// <summary>
+    /// Builds many controller views at once. Each worker owns its own observation
+    /// cache, so the shared per-tick cache (which is not thread-safe) is never
+    /// touched. Results keep the caller's input order.
+    /// </summary>
+    public Observation[] BuildControllerObservations(
+        IReadOnlyList<EntityId> entityIds,
+        int maxDegreeOfParallelism = 0)
+    {
+        ArgumentNullException.ThrowIfNull(entityIds);
+        var results = new Observation[entityIds.Count];
+        if (entityIds.Count == 0)
+        {
+            return results;
+        }
+
+        var degree = maxDegreeOfParallelism > 0
+            ? Math.Min(maxDegreeOfParallelism, entityIds.Count)
+            : Math.Min(Math.Clamp(Environment.ProcessorCount, 1, 16), entityIds.Count);
+        if (degree <= 1 || entityIds.Count < 8)
+        {
+            for (var index = 0; index < entityIds.Count; index++)
+            {
+                results[index] = BuildControllerObservation(entityIds[index]);
+            }
+
+            return results;
+        }
+
+        Parallel.For(
+            0,
+            entityIds.Count,
+            new ParallelOptions { MaxDegreeOfParallelism = degree },
+            () => ObservationCache.Build(World),
+            (index, _, cache) =>
+            {
+                results[index] = ObservationBuilder.BuildForEntity(
+                    World,
+                    entityIds[index],
+                    cache,
+                    includeAllies: false);
+                return cache;
+            },
+            _ => { });
+
+        return results;
+    }
+
+    /// <summary>
     /// Per-tick cache, rebuilt after a tick advance or after any host command that
     /// mutated the world without advancing the tick (for example a deployment).
     /// Command paths call <see cref="InvalidateObservationCache"/>.
