@@ -47,6 +47,8 @@ public partial class Main : Node2D
     private ColorRect _editorDimmer = null!;
     private WorkshopPanel _workshop = null!;
     private CanvasLayer _workshopLayer = null!;
+    private DiplomacyPanel _diplomacy = null!;
+    private CanvasLayer _diplomacyLayer = null!;
     private string _deployedSourceA = string.Empty;
     private int _workshopSpawnIndex;
     private string _capturePath = "res://screenshots/m0-combat.png";
@@ -57,6 +59,7 @@ public partial class Main : Node2D
     private bool _captureRequested;
     private bool _captureEditor;
     private bool _captureWorkshop;
+    private bool _captureDiplomacy;
     private bool _captureVictory;
     private int _frame;
     private int _faultCount;
@@ -74,6 +77,7 @@ public partial class Main : Node2D
         ResetScenario();
         BuildProgramEditor();
         BuildWorkshopPanel();
+        BuildDiplomacyPanel();
 
         if (arguments.Contains("--save-smoke"))
         {
@@ -81,21 +85,31 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--diplomacy-smoke"))
+        {
+            RunDiplomacySmoke();
+            return;
+        }
+
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
+        _captureDiplomacy = arguments.Contains("--capture-diplomacy");
         _captureVictory = arguments.Contains("--capture-victory");
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
                   _captureWorkshop ||
+                  _captureDiplomacy ||
                   _captureVictory;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
             : _captureWorkshop
                 ? "res://screenshots/m0-workshop.png"
-                : _captureVictory
-                    ? "res://screenshots/m0-victory.png"
-                    : "res://screenshots/m0-combat.png";
+                : _captureDiplomacy
+                    ? "res://screenshots/m0-diplomacy.png"
+                    : _captureVictory
+                        ? "res://screenshots/m0-victory.png"
+                        : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -124,6 +138,12 @@ public partial class Main : Node2D
                 $"· upgraded scout to v{_world.FindEntity(new EntityId(1))!.BlueprintVersion}",
                 false);
             _status = "workshop · paused";
+        }
+        else if (_captureDiplomacy)
+        {
+            OpenDiplomacy();
+            SeedDiplomacyCapture();
+            _status = "diplomacy · paused";
         }
         else if (_captureVictory)
         {
@@ -207,6 +227,13 @@ public partial class Main : Node2D
             return;
         }
 
+        if (key.Keycode == Key.F3)
+        {
+            ToggleDiplomacy();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode == Key.F1)
         {
             ToggleProgramEditor();
@@ -227,7 +254,8 @@ public partial class Main : Node2D
             !key.Pressed ||
             key.Echo ||
             _editorLayer.Visible ||
-            _workshopLayer.Visible)
+            _workshopLayer.Visible ||
+            _diplomacyLayer.Visible)
         {
             return;
         }
@@ -312,6 +340,157 @@ public partial class Main : Node2D
         _workshop.Refresh(_world);
     }
 
+    private void BuildDiplomacyPanel()
+    {
+        _diplomacyLayer = new CanvasLayer { Layer = 18, Visible = false };
+        AddChild(_diplomacyLayer);
+
+        var dimmer = new ColorRect { Color = new Color(0, 0, 0, 0.55f) };
+        dimmer.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _diplomacyLayer.AddChild(dimmer);
+
+        _diplomacy = new DiplomacyPanel();
+        _diplomacy.ProposeTreatyRequested += ProposeTreatyFromDiplomacy;
+        _diplomacy.BreakTreatyRequested += BreakTreatyFromDiplomacy;
+        _diplomacy.RespondTreatyRequested += RespondTreatyFromDiplomacy;
+        _diplomacy.RespondTradeRequested += RespondTradeFromDiplomacy;
+        _diplomacy.CancelTradeRequested += CancelTradeFromDiplomacy;
+        _diplomacy.ProposeTradeRequested += ProposeTradeFromDiplomacy;
+        _diplomacy.CloseRequested += CloseDiplomacy;
+        _diplomacyLayer.AddChild(_diplomacy);
+        RefreshDiplomacy();
+    }
+
+    private void ToggleDiplomacy()
+    {
+        if (_diplomacyLayer.Visible)
+        {
+            CloseDiplomacy();
+        }
+        else
+        {
+            OpenDiplomacy();
+        }
+    }
+
+    private void OpenDiplomacy()
+    {
+        if (_editorLayer.Visible)
+        {
+            CloseProgramEditor();
+        }
+
+        if (_workshopLayer.Visible)
+        {
+            CloseWorkshop();
+        }
+
+        _diplomacyLayer.Visible = true;
+        RefreshDiplomacy();
+        _paused = true;
+        _status = "diplomacy · paused";
+        QueueRedraw();
+    }
+
+    private void CloseDiplomacy()
+    {
+        _diplomacyLayer.Visible = false;
+        _paused = _captureRequested;
+        _status = _paused ? "capture" : "running";
+        QueueRedraw();
+    }
+
+    private void RefreshDiplomacy()
+    {
+        _diplomacy.Refresh(_world, _engine.HasCommunicationPath("A", "B"));
+    }
+
+    private void RefreshDiplomacyIfReady()
+    {
+        if (_diplomacy is not null)
+        {
+            RefreshDiplomacy();
+        }
+    }
+
+    private void ProposeTreatyFromDiplomacy(TreatyKind kind)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", kind, ExpiresInTicks: 200)));
+    }
+
+    private void BreakTreatyFromDiplomacy(long treatyId)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new BreakTreatyCommand("A", treatyId)));
+    }
+
+    private void RespondTreatyFromDiplomacy(long proposalId, bool accept)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("A", proposalId, accept)));
+    }
+
+    private void RespondTradeFromDiplomacy(long offerId, bool accept)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new RespondTradeCommand("A", offerId, accept)));
+    }
+
+    private void CancelTradeFromDiplomacy(long offerId)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new CancelTradeCommand("A", offerId)));
+    }
+
+    private void ProposeTradeFromDiplomacy(
+        long giveMaterial,
+        long giveEnergy,
+        long wantMaterial,
+        long wantEnergy)
+    {
+        ApplyDiplomacyResult(_engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand(
+                "A",
+                "B",
+                "frontier",
+                giveMaterial,
+                giveEnergy,
+                wantMaterial,
+                wantEnergy,
+                ExpiresInTicks: 200)));
+    }
+
+    private void ApplyDiplomacyResult(DiplomacyCommandResult result)
+    {
+        _diplomacy.SetStatus(
+            result.Success
+                ? result.Message
+                : $"failed [{result.ErrorCode}]: {result.Message}",
+            !result.Success);
+        RefreshDiplomacy();
+        QueueRedraw();
+    }
+
+    private void SeedDiplomacyCapture()
+    {
+        var tradeProposal = _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("B", "A", TreatyKind.Trade, ExpiresInTicks: 300));
+        _engine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("A", tradeProposal.ProposalId!.Value, Accept: true));
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("B", "A", TreatyKind.NonAggression, ExpiresInTicks: 200));
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("B", "A", "frontier", 40, 20, 30, 10, ExpiresInTicks: 200));
+        _engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "frontier", 25, 10, 15, 5, ExpiresInTicks: 200));
+
+        RefreshDiplomacy();
+        _diplomacy.SetStatus(
+            "incoming NAP proposal and trade offers ready for review",
+            false);
+    }
+
     private void ToggleWorkshop()
     {
         if (_workshopLayer.Visible)
@@ -329,6 +508,11 @@ public partial class Main : Node2D
         if (_editorLayer.Visible)
         {
             CloseProgramEditor();
+        }
+
+        if (_diplomacyLayer.Visible)
+        {
+            CloseDiplomacy();
         }
 
         _workshopLayer.Visible = true;
@@ -464,6 +648,11 @@ public partial class Main : Node2D
             CloseWorkshop();
         }
 
+        if (_diplomacyLayer.Visible)
+        {
+            CloseDiplomacy();
+        }
+
         _editorLayer.Visible = true;
         _paused = true;
         _status = "program editor · paused";
@@ -494,6 +683,48 @@ public partial class Main : Node2D
         }
 
         QueueRedraw();
+    }
+
+    private void RunDiplomacySmoke()
+    {
+        var frontier = _world.Regions["frontier"];
+        var beforeMaterial = frontier.GetMaterial("A") + frontier.GetMaterial("B");
+        var beforeEnergy = frontier.GetEnergy("A") + frontier.GetEnergy("B");
+
+        SeedDiplomacyCapture();
+
+        var proposalId = _world.TreatyProposals.Values
+            .Single(proposal => proposal.TargetCivilizationId == "A")
+            .Id;
+        var incomingOfferId = _world.TradeOffers.Values
+            .Single(offer => offer.TargetCivilizationId == "A")
+            .Id;
+        var outgoingOfferId = _world.TradeOffers.Values
+            .Single(offer => offer.ProposerCivilizationId == "A")
+            .Id;
+
+        RespondTreatyFromDiplomacy(proposalId, accept: true);
+        RespondTradeFromDiplomacy(incomingOfferId, accept: true);
+        CancelTradeFromDiplomacy(outgoingOfferId);
+
+        var afterMaterial = frontier.GetMaterial("A") + frontier.GetMaterial("B");
+        var afterEnergy = frontier.GetEnergy("A") + frontier.GetEnergy("B");
+        var ok = _world.Treaties.Count == 2 &&
+                 _world.TradeOffers.Count == 0 &&
+                 afterMaterial == beforeMaterial &&
+                 afterEnergy == beforeEnergy &&
+                 _world.Statistics.TradeMaterialSettledTotal == 70 &&
+                 _world.Statistics.TradeEnergySettledTotal == 30;
+
+        GD.Print(
+            $"DIPLOMACY_SMOKE treaties={_world.Treaties.Count} " +
+            $"offers={_world.TradeOffers.Count} " +
+            $"A=M{frontier.GetMaterial("A")}/E{frontier.GetEnergy("A")} " +
+            $"B=M{frontier.GetMaterial("B")}/E{frontier.GetEnergy("B")} " +
+            $"settled=M{_world.Statistics.TradeMaterialSettledTotal}/" +
+            $"E{_world.Statistics.TradeEnergySettledTotal} ok={ok}");
+
+        GetTree().Quit();
     }
 
     private void RunSaveSmoke()
@@ -604,6 +835,7 @@ public partial class Main : Node2D
                 _paused = true;
                 _editor.Source = _deployedSourceA;
                 _workshop?.Refresh(_world);
+                RefreshDiplomacyIfReady();
 
                 _status = $"loaded tick {_world.Tick} · A v{_slotA.Version}";
             }
@@ -643,6 +875,7 @@ public partial class Main : Node2D
         _workshopSpawnIndex = 0;
 
         PreRunToCombat();
+        RefreshDiplomacyIfReady();
     }
 
     private void PreRunToCombat()
@@ -1100,7 +1333,7 @@ public partial class Main : Node2D
             new Vector2(24, 716),
             $"OPPONENT {_opponent.Manifest.PackageId} " +
             $"v{_opponent.Manifest.Version} · " +
-            "SPACE pause · N step · F1 program · F2 workshop · F5 save · F9 load · F12 screenshot",
+            "SPACE pause · N step · F1 program · F2 workshop · F3 diplomacy · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,
             11,

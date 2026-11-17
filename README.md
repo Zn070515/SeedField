@@ -53,7 +53,7 @@
 | 条约/贸易 | 互不侵犯/贸易协定；宿主命令签约；互不侵犯阻止攻击；贸易托管、原子交换与退款；存档 v7 |
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
-| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊面板（net10.0）** |
+| 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交面板（net10.0）** |
 | 验证 | 136 个仿真测试 + 25 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/胜利截图已提交；CI 构建/测试/提交规范 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Godot 4.7.2 .NET |
 
@@ -84,11 +84,13 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --const
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --message-acl
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --diplomacy
 
-godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊
+godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交
 godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
+godot --path game/SeedField.Game -- --capture-diplomacy # 外交面板截图
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
+godot --path game/SeedField.Game -- --diplomacy-smoke  # 外交面板按钮接线冒烟
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
@@ -121,6 +123,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`policy/refund/offscreen`](docs/engineering/evidence/2026-11-17-policy-refund-offscreen.md) | 消息权限、失败退款、离屏发电预算证据 |
 | [`message ACL`](docs/engineering/evidence/2026-11-17-message-acl.md) | 发送方/话题白名单、身份边界、重复消息与断联证据 |
 | [`treaty & trade`](docs/engineering/evidence/2026-11-17-treaty-trade.md) | 互不侵犯、贸易托管/原子交换/退款、存档 v7 证据 |
+| [`diplomacy panel`](docs/engineering/evidence/2026-11-17-diplomacy-panel.md) | F3 外交面板、按钮接线、截图与 smoke 证据 |
 
 ## 工程原则
 
@@ -135,4 +138,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；跨文明协议已有消息 ACL 与条约/贸易原型，但尚无外交 UI、AI 自动谈判、消息签名/信誉/关税；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复配额未统一；跨文明协议已有消息 ACL、条约/贸易原型与 F3 外交面板，但面板只操作 A，B 无自动外交，也没有消息签名/信誉/关税；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

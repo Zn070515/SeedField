@@ -38,6 +38,9 @@ internal static class Scenarios
             .SetVictoryCondition(capturedPointsToWin: 2)
             .Build();
 
+        world.Regions["frontier"].AddEnergy("A", 200);
+        world.Regions["frontier"].AddEnergy("B", 200);
+
         var workshop = world.Workshop;
         workshop.Publish(new DeviceBlueprint(
             "power", 0, "Power Cell", 60, 5_000,

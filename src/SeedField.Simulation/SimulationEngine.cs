@@ -972,7 +972,11 @@ public sealed class SimulationEngine
             ? (first, second)
             : (second, first);
 
-    private bool HasCommunicationPath(string civilizationA, string civilizationB)
+    /// <summary>
+    /// Read-only query used by the host UI: both civilizations need a Comm endpoint and
+    /// either a shared region or a link path between their endpoints.
+    /// </summary>
+    public bool HasCommunicationPath(string civilizationA, string civilizationB)
     {
         foreach (var regionA in World.Regions.Values)
         {
