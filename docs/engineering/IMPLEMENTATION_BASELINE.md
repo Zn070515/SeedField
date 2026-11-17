@@ -101,6 +101,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
+- 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；100 台 33.96→7.46 ms/tick、1000 台 180.36→103.71 ms/tick；`--benchmark-jint-parallel` 与 `--budget-ms` 门禁（ADR-0028）。
 
 ### 尚未实现
 
@@ -397,6 +398,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0024](adr/ADR-0024-art-camera-route-world-space.md) | 美术相机路线 A 与世界空间样片 |
 | [ADR-0025](adr/ADR-0025-art-gate2-direction-modules-masks.md) | 方向数、模块剪影、核心四态与 mask 验证 |
 | [ADR-0027](adr/ADR-0027-spatial-observation-controller-view.md) | 空间索引、共享观测与控制器观测视图 |
+| [ADR-0028](adr/ADR-0028-parallel-controller-batch.md) | 并行控制器批处理与观测批次 |
 
 ## 8. 下一步（按依赖顺序）
 

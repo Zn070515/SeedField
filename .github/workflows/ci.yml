@@ -72,6 +72,26 @@ jobs:
           path: "**/TestResults/*.trx"
           if-no-files-found: ignore
 
+  perf:
+    name: perf · jint
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build SeedField.slnx -c Release
+
+      - name: Parallel controller budget
+        shell: pwsh
+        run: |
+          dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -c Release --no-build -- --benchmark-jint-parallel 100 --parallel-dof 8 --budget-ms 120
+
   commit-lint:
     name: commit messages
     runs-on: ubuntu-latest
