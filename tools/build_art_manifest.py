@@ -1,8 +1,8 @@
 """Rebuild game/SeedField.Game/Art/manifest.json from rendered style assets.
 
-The runtime PNGs are the source of truth for hashes and alpha bounds; the Blender
-metadata in art/generated/ supplies route, angles and source. Pivots are derived
-from the alpha bounding box so sprites sit on their world anchor.
+The runtime PNGs under Art/style_<route>/ are the source of truth for file names,
+directions, hashes and alpha bounds. Pivots are derived from the alpha bounding
+box so sprites sit on their world anchor.
 
 Usage:
   python tools/build_art_manifest.py
@@ -26,8 +26,10 @@ FOOTPRINTS = {
 }
 
 
-def decode_alpha(path: Path) -> tuple[tuple[int, int, int, int], float, int]:
-    """Return (bbox, opaque coverage, width) for an 8-bit RGBA, non-interlaced PNG."""
+def decode_alpha(
+    path: Path,
+) -> tuple[tuple[int, int, int, int], float, int, int]:
+    """Return (bbox, opaque coverage, width, height) for an 8-bit RGBA PNG."""
     data = path.read_bytes()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"{path}: not a PNG")
@@ -101,7 +103,7 @@ def decode_alpha(path: Path) -> tuple[tuple[int, int, int, int], float, int]:
     if max_x < 0:
         raise ValueError(f"{path}: fully transparent")
     coverage = opaque / float(width * height)
-    return (min_x, min_y, max_x, max_y), coverage, width
+    return (min_x, min_y, max_x, max_y), coverage, width, height
 
 
 def sha256(path: Path) -> str:
@@ -133,15 +135,21 @@ def build_manifest(repo: Path) -> dict:
 
             files = []
             front_bottom = None
-            width = 0
+            front_height = 0
+            width = height = 0
             for runtime in runtime_files:
-                bbox, coverage, width = decode_alpha(runtime)
+                bbox, coverage, width, height = decode_alpha(runtime)
                 if coverage < 0.04:
                     raise ValueError(f"{runtime}: only {coverage:.1%} opaque pixels")
-                if bbox[0] < 2 or bbox[1] < 2 or bbox[2] > width - 3 or bbox[3] > width - 3:
+                if coverage > 0.80:
+                    raise ValueError(
+                        f"{runtime}: {coverage:.1%} opaque pixels; alpha likely broken"
+                    )
+                if bbox[0] < 2 or bbox[1] < 2 or bbox[2] > width - 3 or bbox[3] > height - 3:
                     raise ValueError(f"{runtime}: sprite touches the frame edge {bbox}")
                 if front_bottom is None:
                     front_bottom = bbox[3]
+                    front_height = height
                 files.append(
                     {
                         "path": f"style_{route}/{runtime.name}",
@@ -153,7 +161,7 @@ def build_manifest(repo: Path) -> dict:
             if route == "topdown":
                 pivot = [0.5, 0.5]
             else:
-                pivot = [0.5, round((front_bottom + 1) / float(width), 3)]
+                pivot = [0.5, round((front_bottom + 1) / float(front_height), 3)]
 
             entries.append(
                 {
@@ -161,7 +169,7 @@ def build_manifest(repo: Path) -> dict:
                     "kind": "style-test",
                     "route": route,
                     "directions": len(files),
-                    "resolutionPx": [width, width],
+                    "resolutionPx": [width, height],
                     "footprintPx": FOOTPRINTS[name],
                     "pivot": pivot,
                     "source": source,

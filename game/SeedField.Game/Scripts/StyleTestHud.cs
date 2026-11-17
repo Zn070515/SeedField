@@ -16,6 +16,7 @@ public partial class StyleTestHud : Control
     public override void _Ready()
     {
         MouseFilter = MouseFilterEnum.Ignore;
+        Resized += QueueRedraw;
         GetViewport().SizeChanged += OnViewportSizeChanged;
         QueueRedraw();
     }
@@ -32,7 +33,11 @@ public partial class StyleTestHud : Control
 
     public override void _Draw()
     {
-        var width = Size.X;
+        // The Control is added and anchored after entering the tree, so its own
+        // Size can still be (0, 0) when the first draw runs. Lay the HUD out
+        // against the viewport rect, which is valid immediately.
+        var viewport = GetViewportRect().Size;
+        var width = viewport.X;
 
         DrawRect(new Rect2(0, 0, width, 78), new Color(0.03f, 0.06f, 0.10f, 0.94f));
         DrawLine(
@@ -56,22 +61,22 @@ public partial class StyleTestHud : Control
             new Color(0.45f, 0.58f, 0.68f));
 
         DrawRect(
-            new Rect2(28, Size.Y - 44, 430, 26),
+            new Rect2(28, viewport.Y - 44, 430, 26),
             new Color(0.12f, 0.07f, 0.02f, 0.88f));
         DrawRect(
-            new Rect2(28, Size.Y - 44, 430, 26),
+            new Rect2(28, viewport.Y - 44, 430, 26),
             new Color(0.80f, 0.52f, 0.18f, 0.75f),
             false,
             1f);
         Label(
             "STATIC SAMPLE · DEMO DATA · DOES NOT READ WORLDSTATE",
-            new Vector2(38, Size.Y - 26),
+            new Vector2(38, viewport.Y - 26),
             11,
             new Color(0.98f, 0.74f, 0.36f));
 
         Label(
-            $"1 grid = 64 px · viewport {Size.X:0}×{Size.Y:0}",
-            new Vector2(width - 300, Size.Y - 26),
+            $"1 grid = 64 px · viewport {viewport.X:0}×{viewport.Y:0}",
+            new Vector2(width - 300, viewport.Y - 26),
             11,
             new Color(0.40f, 0.52f, 0.62f));
 

@@ -2,7 +2,7 @@
 
 Example:
   python art/comfy/generate_concept.py \
-    --prompt-file art/prompts/concept_power_node.md --seed 101 \
+    --prompt-file art/prompts/power_node_concept.txt --seed 101 \
     --width 1024 --height 1024 --name power_node_concept_101
 
 Requires ComfyUI at http://127.0.0.1:8188 with Flux.1-dev + T5/CLIP/VAE in
@@ -163,7 +163,7 @@ def main() -> int:
             history = get_json(f"{args.server}/history/{prompt_id}")
         except Exception as error:
             print(f"COMFY_POLL_WARNING {error}")
-        if prompt_id in history:
+        if history is not None and prompt_id in history:
             break
         time.sleep(2)
 

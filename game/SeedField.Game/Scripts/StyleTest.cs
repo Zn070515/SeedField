@@ -69,8 +69,24 @@ public partial class StyleTest : Node2D
 
         var path = ProjectSettings.GlobalizePath(
             $"res://screenshots/art-{_route}-{_zoom}-{_overlay}.png");
-        GetViewport().GetTexture().GetImage().SavePng(path);
-        GD.Print($"ART_SCREENSHOT_SAVED {path}");
+        var image = GetViewport().GetTexture().GetImage();
+        if (image is null)
+        {
+            GD.PushError($"ART_SCREENSHOT_FAILED viewport image unavailable: {path}");
+        }
+        else
+        {
+            var error = image.SavePng(path);
+            if (error == Error.Ok)
+            {
+                GD.Print($"ART_SCREENSHOT_SAVED {path}");
+            }
+            else
+            {
+                GD.PushError($"ART_SCREENSHOT_FAILED {error}: {path}");
+            }
+        }
+
         GetTree().Quit();
     }
 

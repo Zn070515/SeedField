@@ -85,9 +85,22 @@ public sealed class ArtAssetTests
             }
 
             var name = assetId.Split('.')[0];
-            var expectedAngles = route == "topdown"
-                ? new[] { 0 }
-                : ExpectedDirections[name];
+            int[] expectedAngles;
+            if (route == "topdown")
+            {
+                expectedAngles = new[] { 0 };
+            }
+            else if (ExpectedDirections.TryGetValue(name, out var registeredAngles))
+            {
+                expectedAngles = registeredAngles;
+            }
+            else
+            {
+                problems.Add(
+                    $"{assetId}: no expected direction set registered for '{name}'");
+                expectedAngles = Array.Empty<int>();
+            }
+
             if (declaredDirections != expectedAngles.Length)
             {
                 problems.Add(
