@@ -108,6 +108,11 @@ public enum SimulationErrorCode
     CoreNotAvailable,
     DeploymentRejected,
     InvalidAction,
+    TreatyDenied,
+    TreatyExists,
+    TreatyNotFound,
+    ProposalNotFound,
+    TradeNotFound,
 }
 
 public sealed record IntentResult(

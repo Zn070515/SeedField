@@ -23,6 +23,9 @@ public static class WorldStateHasher
         Append(ref hash, world.NextShipmentId);
         Append(ref hash, world.NextEnergyShipmentId);
         Append(ref hash, world.NextConstructionOrderId);
+        Append(ref hash, world.NextTreatyProposalId);
+        Append(ref hash, world.NextTreatyId);
+        Append(ref hash, world.NextTradeOfferId);
 
         Append(ref hash, world.Statistics.EnergySpentTotal);
         Append(ref hash, world.Statistics.EnergyRegeneratedTotal);
@@ -45,6 +48,8 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.ConstructionsStartedTotal);
         Append(ref hash, world.Statistics.ConstructionsCompletedTotal);
         Append(ref hash, world.Statistics.MaterialRefundedTotal);
+        Append(ref hash, world.Statistics.TradeMaterialSettledTotal);
+        Append(ref hash, world.Statistics.TradeEnergySettledTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -153,6 +158,43 @@ public static class WorldStateHasher
             Append(ref hash, order.StartTick);
             Append(ref hash, order.CompleteTick);
             Append(ref hash, order.MaterialPaid);
+        }
+
+        Append(ref hash, world.TreatyProposals.Count);
+        foreach (var proposal in world.TreatyProposals.Values.OrderBy(p => p.Id))
+        {
+            Append(ref hash, proposal.Id);
+            Append(ref hash, (int)proposal.Kind);
+            Append(ref hash, proposal.ProposerCivilizationId);
+            Append(ref hash, proposal.TargetCivilizationId);
+            Append(ref hash, proposal.ProposedTick);
+            Append(ref hash, proposal.ExpiresTick);
+        }
+
+        Append(ref hash, world.Treaties.Count);
+        foreach (var treaty in world.Treaties.Values.OrderBy(t => t.Id))
+        {
+            Append(ref hash, treaty.Id);
+            Append(ref hash, (int)treaty.Kind);
+            Append(ref hash, treaty.CivilizationA);
+            Append(ref hash, treaty.CivilizationB);
+            Append(ref hash, treaty.ProposerCivilizationId);
+            Append(ref hash, treaty.SignedTick);
+        }
+
+        Append(ref hash, world.TradeOffers.Count);
+        foreach (var offer in world.TradeOffers.Values.OrderBy(o => o.Id))
+        {
+            Append(ref hash, offer.Id);
+            Append(ref hash, offer.ProposerCivilizationId);
+            Append(ref hash, offer.TargetCivilizationId);
+            Append(ref hash, offer.RegionId);
+            Append(ref hash, offer.GiveMaterial);
+            Append(ref hash, offer.GiveEnergy);
+            Append(ref hash, offer.WantMaterial);
+            Append(ref hash, offer.WantEnergy);
+            Append(ref hash, offer.ProposedTick);
+            Append(ref hash, offer.ExpiresTick);
         }
 
         var energyShipments = world.InTransitEnergy

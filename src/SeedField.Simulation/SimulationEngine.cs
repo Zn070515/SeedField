@@ -161,6 +161,7 @@ public sealed class SimulationEngine
 
         World.Tick = tick + 1;
 
+        ExpireDiplomacy(World.Tick, events);
         DeliverDueMessages(World.Tick, events);
         DeliverDueMaterialShipments(World.Tick, events);
         DeliverDueEnergyShipments(World.Tick, events);
@@ -392,6 +393,624 @@ public sealed class SimulationEngine
             result.ErrorCode,
             result.Message,
             result.Event);
+
+    /// <summary>
+    /// Unified host entry for treaties and trade. Device scripts never reach this path.
+    /// </summary>
+    public DiplomacyCommandResult ExecuteDiplomacyCommand(DiplomacyCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var events = new List<SimulationEvent>();
+        ExpireDiplomacy(World.Tick, events);
+
+        return command switch
+        {
+            ProposeTreatyCommand propose => ProposeTreaty(propose, events),
+            RespondTreatyCommand respond => RespondTreaty(respond, events),
+            BreakTreatyCommand breakTreaty => BreakTreaty(breakTreaty, events),
+            ProposeTradeCommand proposeTrade => ProposeTrade(proposeTrade, events),
+            RespondTradeCommand respondTrade => RespondTrade(respondTrade, events),
+            CancelTradeCommand cancelTrade => CancelTrade(cancelTrade, events),
+            _ => new DiplomacyCommandResult(
+                false,
+                null,
+                null,
+                null,
+                SimulationErrorCode.InvalidAction,
+                "Unknown diplomacy command.",
+                events),
+        };
+    }
+
+    private DiplomacyCommandResult BreakTreaty(
+        BreakTreatyCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.Treaties.TryGetValue(command.TreatyId, out var treaty) ||
+            !treaty.Involves(command.CivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyNotFound,
+                "Treaty does not exist for this civilization.",
+                events);
+        }
+
+        World.Treaties.Remove(treaty.Id);
+        events.Add(new TreatyBroken(
+            World.Tick,
+            treaty.Id,
+            treaty.Kind,
+            treaty.CivilizationA,
+            treaty.CivilizationB,
+            command.CivilizationId));
+
+        if (treaty.Kind == TreatyKind.Trade)
+        {
+            var cancelledOffers = World.TradeOffers.Values
+                .Where(offer =>
+                    offer.Involves(treaty.CivilizationA) &&
+                    offer.Involves(treaty.CivilizationB))
+                .OrderBy(offer => offer.Id)
+                .ToList();
+            foreach (var offer in cancelledOffers)
+            {
+                var refunded = RefundTradeOffer(offer);
+                World.TradeOffers.Remove(offer.Id);
+                events.Add(new TradeCancelled(
+                    World.Tick,
+                    offer.Id,
+                    offer.ProposerCivilizationId,
+                    offer.TargetCivilizationId,
+                    command.CivilizationId,
+                    refunded.Material,
+                    refunded.Energy));
+            }
+        }
+
+        return new DiplomacyCommandResult(
+            true,
+            treaty.Id,
+            null,
+            null,
+            SimulationErrorCode.None,
+            $"Treaty {treaty.Id} broken.",
+            events);
+    }
+
+    private DiplomacyCommandResult ProposeTrade(
+        ProposeTradeCommand command,
+        List<SimulationEvent> events)
+    {
+        if (string.IsNullOrWhiteSpace(command.CivilizationId) ||
+            string.IsNullOrWhiteSpace(command.TargetCivilizationId) ||
+            string.IsNullOrWhiteSpace(command.RegionId) ||
+            string.Equals(
+                command.CivilizationId,
+                command.TargetCivilizationId,
+                StringComparison.Ordinal) ||
+            command.GiveMaterial < 0 ||
+            command.GiveEnergy < 0 ||
+            command.WantMaterial < 0 ||
+            command.WantEnergy < 0 ||
+            (command.GiveMaterial == 0 && command.GiveEnergy == 0) ||
+            (command.WantMaterial == 0 && command.WantEnergy == 0) ||
+            command.ExpiresInTicks <= 0)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                "Trade offer needs two different civilizations, non-negative goods, " +
+                "both sides non-empty and a positive expiry.",
+                events);
+        }
+
+        if (!HasActiveTreaty(
+                TreatyKind.Trade,
+                command.CivilizationId,
+                command.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyDenied,
+                "A trade treaty is required.",
+                events);
+        }
+
+        if (!HasCommunicationPath(command.CivilizationId, command.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoRoute,
+                "No communication path between the civilizations.",
+                events);
+        }
+
+        if (!World.Regions.TryGetValue(command.RegionId, out var region))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                $"Trade region '{command.RegionId}' does not exist.",
+                events);
+        }
+
+        if (region.GetMaterial(command.CivilizationId) < command.GiveMaterial)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InsufficientMaterial,
+                "Not enough material to escrow the trade offer.",
+                events);
+        }
+
+        if (region.GetEnergy(command.CivilizationId) < command.GiveEnergy)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoEnergy,
+                "Not enough energy to escrow the trade offer.",
+                events);
+        }
+
+        region.TryConsumeMaterial(command.CivilizationId, command.GiveMaterial);
+        region.TryConsumeEnergy(command.CivilizationId, command.GiveEnergy);
+
+        var tick = World.Tick;
+        var offer = new TradeOfferState(
+            World.NextTradeOfferId++,
+            command.CivilizationId,
+            command.TargetCivilizationId,
+            command.RegionId,
+            command.GiveMaterial,
+            command.GiveEnergy,
+            command.WantMaterial,
+            command.WantEnergy,
+            tick,
+            tick + command.ExpiresInTicks);
+        World.TradeOffers.Add(offer.Id, offer);
+        events.Add(new TradeProposed(
+            tick,
+            offer.Id,
+            offer.ProposerCivilizationId,
+            offer.TargetCivilizationId,
+            offer.RegionId,
+            offer.GiveMaterial,
+            offer.GiveEnergy,
+            offer.WantMaterial,
+            offer.WantEnergy,
+            offer.ExpiresTick));
+
+        return new DiplomacyCommandResult(
+            true,
+            null,
+            null,
+            offer.Id,
+            SimulationErrorCode.None,
+            $"Trade offer {offer.Id} created.",
+            events);
+    }
+
+    private DiplomacyCommandResult RespondTrade(
+        RespondTradeCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.TradeOffers.TryGetValue(command.TradeOfferId, out var offer) ||
+            !string.Equals(
+                offer.TargetCivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TradeNotFound,
+                "Trade offer does not exist for this civilization.",
+                events);
+        }
+
+        if (!HasCommunicationPath(
+                offer.ProposerCivilizationId,
+                offer.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoRoute,
+                "No communication path between the civilizations.",
+                events);
+        }
+
+        if (!command.Accept)
+        {
+            var refunded = RefundTradeOffer(offer);
+            World.TradeOffers.Remove(offer.Id);
+            events.Add(new TradeRejected(
+                World.Tick,
+                offer.Id,
+                offer.ProposerCivilizationId,
+                offer.TargetCivilizationId,
+                refunded.Material,
+                refunded.Energy));
+            return new DiplomacyCommandResult(
+                true,
+                null,
+                null,
+                offer.Id,
+                SimulationErrorCode.None,
+                $"Trade offer {offer.Id} rejected.",
+                events);
+        }
+
+        if (!HasActiveTreaty(
+                TreatyKind.Trade,
+                offer.ProposerCivilizationId,
+                offer.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyDenied,
+                "A trade treaty is required.",
+                events);
+        }
+
+        if (!World.Regions.TryGetValue(offer.RegionId, out var region))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                $"Trade region '{offer.RegionId}' does not exist.",
+                events);
+        }
+
+        if (region.GetMaterial(offer.TargetCivilizationId) < offer.WantMaterial)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InsufficientMaterial,
+                "Target civilization lacks the requested material.",
+                events);
+        }
+
+        if (region.GetEnergy(offer.TargetCivilizationId) < offer.WantEnergy)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoEnergy,
+                "Target civilization lacks the requested energy.",
+                events);
+        }
+
+        region.TryConsumeMaterial(offer.TargetCivilizationId, offer.WantMaterial);
+        region.TryConsumeEnergy(offer.TargetCivilizationId, offer.WantEnergy);
+
+        region.AddMaterial(offer.TargetCivilizationId, offer.GiveMaterial);
+        region.AddEnergy(offer.TargetCivilizationId, offer.GiveEnergy);
+        region.AddMaterial(offer.ProposerCivilizationId, offer.WantMaterial);
+        region.AddEnergy(offer.ProposerCivilizationId, offer.WantEnergy);
+
+        World.Statistics.TradeMaterialSettledTotal +=
+            offer.GiveMaterial + offer.WantMaterial;
+        World.Statistics.TradeEnergySettledTotal +=
+            offer.GiveEnergy + offer.WantEnergy;
+
+        World.TradeOffers.Remove(offer.Id);
+        events.Add(new TradeAccepted(
+            World.Tick,
+            offer.Id,
+            offer.ProposerCivilizationId,
+            offer.TargetCivilizationId,
+            offer.RegionId,
+            offer.GiveMaterial,
+            offer.GiveEnergy,
+            offer.WantMaterial,
+            offer.WantEnergy));
+
+        return new DiplomacyCommandResult(
+            true,
+            null,
+            null,
+            offer.Id,
+            SimulationErrorCode.None,
+            $"Trade offer {offer.Id} accepted.",
+            events);
+    }
+
+    private DiplomacyCommandResult CancelTrade(
+        CancelTradeCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.TradeOffers.TryGetValue(command.TradeOfferId, out var offer) ||
+            !string.Equals(
+                offer.ProposerCivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TradeNotFound,
+                "Trade offer does not exist for this civilization.",
+                events);
+        }
+
+        var refunded = RefundTradeOffer(offer);
+        World.TradeOffers.Remove(offer.Id);
+        events.Add(new TradeCancelled(
+            World.Tick,
+            offer.Id,
+            offer.ProposerCivilizationId,
+            offer.TargetCivilizationId,
+            command.CivilizationId,
+            refunded.Material,
+            refunded.Energy));
+
+        return new DiplomacyCommandResult(
+            true,
+            null,
+            null,
+            offer.Id,
+            SimulationErrorCode.None,
+            $"Trade offer {offer.Id} cancelled.",
+            events);
+    }
+
+    private (long Material, long Energy) RefundTradeOffer(TradeOfferState offer)
+    {
+        if (!World.Regions.TryGetValue(offer.RegionId, out var region))
+        {
+            return (0, 0);
+        }
+
+        region.AddMaterial(offer.ProposerCivilizationId, offer.GiveMaterial);
+        region.AddEnergy(offer.ProposerCivilizationId, offer.GiveEnergy);
+        return (offer.GiveMaterial, offer.GiveEnergy);
+    }
+
+    private void ExpireDiplomacy(long tick, List<SimulationEvent> events)
+    {
+        var expiredProposals = World.TreatyProposals.Values
+            .Where(proposal => proposal.ExpiresTick <= tick)
+            .OrderBy(proposal => proposal.Id)
+            .ToList();
+        foreach (var proposal in expiredProposals)
+        {
+            World.TreatyProposals.Remove(proposal.Id);
+            events.Add(new TreatyProposalExpired(
+                tick,
+                proposal.Id,
+                proposal.Kind,
+                proposal.ProposerCivilizationId,
+                proposal.TargetCivilizationId));
+        }
+
+        var expiredOffers = World.TradeOffers.Values
+            .Where(offer => offer.ExpiresTick <= tick)
+            .OrderBy(offer => offer.Id)
+            .ToList();
+        foreach (var offer in expiredOffers)
+        {
+            var refunded = RefundTradeOffer(offer);
+            World.TradeOffers.Remove(offer.Id);
+            events.Add(new TradeExpired(
+                tick,
+                offer.Id,
+                offer.ProposerCivilizationId,
+                offer.TargetCivilizationId,
+                refunded.Material,
+                refunded.Energy));
+        }
+    }
+
+    private DiplomacyCommandResult ProposeTreaty(
+        ProposeTreatyCommand command,
+        List<SimulationEvent> events)
+    {
+        if (string.IsNullOrWhiteSpace(command.CivilizationId) ||
+            string.IsNullOrWhiteSpace(command.TargetCivilizationId) ||
+            string.Equals(
+                command.CivilizationId,
+                command.TargetCivilizationId,
+                StringComparison.Ordinal) ||
+            command.ExpiresInTicks <= 0)
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.InvalidAction,
+                "Treaty proposal needs two different civilizations and a positive expiry.",
+                events);
+        }
+
+        if (!HasCommunicationPath(command.CivilizationId, command.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoRoute,
+                "No communication path between the civilizations.",
+                events);
+        }
+
+        if (HasActiveTreaty(
+                command.Kind,
+                command.CivilizationId,
+                command.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyExists,
+                "A treaty of this kind is already active.",
+                events);
+        }
+
+        if (HasPendingProposal(
+                command.Kind,
+                command.CivilizationId,
+                command.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyExists,
+                "A proposal of this kind is already pending.",
+                events);
+        }
+
+        var tick = World.Tick;
+        var proposal = new TreatyProposalState(
+            World.NextTreatyProposalId++,
+            command.Kind,
+            command.CivilizationId,
+            command.TargetCivilizationId,
+            tick,
+            tick + command.ExpiresInTicks);
+        World.TreatyProposals.Add(proposal.Id, proposal);
+        events.Add(new TreatyProposed(
+            tick,
+            proposal.Id,
+            proposal.Kind,
+            proposal.ProposerCivilizationId,
+            proposal.TargetCivilizationId,
+            proposal.ExpiresTick));
+
+        return new DiplomacyCommandResult(
+            true,
+            null,
+            proposal.Id,
+            null,
+            SimulationErrorCode.None,
+            $"Treaty proposal {proposal.Id} created.",
+            events);
+    }
+
+    private DiplomacyCommandResult RespondTreaty(
+        RespondTreatyCommand command,
+        List<SimulationEvent> events)
+    {
+        if (!World.TreatyProposals.TryGetValue(command.ProposalId, out var proposal))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.ProposalNotFound,
+                "Treaty proposal does not exist.",
+                events);
+        }
+
+        if (!string.Equals(
+                proposal.TargetCivilizationId,
+                command.CivilizationId,
+                StringComparison.Ordinal))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.ProposalNotFound,
+                "Treaty proposal does not exist.",
+                events);
+        }
+
+        if (!HasCommunicationPath(
+                proposal.ProposerCivilizationId,
+                proposal.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.NoRoute,
+                "No communication path between the civilizations.",
+                events);
+        }
+
+        var tick = World.Tick;
+
+        if (!command.Accept)
+        {
+            World.TreatyProposals.Remove(proposal.Id);
+            events.Add(new TreatyRejected(
+                tick,
+                proposal.Id,
+                proposal.Kind,
+                proposal.ProposerCivilizationId,
+                proposal.TargetCivilizationId));
+            return new DiplomacyCommandResult(
+                true,
+                null,
+                proposal.Id,
+                null,
+                SimulationErrorCode.None,
+                $"Treaty proposal {proposal.Id} rejected.",
+                events);
+        }
+
+        if (HasActiveTreaty(
+                proposal.Kind,
+                proposal.ProposerCivilizationId,
+                proposal.TargetCivilizationId))
+        {
+            return DiplomacyFailure(
+                SimulationErrorCode.TreatyExists,
+                "A treaty of this kind is already active.",
+                events);
+        }
+
+        World.TreatyProposals.Remove(proposal.Id);
+        var (civilizationA, civilizationB) = OrderParties(
+            proposal.ProposerCivilizationId,
+            proposal.TargetCivilizationId);
+        var treaty = new TreatyState(
+            World.NextTreatyId++,
+            proposal.Kind,
+            civilizationA,
+            civilizationB,
+            proposal.ProposerCivilizationId,
+            tick);
+        World.Treaties.Add(treaty.Id, treaty);
+        events.Add(new TreatyAccepted(
+            tick,
+            treaty.Id,
+            treaty.Kind,
+            treaty.CivilizationA,
+            treaty.CivilizationB));
+
+        return new DiplomacyCommandResult(
+            true,
+            treaty.Id,
+            proposal.Id,
+            null,
+            SimulationErrorCode.None,
+            $"Treaty {treaty.Id} accepted.",
+            events);
+    }
+
+    private bool HasActiveTreaty(TreatyKind kind, string civilizationA, string civilizationB) =>
+        World.Treaties.Values.Any(treaty =>
+            treaty.Kind == kind &&
+            treaty.Involves(civilizationA) &&
+            treaty.Involves(civilizationB));
+
+    private bool HasPendingProposal(TreatyKind kind, string civilizationA, string civilizationB) =>
+        World.TreatyProposals.Values.Any(proposal =>
+            proposal.Kind == kind &&
+            proposal.Involves(civilizationA) &&
+            proposal.Involves(civilizationB));
+
+    private static (string A, string B) OrderParties(string first, string second) =>
+        string.CompareOrdinal(first, second) <= 0
+            ? (first, second)
+            : (second, first);
+
+    private bool HasCommunicationPath(string civilizationA, string civilizationB)
+    {
+        foreach (var regionA in World.Regions.Values)
+        {
+            if (!HasCommEndpoint(regionA.Id, civilizationA))
+            {
+                continue;
+            }
+
+            foreach (var regionB in World.Regions.Values)
+            {
+                if (!HasCommEndpoint(regionB.Id, civilizationB))
+                {
+                    continue;
+                }
+
+                if (string.Equals(regionA.Id, regionB.Id, StringComparison.Ordinal) ||
+                    FindMessagePath(regionA.Id, regionB.Id) is not null)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static DiplomacyCommandResult DiplomacyFailure(
+        SimulationErrorCode code,
+        string message,
+        IReadOnlyList<SimulationEvent>? events = null) =>
+        new(
+            false,
+            null,
+            null,
+            null,
+            code,
+            message,
+            events ?? Array.Empty<SimulationEvent>());
 
     /// <summary>
     /// Restores the latest confirmed product for one branch directly from the core.
@@ -786,6 +1405,25 @@ public sealed class SimulationEngine
         {
             // Same code as a missing target: guessing an id must not reveal existence.
             Reject(intent, SimulationErrorCode.TargetUnknown, "Target is not visible.", tick, events, results);
+            return;
+        }
+
+        if (!string.Equals(
+                entity.CivilizationId,
+                target.CivilizationId,
+                StringComparison.Ordinal) &&
+            HasActiveTreaty(
+                TreatyKind.NonAggression,
+                entity.CivilizationId,
+                target.CivilizationId))
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.TreatyDenied,
+                "A non-aggression treaty forbids this attack.",
+                tick,
+                events,
+                results);
             return;
         }
 

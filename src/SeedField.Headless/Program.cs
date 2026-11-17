@@ -52,6 +52,11 @@ internal static class Program
             return RunMessageAclDemo();
         }
 
+        if (args.Contains("--diplomacy"))
+        {
+            return RunDiplomacyDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 
@@ -378,6 +383,91 @@ internal static class Program
 
         return ok ? 0 : 1;
     }
+
+    private static int RunDiplomacyDemo()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(DiplomacyUnit(1, "A", 100))
+            .AddEntity(DiplomacyUnit(2, "B", 200))
+            .AddStock("r0", "A", 100)
+            .AddStock("r0", "B", 50)
+            .Build();
+        world.Regions["r0"].AddEnergy("A", 50);
+        world.Regions["r0"].AddEnergy("B", 100);
+        var engine = new SimulationEngine(world);
+
+        var napProposal = engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.NonAggression, ExpiresInTicks: 20));
+        var nap = engine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("B", napProposal.ProposalId!.Value, Accept: true));
+
+        var blocked = engine.Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+        var napBlocked = blocked.IntentResults[0].ErrorCode == SimulationErrorCode.TreatyDenied &&
+                         world.FindEntity(new EntityId(2))!.Health == 10 &&
+                         world.FindEntity(new EntityId(1))!.Energy == 100;
+
+        engine.ExecuteDiplomacyCommand(
+            new BreakTreatyCommand("A", nap.TreatyId!.Value));
+        var afterBreak = engine.Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+        var napBreakAttacked = afterBreak.IntentResults[0].Accepted &&
+                               world.FindEntity(new EntityId(2))!.Health < 10;
+
+        var tradeProposal = engine.ExecuteDiplomacyCommand(
+            new ProposeTreatyCommand("A", "B", TreatyKind.Trade, ExpiresInTicks: 20));
+        engine.ExecuteDiplomacyCommand(
+            new RespondTreatyCommand("B", tradeProposal.ProposalId!.Value, Accept: true));
+
+        var offer = engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 30, 10, 20, 5, ExpiresInTicks: 20));
+        var accepted = engine.ExecuteDiplomacyCommand(
+            new RespondTradeCommand("B", offer.TradeOfferId!.Value, Accept: true));
+
+        var tradeSwapped = accepted.Success &&
+                           world.Regions["r0"].GetMaterial("A") == 90 &&
+                           world.Regions["r0"].GetEnergy("A") == 45 &&
+                           world.Regions["r0"].GetMaterial("B") == 60 &&
+                           world.Regions["r0"].GetEnergy("B") == 105;
+
+        engine.ExecuteDiplomacyCommand(
+            new ProposeTradeCommand("A", "B", "r0", 10, 0, 0, 5, ExpiresInTicks: 1));
+        engine.Step(Array.Empty<Intent>());
+        var refundOk = world.Regions["r0"].GetMaterial("A") == 90 &&
+                       world.TradeOffers.Count == 0;
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+        var hashOk = WorldStateHasher.Compute(world) == WorldStateHasher.Compute(loaded);
+
+        var ok = napBlocked && napBreakAttacked && tradeSwapped && refundOk && hashOk;
+        Console.WriteLine(
+            $"DIPLOMACY napBlocked={napBlocked} napBreakAttacked={napBreakAttacked} " +
+            $"tradeSwapped={tradeSwapped} refundOk={refundOk} hashOk={hashOk} ok={ok}");
+
+        return ok ? 0 : 1;
+    }
+
+    private static EntityDefinition DiplomacyUnit(
+        long id,
+        string civilizationId,
+        int x) =>
+        new(
+            new EntityId(id),
+            civilizationId,
+            "r0",
+            new Vec2(x, 100),
+            MaxHealth: 10,
+            Energy: 100,
+            EnergyCapacity: 100,
+            Material: 0,
+            Sensor: new SensorModule(5_000),
+            Weapon: new WeaponModule(1_000, Damage: 3, EnergyCost: 5, CooldownTicks: 2),
+            Comm: new CommModule(1, EnergyCostPerMessage: 0));
 
     private static EntityDefinition Sender(long id, string civilizationId, string regionId) =>
         new(

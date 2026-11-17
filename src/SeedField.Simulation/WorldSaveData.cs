@@ -26,7 +26,41 @@ public sealed record WorldSaveData(
     MatchSaveData? Match = null,
     ConstructionOrderSaveData[]? ConstructionOrders = null,
     long NextConstructionOrderId = 0,
-    MessagePolicySaveData[]? MessagePolicies = null);
+    MessagePolicySaveData[]? MessagePolicies = null,
+    TreatyProposalSaveData[]? TreatyProposals = null,
+    TreatySaveData[]? Treaties = null,
+    TradeOfferSaveData[]? TradeOffers = null,
+    long NextTreatyProposalId = 0,
+    long NextTreatyId = 0,
+    long NextTradeOfferId = 0);
+
+public sealed record TreatyProposalSaveData(
+    long Id,
+    TreatyKind Kind,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    long ProposedTick,
+    long ExpiresTick);
+
+public sealed record TreatySaveData(
+    long Id,
+    TreatyKind Kind,
+    string CivilizationA,
+    string CivilizationB,
+    string ProposerCivilizationId,
+    long SignedTick);
+
+public sealed record TradeOfferSaveData(
+    long Id,
+    string ProposerCivilizationId,
+    string TargetCivilizationId,
+    string RegionId,
+    long GiveMaterial,
+    long GiveEnergy,
+    long WantMaterial,
+    long WantEnergy,
+    long ProposedTick,
+    long ExpiresTick);
 
 public sealed record MessagePolicySaveData(
     string CivilizationId,
@@ -218,7 +252,9 @@ public sealed record StatisticsSaveData(
     long MaterialLostTotal = 0,
     long ConstructionsStartedTotal = 0,
     long ConstructionsCompletedTotal = 0,
-    long MaterialRefundedTotal = 0);
+    long MaterialRefundedTotal = 0,
+    long TradeMaterialSettledTotal = 0,
+    long TradeEnergySettledTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

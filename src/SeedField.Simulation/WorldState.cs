@@ -46,6 +46,10 @@ public sealed class SimulationStatistics
     public long ConstructionsStartedTotal { get; internal set; }
 
     public long ConstructionsCompletedTotal { get; internal set; }
+
+    public long TradeMaterialSettledTotal { get; internal set; }
+
+    public long TradeEnergySettledTotal { get; internal set; }
 }
 
 /// <summary>
@@ -65,6 +69,12 @@ public sealed class WorldState
     public long NextEnergyShipmentId { get; internal set; } = 1;
 
     public long NextConstructionOrderId { get; internal set; } = 1;
+
+    public long NextTreatyProposalId { get; internal set; } = 1;
+
+    public long NextTreatyId { get; internal set; } = 1;
+
+    public long NextTradeOfferId { get; internal set; } = 1;
 
     public SortedDictionary<string, RegionState> Regions { get; } = new(StringComparer.Ordinal);
 
@@ -93,6 +103,15 @@ public sealed class WorldState
     public List<EnergyShipment> InTransitEnergy { get; } = new();
 
     public List<ConstructionOrder> ConstructionOrders { get; } = new();
+
+    /// <summary>Pending treaty proposals by stable id.</summary>
+    public SortedDictionary<long, TreatyProposalState> TreatyProposals { get; } = new();
+
+    /// <summary>Active bilateral treaties by stable id.</summary>
+    public SortedDictionary<long, TreatyState> Treaties { get; } = new();
+
+    /// <summary>Active trade offers by stable id. Escrow is already deducted.</summary>
+    public SortedDictionary<long, TradeOfferState> TradeOffers { get; } = new();
 
     /// <summary>Delivered messages per civilization, in delivery order.</summary>
     public SortedDictionary<string, List<DeliveredMessage>> Inboxes { get; } = new(StringComparer.Ordinal);

@@ -425,7 +425,33 @@ public sealed class JsController : IDisposable
                     ? null
                     : new MatchDto(
                         observation.Match.CapturedPointsToWin,
-                        observation.Match.WinnerCivilizationId));
+                        observation.Match.WinnerCivilizationId),
+                [.. (observation.Treaties ?? Array.Empty<ObservedTreaty>())
+                    .Select(treaty => new TreatyDto(
+                        treaty.TreatyId,
+                        treaty.Kind.ToString(),
+                        treaty.OtherCivilizationId,
+                        treaty.SignedTick))],
+                [.. (observation.TreatyProposals ?? Array.Empty<ObservedTreatyProposal>())
+                    .Select(proposal => new TreatyProposalDto(
+                        proposal.ProposalId,
+                        proposal.Kind.ToString(),
+                        proposal.ProposerCivilizationId,
+                        proposal.TargetCivilizationId,
+                        proposal.ProposedTick,
+                        proposal.ExpiresTick))],
+                [.. (observation.TradeOffers ?? Array.Empty<ObservedTradeOffer>())
+                    .Select(offer => new TradeOfferDto(
+                        offer.TradeOfferId,
+                        offer.ProposerCivilizationId,
+                        offer.TargetCivilizationId,
+                        offer.RegionId,
+                        offer.GiveMaterial,
+                        offer.GiveEnergy,
+                        offer.WantMaterial,
+                        offer.WantEnergy,
+                        offer.ProposedTick,
+                        offer.ExpiresTick))]);
 
         private sealed record ObservationDto(
             long Tick,
@@ -436,7 +462,36 @@ public sealed class JsController : IDisposable
             List<EnergyShipmentDto> EnergyShipments,
             long? ViewerEntityId,
             List<ControlPointDto> ControlPoints,
-            MatchDto? Match);
+            MatchDto? Match,
+            List<TreatyDto> Treaties,
+            List<TreatyProposalDto> TreatyProposals,
+            List<TradeOfferDto> TradeOffers);
+
+        private sealed record TreatyDto(
+            long TreatyId,
+            string Kind,
+            string OtherCivilizationId,
+            long SignedTick);
+
+        private sealed record TreatyProposalDto(
+            long ProposalId,
+            string Kind,
+            string ProposerCivilizationId,
+            string TargetCivilizationId,
+            long ProposedTick,
+            long ExpiresTick);
+
+        private sealed record TradeOfferDto(
+            long TradeOfferId,
+            string ProposerCivilizationId,
+            string TargetCivilizationId,
+            string RegionId,
+            long GiveMaterial,
+            long GiveEnergy,
+            long WantMaterial,
+            long WantEnergy,
+            long ProposedTick,
+            long ExpiresTick);
 
         private sealed record MatchDto(
             int CapturedPointsToWin,

@@ -34,8 +34,9 @@ ADR-0006 只提供无状态的入站消息 ACL，没有条约、关系或资源�
 - 提议方与目标方必须有通信路径：双方都有 Comm 端点，且同区或经链路可达。
 - 目标方通过 `RespondTreatyCommand` 接受或拒绝；响应同样要求通信路径。
 - 提议到期自动移除；不产生条约、不转移资源。
-- 重复提议返回 `TreatyExists`；不存在的提议/非目标方响应返回 `ProposalNotFound`。
+- 重复提议返回 `TreatyExists`；不存在的提议/非目标方响应返回 `ProposalNotFound`；不存在的条约/非当事方撕毁返回 `TreatyNotFound`。
 - 撕毁 `BreakTreatyCommand` 是单边行为，不要求通信路径；立即移除条约。
+- 新增错误码：`TreatyDenied`、`TreatyExists`、`TreatyNotFound`、`ProposalNotFound`、`TradeNotFound`。
 
 ### 3. 互不侵犯的强制执行
 

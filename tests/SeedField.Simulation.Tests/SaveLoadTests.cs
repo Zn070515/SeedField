@@ -155,7 +155,7 @@ public sealed class SaveLoadTests
     public void SaveRejectsUnsupportedSchemaVersion()
     {
         var json = WorldSaveSerializer.Save(TestWorlds.CombatPair());
-        var unsupported = json.Replace("\"schemaVersion\": 6", "\"schemaVersion\": 99");
+        var unsupported = json.Replace("\"schemaVersion\": 7", "\"schemaVersion\": 99");
 
         var exception = Assert.Throws<SaveFormatException>(() => WorldSaveSerializer.Load(unsupported));
 
