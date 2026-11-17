@@ -179,7 +179,7 @@ public partial class DiplomacyPanel : PanelContainer
         {
             _treatyIds.Add(treaty.Id);
             _treaties.AddItem(
-                $"{KindLabel(treaty.Kind)} · {treaty.Other(PlayerCivilizationId)} · " +
+                $"{Main.KindLabel(treaty.Kind)} · {treaty.Other(PlayerCivilizationId)} · " +
                 $"signed t{treaty.SignedTick}");
         }
 
@@ -202,7 +202,7 @@ public partial class DiplomacyPanel : PanelContainer
             _proposalIds.Add(proposal.Id);
             _proposalIncoming.Add(incoming);
             _proposals.AddItem(
-                $"{(incoming ? "IN" : "OUT")} · {KindLabel(proposal.Kind)} · " +
+                $"{(incoming ? "IN" : "OUT")} · {Main.KindLabel(proposal.Kind)} · " +
                 $"{proposal.Other(PlayerCivilizationId)} · expires t{proposal.ExpiresTick}");
         }
 
@@ -403,7 +403,4 @@ public partial class DiplomacyPanel : PanelContainer
         row.AddChild(spin);
         return spin;
     }
-
-    private static string KindLabel(TreatyKind kind) =>
-        kind == TreatyKind.NonAggression ? "NAP" : "TRADE";
 }

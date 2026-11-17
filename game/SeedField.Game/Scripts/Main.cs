@@ -527,8 +527,26 @@ public partial class Main : Node2D
     {
         var tradeProposal = _engine.ExecuteDiplomacyCommand(
             new ProposeTreatyCommand("B", "A", TreatyKind.Trade, ExpiresInTicks: 300));
-        _engine.ExecuteDiplomacyCommand(
-            new RespondTreatyCommand("A", tradeProposal.ProposalId!.Value, Accept: true));
+        var tradeProposalId = tradeProposal.ProposalId ??
+            _world.TreatyProposals.Values
+                .Where(proposal =>
+                    proposal.Kind == TreatyKind.Trade &&
+                    string.Equals(
+                        proposal.ProposerCivilizationId,
+                        "B",
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        proposal.TargetCivilizationId,
+                        "A",
+                        StringComparison.Ordinal))
+                .OrderBy(proposal => proposal.Id)
+                .Select(proposal => (long?)proposal.Id)
+                .LastOrDefault();
+        if (tradeProposalId is not null)
+        {
+            _engine.ExecuteDiplomacyCommand(
+                new RespondTreatyCommand("A", tradeProposalId.Value, Accept: true));
+        }
         _engine.ExecuteDiplomacyCommand(
             new ProposeTreatyCommand("B", "A", TreatyKind.NonAggression, ExpiresInTicks: 200));
         _engine.ExecuteDiplomacyCommand(
@@ -1589,7 +1607,7 @@ public partial class Main : Node2D
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 
-    private static string KindLabel(TreatyKind kind) =>
+    internal static string KindLabel(TreatyKind kind) =>
         kind == TreatyKind.NonAggression ? "NAP" : "TRADE";
 
     private static Vector2 Map(Vec2 position) =>
