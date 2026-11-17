@@ -31,6 +31,17 @@ public sealed record WorkerControllerOptions
     /// </summary>
     public bool RequireJobObject { get; init; }
 
+    /// <summary>
+    /// Launch the worker inside a Windows AppContainer with no capabilities. The
+    /// launcher also owns a Job Object for the worker. When true, a missing
+    /// launcher is a hard failure; there is no silent unsandboxed fallback.
+    /// </summary>
+    public bool UseAppContainer { get; init; }
+
+    public string AppContainerProfileName { get; init; } = "SeedField.Worker";
+
+    public string? AppContainerLauncherPath { get; init; }
+
     public JsControllerOptions ControllerOptions { get; init; } = new();
 
     public void Validate()
@@ -60,6 +71,13 @@ public sealed record WorkerControllerOptions
         if (DiskLimitBytes <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(DiskLimitBytes));
+        }
+
+        if (UseAppContainer && string.IsNullOrWhiteSpace(AppContainerProfileName))
+        {
+            throw new ArgumentException(
+                "AppContainer profile name is required when UseAppContainer is true.",
+                nameof(AppContainerProfileName));
         }
 
         ControllerOptions.Validate();

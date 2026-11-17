@@ -184,7 +184,19 @@ public sealed class WorkerController : IController
     {
         KillNoLock();
 
-        var executable = WorkerLocator.Find(_options.ExecutablePath);
+        var workerExecutable = WorkerLocator.Find(_options.ExecutablePath);
+        var executable = workerExecutable;
+        var arguments = string.Empty;
+        if (_options.UseAppContainer)
+        {
+            executable = WorkerLocator.FindLauncher(_options.AppContainerLauncherPath);
+            var memoryMb = Math.Max(1, _options.JobMemoryLimitBytes / (1024 * 1024));
+            arguments =
+                $"--worker \"{workerExecutable}\" " +
+                $"--profile \"{_options.AppContainerProfileName}\" " +
+                $"--memory-mb {memoryMb} --cpu-ms {_options.JobCpuLimitMs} --keep-profile";
+        }
+
         _temporaryDirectory = Path.Combine(
             Path.GetTempPath(),
             $"seedfield-worker-{Guid.NewGuid():N}");
@@ -193,6 +205,7 @@ public sealed class WorkerController : IController
         var startInfo = new ProcessStartInfo
         {
             FileName = executable,
+            Arguments = arguments,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardInput = true,
@@ -237,18 +250,28 @@ public sealed class WorkerController : IController
         process.ErrorDataReceived += OnWorkerError;
         process.BeginErrorReadLine();
 
-        _job = WindowsJobObject.TryAssign(
-            process,
-            _options.JobMemoryLimitBytes,
-            _options.JobCpuLimitMs,
-            _options.RequireJobObject,
-            out var jobError);
-        if (_job is null)
+        if (_options.UseAppContainer)
         {
-            IsolationDegraded = true;
-            lock (_stderrGate)
+            // The launcher owns the worker's Job Object (it creates the worker
+            // suspended, assigns it, then resumes). Assigning the launcher to the
+            // host job with ActiveProcessLimit=1 would block the worker child.
+            _job = null;
+        }
+        else
+        {
+            _job = WindowsJobObject.TryAssign(
+                process,
+                _options.JobMemoryLimitBytes,
+                _options.JobCpuLimitMs,
+                _options.RequireJobObject,
+                out var jobError);
+            if (_job is null)
             {
-                _lastWorkerError = jobError;
+                IsolationDegraded = true;
+                lock (_stderrGate)
+                {
+                    _lastWorkerError = jobError;
+                }
             }
         }
 

@@ -100,6 +100,8 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --comba
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --replay-record replay.json
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --replay-play replay.json
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-scale
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --sandbox-check
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent-appcontainer
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --package-check <dir> --allow-unsigned --confirm
@@ -192,4 +194,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，已有残骸占领/封锁他方回收与锚点仓储/产出加成，但锚点独立蓝图/多跳围困、残骸老化/掠夺、独立废墟美术、快照签名/Workshop 流程未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗已有确定性随机命中/伤害/掉落与 Intent 边界回放；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手已有内置包、Phase 1 工作进程隔离与 Phase 2a 签名/同意/CPU/磁盘限额，但 AppContainer/网络与文件系统 OS 拒绝、OS 磁盘配额、发布签名密钥/Workshop、第三方可执行包导入、导出模板与正式平衡数值仍未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，已有残骸占领/封锁他方回收与锚点仓储/产出加成，但锚点独立蓝图/多跳围困、残骸老化/掠夺、独立废墟美术、快照签名/Workshop 流程未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗已有确定性随机命中/伤害/掉落与 Intent 边界回放；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手已有内置包、Phase 1 工作进程隔离、Phase 2a 签名/同意/CPU/磁盘限额与 Phase 2b AppContainer 网络/文件隔离，但 OS 磁盘配额（当前无可写文件面）、发布签名密钥/Workshop、独立安全审查、第三方可执行包导入、导出模板与正式平衡数值仍未完成。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

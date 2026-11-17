@@ -140,9 +140,19 @@ internal static partial class Program
             return RunRegionScaleDemo();
         }
 
+        if (args.Contains("--sandbox-check"))
+        {
+            return RunSandboxCheck();
+        }
+
         if (args.Contains("--worker-opponent"))
         {
             return RunWorkerOpponentDemo();
+        }
+
+        if (args.Contains("--worker-opponent-appcontainer"))
+        {
+            return RunWorkerOpponentDemo(appContainer: true);
         }
 
         var packageCheckIndex = Array.IndexOf(args, "--package-check");

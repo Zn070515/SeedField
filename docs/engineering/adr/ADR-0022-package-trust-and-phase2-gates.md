@@ -59,13 +59,16 @@ ADR-0021 已实现工作进程、IPC 与 Job Object。Phase 2 还要求签名包
 | 签名/哈希/信任库 | ✅ |
 | 显式同意 | ✅ CLI 级 |
 | 磁盘看门狗 | ✅ 应用级（非 OS 配额） |
-| AppContainer/低完整性令牌 | ❌ 未实现 |
-| OS 网络/文件系统拒绝、只读挂载 | ❌ 未实现 |
-| OS 磁盘配额 | ❌ 未实现 |
+| AppContainer/低完整性令牌 | ✅ Phase 2b（ADR-0034） |
+| OS 网络/文件系统拒绝、只读挂载 | ✅ 无 capability + worker 目录 RX（ADR-0034） |
+| OS 磁盘配额 | ⚠️ 当前无可写文件面；应用级看门狗；文件 API 开放前需配额 |
 | 独立安全审查 | ❌ 未完成 |
 | 发布签名密钥/Workshop | ❌ 未完成 |
 
-因此 `ThirdPartyImportEnabled` 保持 `false`；没有游戏路径执行加载的包。
+Phase 2b 的 AppContainer 启动器与验证见
+[ADR-0034](ADR-0034-appcontainer-worker-sandbox.md)。因此
+`ThirdPartyImportEnabled` 保持 `false`；没有游戏路径执行加载的包；独立审查、
+发布签名密钥、完整 fuzz/红队与磁盘配额（若未来开放文件 API）仍未完成。
 
 ## 非目标
 
