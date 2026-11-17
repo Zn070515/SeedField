@@ -255,6 +255,9 @@ public partial class Main : Node2D
                 _deployedSourceA = _slotA.DeployedScript;
                 RebuildDeviceControllers();
                 _history.Clear();
+                _facing.Clear();
+                _hitUntil.Clear();
+                _effects.Clear();
                 _faultCount = 0;
                 _tickAccumulator = 0;
                 _paused = true;
@@ -303,7 +306,11 @@ public partial class Main : Node2D
         _tickAccumulator = 0;
         _workshopSpawnIndex = 0;
         _facing.Clear();
+        _hitUntil.Clear();
+        _effects.Clear();
         _bootstrapUntilTick = 0;
+        _zoom = 1f;
+        _pan = Vector2.Zero;
 
         if (preRun)
         {

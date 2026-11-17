@@ -20,6 +20,10 @@ public partial class WorkshopPanel : PanelContainer
     private ItemList _instances = null!;
     private ItemList _orders = null!;
     private Label _status = null!;
+    private TextureRect _preview = null!;
+    private Label _previewLabel = null!;
+    private VisualAssetCatalog _catalog = null!;
+    private WorldState? _world;
     private readonly List<string> _blueprintIds = new();
     private readonly List<EntityId> _entityIds = new();
     private readonly List<long> _orderIds = new();
@@ -66,8 +70,31 @@ public partial class WorkshopPanel : PanelContainer
         blueprintLabel.Modulate = new Color(0.55f, 0.68f, 0.78f);
         box.AddChild(blueprintLabel);
 
-        _blueprints = new ItemList { CustomMinimumSize = new Vector2(640, 120) };
-        box.AddChild(_blueprints);
+        _blueprints = new ItemList { CustomMinimumSize = new Vector2(500, 120) };
+        _blueprints.ItemSelected += _ => UpdatePreview();
+        _preview = new TextureRect
+        {
+            CustomMinimumSize = new Vector2(112, 112),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+        };
+        _previewLabel = new Label
+        {
+            Text = "select a design",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            CustomMinimumSize = new Vector2(112, 24),
+        };
+        _previewLabel.AddThemeFontSizeOverride("font_size", 9);
+        _previewLabel.Modulate = new Color(0.55f, 0.68f, 0.78f);
+        var previewBox = new VBoxContainer();
+        previewBox.AddChild(_preview);
+        previewBox.AddChild(_previewLabel);
+        var designRow = new HBoxContainer();
+        designRow.AddThemeConstantOverride("separation", 10);
+        designRow.AddChild(_blueprints);
+        designRow.AddChild(previewBox);
+        box.AddChild(designRow);
+        _catalog = VisualAssetCatalog.Load();
 
         var deployRow = new HBoxContainer();
         deployRow.AddThemeConstantOverride("separation", 12);
@@ -135,6 +162,7 @@ public partial class WorkshopPanel : PanelContainer
 
     public void Refresh(WorldState world)
     {
+        _world = world;
         _blueprintIds.Clear();
         _blueprints.Clear();
 
@@ -153,6 +181,8 @@ public partial class WorkshopPanel : PanelContainer
         {
             _blueprints.Select(0);
         }
+
+        UpdatePreview();
 
         _entityIds.Clear();
         _instances.Clear();
@@ -214,7 +244,45 @@ public partial class WorkshopPanel : PanelContainer
         if (index >= 0)
         {
             _blueprints.Select(index);
+            UpdatePreview();
         }
+    }
+
+    private void UpdatePreview()
+    {
+        _preview.Texture = null;
+        _previewLabel.Text = "select a design";
+        var selected = _blueprints.GetSelectedItems();
+        if (_world is null || selected.Length == 0 || selected[0] >= _blueprintIds.Count)
+        {
+            return;
+        }
+
+        var blueprintId = _blueprintIds[selected[0]];
+        var blueprint = _world.Workshop.GetVersions(blueprintId).LastOrDefault();
+        if (blueprint is null)
+        {
+            return;
+        }
+
+        var asset = blueprint.Weapon is not null
+            ? "worker_frame_weapon"
+            : blueprint.Sensor is not null
+                ? "worker_frame_sensor"
+                : blueprintId.Contains("drill", StringComparison.Ordinal)
+                    ? "worker_frame_drill"
+                    : blueprint.BlueprintId == "power"
+                        ? "power_node"
+                        : "worker_frame";
+        var frame = _catalog.Get(asset);
+        if (frame is null)
+        {
+            _previewLabel.Text = $"{blueprintId} v{blueprint.Version}\nno sprite";
+            return;
+        }
+
+        _preview.Texture = frame.Diffuse;
+        _previewLabel.Text = $"{blueprintId} v{blueprint.Version}\n{asset}";
     }
 
     public void SelectInstance(EntityId entityId)

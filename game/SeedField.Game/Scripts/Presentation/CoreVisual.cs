@@ -20,7 +20,8 @@ public sealed class CoreVisual
         Vector2 position,
         CoreVisualState state,
         long tick,
-        bool debug)
+        bool debug,
+        float visualScale)
     {
         var frame = _catalog.GetCore(state);
         if (frame is null)
@@ -29,7 +30,7 @@ public sealed class CoreVisual
             return;
         }
 
-        var size = frame.Footprint * ScreenScale;
+        var size = frame.Footprint * ScreenScale * visualScale;
         var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
         var color = StateColor(state);
         var pulse = 0.55f + 0.20f * Mathf.Sin(tick * 0.22f);
@@ -50,6 +51,13 @@ public sealed class CoreVisual
             64,
             new Color(color, pulse),
             2.4f);
+        for (var index = 0; index < 5; index++)
+        {
+            var angle = tick * 0.015f + index * Mathf.Tau / 5f;
+            var socket = position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) *
+                size * 0.55f;
+            canvas.DrawCircle(socket, 3.2f, new Color(color, 0.85f));
+        }
         canvas.DrawString(
             ThemeDB.FallbackFont,
             position + new Vector2(-52f, size * 0.62f + 16f),

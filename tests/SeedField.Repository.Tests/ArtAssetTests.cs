@@ -103,6 +103,7 @@ public sealed class ArtAssetTests
             }
 
             var name = assetId.Split('.')[0];
+            var isTerrain = name is "terrain_concrete" or "terrain_road";
             if (ExpectedStates.TryGetValue(name, out var expectedState))
             {
                 var actualState = asset.TryGetProperty("state", out var stateElement)
@@ -210,13 +211,13 @@ public sealed class ArtAssetTests
                     problems.Add($"{assetId}: '{relative}' is only {alpha.Coverage:P0} opaque");
                 }
 
-                if (alpha.Coverage > 0.80)
+                if (!isTerrain && alpha.Coverage > 0.80)
                 {
                     problems.Add($"{assetId}: '{relative}' is {alpha.Coverage:P0} opaque; alpha likely broken");
                 }
 
-                if (alpha.MinX < 2 || alpha.MinY < 2 ||
-                    alpha.MaxX > alpha.Width - 3 || alpha.MaxY > alpha.Height - 3)
+                if (!isTerrain && (alpha.MinX < 2 || alpha.MinY < 2 ||
+                    alpha.MaxX > alpha.Width - 3 || alpha.MaxY > alpha.Height - 3))
                 {
                     problems.Add(
                         $"{assetId}: sprite touches the frame edge " +
@@ -395,6 +396,11 @@ public sealed class ArtAssetTests
                      "power_node.topdown.v0",
                      "seed_core.topdown.v0",
                      "worker_frame.topdown.v0",
+                     "ruin_block.topdown.v0",
+                     "pipe_junction.topdown.v0",
+                     "wreck_hauler.topdown.v0",
+                     "terrain_concrete.topdown.v0",
+                     "terrain_road.topdown.v0",
                  })
         {
             if (!ids.Contains(expected, StringComparer.Ordinal))
