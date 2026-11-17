@@ -15,11 +15,22 @@ public sealed record ControllerBatchItem(
 public sealed class ControllerBatchRunner
 {
     private readonly ControllerExecutionOptions _options;
+    private readonly Action<int, int, Action<int>> _parallelFor;
+    private readonly bool _usesDefaultParallelFor;
 
-    public ControllerBatchRunner(ControllerExecutionOptions? options = null)
+    public ControllerBatchRunner(
+        ControllerExecutionOptions? options = null,
+        Action<int, int, Action<int>>? parallelFor = null)
     {
         _options = options ?? new ControllerExecutionOptions();
         _options.Validate();
+        _usesDefaultParallelFor = parallelFor is null;
+        _parallelFor = parallelFor ?? ((count, degree, body) =>
+            Parallel.For(
+                0,
+                count,
+                new ParallelOptions { MaxDegreeOfParallelism = degree },
+                body));
     }
 
     public int LastUsedDegreeOfParallelism { get; private set; } = 1;
@@ -43,15 +54,15 @@ public sealed class ControllerBatchRunner
         // pool callers degrade to the sequential path instead of deadlocking.
         var parallel = items.Count >= _options.MinBatchSize &&
                        degree > 1 &&
-                       !Thread.CurrentThread.IsThreadPoolThread;
+                       (!_usesDefaultParallelFor ||
+                        !Thread.CurrentThread.IsThreadPoolThread);
         LastUsedDegreeOfParallelism = parallel ? degree : 1;
 
         if (parallel)
         {
-            Parallel.For(
-                0,
+            _parallelFor(
                 items.Count,
-                new ParallelOptions { MaxDegreeOfParallelism = degree },
+                degree,
                 index => decisions[items[index].Index] = Decide(items[index]));
         }
         else

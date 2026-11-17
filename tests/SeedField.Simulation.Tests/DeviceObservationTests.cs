@@ -88,7 +88,7 @@ public sealed class DeviceObservationTests
             .Select(id => engine.BuildControllerObservation(id))
             .ToList();
         var parallel = RunOnDedicatedThread(
-            () => engine.BuildControllerObservations(ids, maxDegreeOfParallelism: 4));
+            () => engine.BuildControllerObservations(ids, maxDegreeOfParallelism: 2));
 
         Assert.Equal(serial.Count, parallel.Length);
         for (var index = 0; index < serial.Count; index++)

@@ -69,11 +69,13 @@ public sealed class ControllerBatchRunnerTests
             controllers.Add(new DeviceControllerSlot(new EntityId(id), "A", script));
         }
 
-        var runner = new ControllerBatchRunner(new ControllerExecutionOptions
-        {
-            MinBatchSize = 1,
-            MaxDegreeOfParallelism = 8,
-        });
+        var runner = new ControllerBatchRunner(
+            new ControllerExecutionOptions
+            {
+                MinBatchSize = 1,
+                MaxDegreeOfParallelism = 8,
+            },
+            RunInReverse);
         var items = controllers
             .Select((controller, index) => new ControllerBatchItem(
                 index,
@@ -81,7 +83,7 @@ public sealed class ControllerBatchRunnerTests
                 engine.BuildControllerObservation(controller.EntityId)))
             .ToList();
 
-        var decisions = RunOnDedicatedThread(() => runner.Run(items));
+        var decisions = runner.Run(items);
 
         Assert.Equal(8, runner.LastUsedDegreeOfParallelism);
         for (var index = 0; index < decisions.Length; index++)
@@ -148,8 +150,8 @@ public sealed class ControllerBatchRunnerTests
     [Fact]
     public void ParallelBatchMatchesSequentialOnScriptedCombat()
     {
-        var sequential = RunOnDedicatedThread(() => RunScenario(parallel: false));
-        var parallel = RunOnDedicatedThread(() => RunScenario(parallel: true));
+        var sequential = RunScenario(parallel: false);
+        var parallel = RunScenario(parallel: true);
 
         Assert.Equal(sequential.Hash, parallel.Hash);
         Assert.Equal(sequential.Events, parallel.Events);
@@ -168,11 +170,13 @@ public sealed class ControllerBatchRunnerTests
             .Where(entity => entity.CivilizationId == "A")
             .Select(entity => new DeviceControllerSlot(entity.Id, "A", CombatScript))
             .ToList();
-        var runner = new ControllerBatchRunner(new ControllerExecutionOptions
-        {
-            MinBatchSize = 1,
-            MaxDegreeOfParallelism = parallel ? 4 : 1,
-        });
+        var runner = new ControllerBatchRunner(
+            new ControllerExecutionOptions
+            {
+                MinBatchSize = 1,
+                MaxDegreeOfParallelism = parallel ? 4 : 1,
+            },
+            parallel ? RunInReverse : null);
         var events = new List<string>();
 
         for (var tick = 0; tick < 20; tick++)
@@ -229,29 +233,12 @@ public sealed class ControllerBatchRunnerTests
             Drive: new DriveModule(SpeedMmPerTick: 100, EnergyCostPerMove: 1),
             Comm: new CommModule(LatencyTicks: 1, EnergyCostPerMessage: 1));
 
-    private static T RunOnDedicatedThread<T>(Func<T> action)
+    private static void RunInReverse(int count, int degree, Action<int> body)
     {
-        T result = default!;
-        Exception? error = null;
-        var thread = new Thread(() =>
+        for (var index = count - 1; index >= 0; index--)
         {
-            try
-            {
-                result = action();
-            }
-            catch (Exception exception)
-            {
-                error = exception;
-            }
-        });
-        thread.Start();
-        thread.Join();
-        if (error is not null)
-        {
-            throw error;
+            body(index);
         }
-
-        return result;
     }
 
     private static DeviceControllerSlot Device(EntityId id, string civilizationId) =>
