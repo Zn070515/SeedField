@@ -30,6 +30,10 @@
   - `ShotFired.TargetId` 命中后 6 Tick 闪红；`EntityDestroyed` 清理。
 - `CoreVisual`：四态环 + 5 个随 tick 旋转的分支指示点。
 - 默认画面仍只画 A 方自己与 `Observation` 已感知敌人；F10 全知调试保留。
+- `PlayerEventFilter` 过滤 `ShotFired`/`MessageQueued`/`EntityDestroyed`/`DrawEventLog` 等
+  事件流；未侦察敌人的弹道、通信线和日志不会出现。
+- 网络供电脉冲要求 frontier 电网有能量且 `PowerGridState.BreakerOpen == false`；
+  断路器手动打开后脉冲熄灭。
 - `WorkshopPanel` 增加选中蓝图/实例的精灵预览；`m0-workshop.png` 显示 power 预览与 Mk3 升级。
 
 ## 4. 截图
@@ -60,6 +64,8 @@ SeedField.Repository.Tests: 18 passed
 SeedField.Simulation.Tests: 230 passed
 SeedField.Runtime.Js.Tests: 85 passed
 VISIBILITY_SMOKE unseenB4=True omniscientB4=True ok=True
+EVENT_VISIBILITY_SMOKE hiddenShot/visibleShot/destroyed/message ok=True
+POWER_VISUAL_SMOKE before=True after=False energy=200 powered=False ok=True
 ```
 
 Headless：

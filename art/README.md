@@ -160,7 +160,8 @@ godot --path game/SeedField.Game res://Scenes/VisualBench.tscn -- --devices=100 
 - `NetworkVisual`：控制点到 A/B 出口的能量/信息连线与 tick 脉冲；核芯 `EXIT` 线也由真实储备驱动。
 - `EntityVisual`：单位放大到 26%，移动时产生履带扬尘，`ShotFired` 命中后 6 Tick 闪红。
 - `CoreVisual`：四态环 + 5 个随 tick 旋转的分支指示点。
-- 默认仍只画已感知敌人；F10 全知调试保留。
+- 默认仍只画已感知敌人；事件流（弹道/通信/日志）同样过滤，F10 全知调试保留。
+- 网络脉冲同时要求电网库存与断路器闭合；断路器打开即熄灭。
 - 截图：`art-main-combat/tactical/debug/omniscient.png`；工坊预览 `m0-workshop.png`。
 
 ## 10. 下一步 Gate
