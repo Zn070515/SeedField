@@ -69,6 +69,7 @@ public static class PlayerEventFilter
             MaterialShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             EnergyShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             WreckCreated wreck => wreck.OwnerCivilizationId == "A",
+            WreckOccupied occupied => occupied.CivilizationId == "A",
             WreckSalvaged salvaged => salvaged.CivilizationId == "A",
             RuinImported imported => imported.CivilizationId == "A",
             TreatyProposed proposed => InvolvesA(

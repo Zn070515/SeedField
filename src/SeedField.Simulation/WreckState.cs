@@ -42,4 +42,16 @@ public sealed class WreckState
     public long MaterialRecoverable { get; }
 
     public long CreatedTick { get; }
+
+    /// <summary>Civilization currently occupying this wreck (null = unoccupied).</summary>
+    public string? OccupiedByCivilizationId { get; internal set; }
+
+    /// <summary>Tick the occupation started, or -1 when unoccupied.</summary>
+    public long OccupiedTick { get; internal set; } = -1;
+
+    internal void Occupy(string civilizationId, long tick)
+    {
+        OccupiedByCivilizationId = civilizationId;
+        OccupiedTick = tick;
+    }
 }

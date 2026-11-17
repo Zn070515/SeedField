@@ -99,6 +99,57 @@ public sealed class WreckRecoveryTests
     }
 
     [Fact]
+    public void OccupationRequiresPresenceAndBlocksOtherSalvagers()
+    {
+        var (world, engine, _) = CreateWorldWithDeployedVictim(percent: 50);
+        engine.Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+        var wreckId = Assert.Single(world.Wrecks.Keys);
+
+        var absentOwner = engine.ExecuteWreckCommand(
+            new OccupyWreckCommand("A", wreckId));
+        Assert.False(absentOwner.Success);
+        Assert.Equal(SimulationErrorCode.WreckUnavailable, absentOwner.ErrorCode);
+
+        var occupied = engine.ExecuteWreckCommand(
+            new OccupyWreckCommand("B", wreckId));
+        Assert.True(occupied.Success);
+        Assert.Contains(occupied.Events, item => item is WreckOccupied);
+        Assert.Equal("B", world.Wrecks[wreckId].OccupiedByCivilizationId);
+
+        var ownerBlocked = engine.ExecuteWreckCommand(
+            new RecoverWreckCommand("A", wreckId));
+        Assert.False(ownerBlocked.Success);
+        Assert.Equal(SimulationErrorCode.WreckUnavailable, ownerBlocked.ErrorCode);
+
+        var salvaged = engine.ExecuteWreckCommand(
+            new RecoverWreckCommand("B", wreckId));
+        Assert.True(salvaged.Success);
+        Assert.Equal(50, world.Regions["r0"].GetMaterial("B"));
+        Assert.Empty(world.Wrecks);
+    }
+
+    [Fact]
+    public void WreckOccupationSurvivesSaveLoad()
+    {
+        var (world, engine, _) = CreateWorldWithDeployedVictim(percent: 50);
+        engine.Step(new Intent[]
+        {
+            new AttackIntent(new EntityId(1), new EntityId(2)),
+        });
+        var wreckId = Assert.Single(world.Wrecks.Keys);
+        Assert.True(engine.ExecuteWreckCommand(
+            new OccupyWreckCommand("B", wreckId)).Success);
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+
+        Assert.Equal("B", loaded.Wrecks[wreckId].OccupiedByCivilizationId);
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+    }
+
+    [Fact]
     public void ZeroRecoveryPercentLeavesNoWreck()
     {
         var (world, engine, _) = CreateWorldWithDeployedVictim(percent: 0);
