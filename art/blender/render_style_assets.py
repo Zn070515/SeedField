@@ -96,71 +96,134 @@ def build_power(m: dict) -> None:
 
 
 def build_core(m: dict) -> None:
-    art.cylinder("Tier1", 3.0, 0.55, (0, 0, 0.275), 8, m["dark"], math.radians(22.5))
-    art.cylinder("Tier2", 2.35, 0.45, (0, 0, 0.75), 8, m["steel"], math.radians(22.5))
-    art.cylinder("Tier3", 1.75, 0.35, (0, 0, 1.15), 8, m["dark"], math.radians(22.5))
-    art.torus("TierRing", 2.05, 0.06, (0, 0, 1.02), m["copper"], 48)
-    art.cylinder("CoreShell", 0.95, 1.25, (0, 0, 1.70), 24, m["ivory"])
-    art.sphere("CoreSeed", 0.32, (0, 0, 2.05), m["hot"])
-    art.torus("GuardLow", 1.12, 0.07, (0, 0, 1.32), m["steel"], 48)
-    art.torus("GuardHigh", 1.12, 0.07, (0, 0, 2.08), m["steel"], 48)
+    """Open five-fold cradle: a permanent shrine, not a larger power tower."""
+    art.cylinder(
+        "Foundation", 3.35, 0.38, (0, 0, 0.19), 12, m["dark"], math.radians(15)
+    )
+    art.cylinder(
+        "FoundationRim",
+        3.10,
+        0.12,
+        (0, 0, 0.44),
+        12,
+        m["steel"],
+        math.radians(15),
+    )
+    art.cylinder(
+        "Cradle", 2.35, 0.42, (0, 0, 0.68), 8, m["steel"], math.radians(22.5)
+    )
+    art.torus("CradleRing", 2.22, 0.075, (0, 0, 0.92), m["copper"], 48)
+
     for index in range(5):
-        angle = math.radians(index * 72)
+        angle = math.radians(index * 72 + 18)
         art.box(
-            f"Arm{index}",
-            (1.55, 0.20, 0.18),
-            (math.cos(angle) * 1.35, math.sin(angle) * 1.35, 1.20),
+            f"Foot{index}",
+            (0.95, 0.72, 0.22),
+            (math.cos(angle) * 2.55, math.sin(angle) * 2.55, 0.50),
             (0, 0, angle),
+            m["dark"],
+        )
+        art.box(
+            f"Buttress{index}",
+            (0.52, 0.40, 2.05),
+            (math.cos(angle) * 1.95, math.sin(angle) * 1.95, 1.22),
+            (0, math.radians(-17), angle),
             m["steel"],
         )
         accent = m["cyan"] if index % 2 == 0 else m["amber"]
         art.sphere(
             f"BranchSocket{index}",
-            0.14,
-            (math.cos(angle) * 2.18, math.sin(angle) * 2.18, 1.20),
+            0.16,
+            (math.cos(angle) * 3.02, math.sin(angle) * 3.02, 0.62),
             accent,
         )
         art.box(
-            f"Pillar{index}",
-            (0.24, 0.24, 1.25),
-            (math.cos(angle) * 1.45, math.sin(angle) * 1.45, 1.72),
-            (0, 0, angle),
-            m["dark"],
+            f"Petal{index}",
+            (0.40, 0.34, 1.30),
+            (math.cos(angle) * 1.30, math.sin(angle) * 1.30, 2.48),
+            (0, math.radians(24), angle),
+            m["steel"],
         )
+        art.sphere(
+            f"PetalTip{index}",
+            0.10,
+            (math.cos(angle) * 1.56, math.sin(angle) * 1.56, 3.08),
+            m["amber"] if index % 2 == 0 else m["cyan"],
+        )
+
+    art.torus("GuardRing", 1.55, 0.075, (0, 0, 2.05), m["steel"], 48)
+    for index in range(3):
+        art.torus(
+            f"SeedArc{index}",
+            1.22,
+            0.045,
+            (0, 0, 1.95),
+            m["copper"],
+            48,
+            rotation=(math.radians(90), 0, math.radians(index * 60)),
+        )
+    art.sphere("CoreSeed", 0.58, (0, 0, 1.95), m["ivory"])
+    art.sphere("CoreHot", 0.30, (0, 0, 1.95), m["hot"])
+    art.torus("SeedHalo", 0.78, 0.035, (0, 0, 1.95), m["amber"], 48)
+    art.cylinder("Crown", 0.42, 0.16, (0, 0, 2.62), 8, m["ivory"], 0.0)
     for index in range(8):
         angle = math.radians(index * 45 + 22.5)
         art.sphere(
             f"Bolt{index}",
             0.06,
-            (math.cos(angle) * 2.55, math.sin(angle) * 2.55, 0.56),
+            (math.cos(angle) * 3.02, math.sin(angle) * 3.02, 0.34),
             m["steel"],
         )
 
 
 def build_worker(m: dict) -> None:
-    art.box("Chassis", (2.3, 1.45, 0.42), (0, 0, 0.38), mat=m["steel"])
-    art.box("ChassisBelly", (1.9, 1.15, 0.20), (0, 0, 0.15), mat=m["dark"])
+    """Asymmetric tracked frame: excavation arm front-right, sensor mast rear-left."""
+    art.box("Chassis", (2.6, 1.60, 0.55), (0, 0, 0.52), mat=m["steel"])
+    art.box("ChassisBelly", (2.2, 1.30, 0.24), (0, 0, 0.20), mat=m["dark"])
     for side in (-1, 1):
         art.box(
             "Track",
-            (0.38, 1.70, 0.34),
-            (side * 1.18, 0, 0.22),
+            (0.42, 1.95, 0.38),
+            (side * 1.30, 0, 0.26),
             mat=m["rubber"],
         )
         art.box(
             "TrackTrim",
-            (0.42, 1.45, 0.08),
-            (side * 1.18, 0, 0.42),
+            (0.46, 1.70, 0.09),
+            (side * 1.30, 0, 0.48),
             mat=m["steel"],
         )
-    art.cylinder("Turret", 0.48, 0.34, (0, 0, 0.76), 6, m["dark"])
-    art.box("Barrel", (1.15, 0.15, 0.15), (0.78, 0, 0.82), mat=m["copper"])
-    art.box("BarrelTip", (0.22, 0.20, 0.20), (1.38, 0, 0.82), mat=m["steel"])
-    art.box("SensorPod", (0.30, 0.30, 0.38), (-0.42, 0.42, 0.88), mat=m["dark"])
-    art.cylinder("SensorLens", 0.16, 0.06, (-0.42, 0.42, 1.08), 16, m["cyan"])
-    art.cylinder("Antenna", 0.035, 1.0, (-0.52, -0.42, 1.15), 8, m["steel"])
-    art.sphere("AntennaTip", 0.06, (-0.52, -0.42, 1.65), m["cyan"])
-    art.box("CyanStripe", (0.9, 0.08, 0.05), (0, 0.70, 0.58), mat=m["cyan"])
+    art.box("Cab", (0.80, 0.82, 0.72), (-0.55, -0.34, 1.10), mat=m["dark"])
+    art.cylinder(
+        "SensorLens", 0.17, 0.07, (-0.55, 0.09, 1.28), 16, m["cyan"]
+    )
+    art.cylinder("Antenna", 0.035, 1.10, (-0.92, -0.55, 1.50), 8, m["steel"])
+    art.sphere("AntennaTip", 0.065, (-0.92, -0.55, 2.08), m["cyan"])
+
+    # Module socket: an empty cradle so replacement modules change the silhouette.
+    art.box("SocketFrame", (0.95, 0.55, 0.55), (-0.90, 0.48, 0.92), mat=m["steel"])
+    art.box("SocketVoid", (0.72, 0.38, 0.32), (-0.90, 0.48, 0.92), mat=m["rubber"])
+    art.box("CyanStripe", (1.05, 0.08, 0.06), (0.15, 0.80, 0.62), mat=m["cyan"])
+
+    # Front excavation arm with a visible elbow and bucket.
+    art.box(
+        "ArmLower",
+        (1.55, 0.30, 0.30),
+        (0.95, 0.42, 1.05),
+        (0, math.radians(-18), 0.10),
+        m["copper"],
+    )
+    art.cylinder("Elbow", 0.24, 0.36, (1.62, 0.46, 1.30), 12, m["dark"])
+    art.box(
+        "ArmUpper",
+        (1.35, 0.24, 0.24),
+        (2.08, 0.52, 1.18),
+        (0, math.radians(28), 0.05),
+        m["steel"],
+    )
+    art.box("Bucket", (0.58, 0.66, 0.40), (2.55, 0.56, 0.86), mat=m["dark"])
+    art.box("BucketEdge", (0.14, 0.70, 0.10), (2.84, 0.56, 0.70), mat=m["steel"])
+    art.box("Counterweight", (0.55, 1.10, 0.55), (-1.55, 0.10, 0.62), mat=m["dark"])
 
 
 ASSETS = {
@@ -173,16 +236,16 @@ ASSETS = {
     },
     "seed_core": {
         "build": build_core,
-        "oblique_scale": 8.2,
-        "topdown_scale": 7.2,
-        "target_z": 1.2,
-        "angles": [0, 45],
+        "oblique_scale": 8.6,
+        "topdown_scale": 7.6,
+        "target_z": 1.3,
+        "angles": [0, 36],
     },
     "worker_frame": {
         "build": build_worker,
-        "oblique_scale": 4.8,
-        "topdown_scale": 4.2,
-        "target_z": 0.5,
+        "oblique_scale": 7.6,
+        "topdown_scale": 7.2,
+        "target_z": 0.9,
         "angles": [0, 90, 180, 270],
     },
 }

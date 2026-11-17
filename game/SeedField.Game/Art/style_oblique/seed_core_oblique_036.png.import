@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://def7j7at0mbsr"
-path="res://.godot/imported/seed_core_oblique_045.png-18d4f87c4193b6bd5bf6b7d4b691e91d.ctex"
+uid="uid://hks2p1op3ycd"
+path="res://.godot/imported/seed_core_oblique_036.png-2c62a06e085fe78666fed0fce54886b8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Art/style_oblique/seed_core_oblique_045.png"
-dest_files=["res://.godot/imported/seed_core_oblique_045.png-18d4f87c4193b6bd5bf6b7d4b691e91d.ctex"]
+source_file="res://Art/style_oblique/seed_core_oblique_036.png"
+dest_files=["res://.godot/imported/seed_core_oblique_036.png-2c62a06e085fe78666fed0fce54886b8.ctex"]
 
 [params]
 

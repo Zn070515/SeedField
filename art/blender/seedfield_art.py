@@ -76,13 +76,14 @@ def box(name, size, location, rotation=(0, 0, 0), mat=None):
     return obj
 
 
-def torus(name, major, minor, location, mat=None, segments=48):
+def torus(name, major, minor, location, mat=None, segments=48, rotation=(0, 0, 0)):
     bpy.ops.mesh.primitive_torus_add(
         major_radius=major,
         minor_radius=minor,
         major_segments=segments,
         minor_segments=10,
         location=location,
+        rotation=rotation,
     )
     obj = bpy.context.object
     obj.name = name
