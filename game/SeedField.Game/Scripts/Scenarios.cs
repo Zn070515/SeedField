@@ -288,4 +288,28 @@ internal static class Scenarios
 
     public const string ScriptA = DeviceScript;
     public const string ScriptB = DeviceScript;
+
+    /// <summary>
+    /// Mixed-benchmark control: a moving controller with no messages or attacks.
+    /// Compare it with ScriptA to isolate inbox/observation broadcast cost.
+    /// </summary>
+    public const string BenchmarkQuietScript = """
+        function decide(obs) {
+            var me = null;
+            for (var i = 0; i < obs.entities.length; i++) {
+                if (obs.entities[i].entityId === obs.viewerEntityId) {
+                    me = obs.entities[i];
+                    break;
+                }
+            }
+            if (!me || !me.hasDrive) {
+                return [];
+            }
+            return [{
+                type: "move",
+                entityId: me.entityId,
+                target: { x: 10000, y: 4000 }
+            }];
+        }
+        """;
 }

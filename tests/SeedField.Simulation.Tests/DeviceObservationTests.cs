@@ -145,6 +145,36 @@ public sealed class DeviceObservationTests
     }
 
     [Fact]
+    public void DeviceMessagesKeepOnlyTheMostRecentHistory()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddEntity(Unit(1, "A", new Vec2(100, 100), sensor: null))
+            .Build();
+        world.Inboxes["A"] = Enumerable.Range(1, 40)
+            .Select(id => new DeliveredMessage(
+                id,
+                new EntityId(1),
+                "A",
+                "r0",
+                "contact",
+                $"payload-{id}",
+                0,
+                id))
+            .ToList();
+
+        var engine = new SimulationEngine(world);
+        var messages = engine.BuildDeviceObservation(new EntityId(1)).Messages;
+
+        Assert.Equal(ObservationLimits.MaxMessages, messages.Count);
+        Assert.Equal(9, messages[0].MessageId);
+        Assert.Equal(40, messages[^1].MessageId);
+        Assert.Equal(
+            messages.OrderBy(message => message.MessageId).Select(message => message.MessageId),
+            messages.Select(message => message.MessageId));
+    }
+
+    [Fact]
     public void DeviceMessagesAreFilteredToItsRegion()
     {
         var world = new WorldBuilder()

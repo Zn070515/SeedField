@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Godot;
 using SeedField.Runtime.Js;
 using SeedField.Simulation;
@@ -343,6 +344,9 @@ public partial class Main : Node2D
 
     private void StepOnce()
     {
+        var benchmarkWatch = _benchmarkMixed && _benchmarkMixedElapsed >= MixedWarmupSeconds
+            ? Stopwatch.StartNew()
+            : null;
         var controllers = new List<DeviceControllerSlot>(_deviceControllers.Count);
         var entityIds = new List<EntityId>(_deviceControllers.Count);
         foreach (var controller in _deviceControllers)
@@ -370,7 +374,15 @@ public partial class Main : Node2D
         foreach (var decision in decisions)
         {
             intents.AddRange(decision.Intents);
-            _faultCount += decision.Faults.Count;
+            foreach (var fault in decision.Faults)
+            {
+                _faultCount++;
+                if (_benchmarkMixed)
+                {
+                    _benchmarkMixedFaultCodes[fault.Code] =
+                        _benchmarkMixedFaultCodes.GetValueOrDefault(fault.Code) + 1;
+                }
+            }
         }
 
         var result = _engine.Step(intents);
@@ -391,6 +403,11 @@ public partial class Main : Node2D
         UpdateFacing();
         PruneHistory();
         RefreshRecoveryIfReady();
+        benchmarkWatch?.Stop();
+        if (benchmarkWatch is not null)
+        {
+            _benchmarkTickMs.Add(benchmarkWatch.Elapsed.TotalMilliseconds);
+        }
     }
 
     private void RunOpponentDiplomacy()

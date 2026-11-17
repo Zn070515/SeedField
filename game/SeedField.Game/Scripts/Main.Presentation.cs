@@ -26,6 +26,7 @@ public partial class Main
     {
         _classicVisuals = arguments.Contains("--classic-visuals");
         _omniscientDebug = arguments.Contains("--omniscient-debug");
+        ParseMixedBenchmark(arguments);
         var viewArgument = arguments.FirstOrDefault(argument =>
             argument.StartsWith("--view=", StringComparison.Ordinal));
         if (viewArgument is not null)
@@ -57,6 +58,10 @@ public partial class Main
         _entityVisual = new EntityVisual(_visualCatalog);
         _coreVisual = new CoreVisual(_visualCatalog);
         UpdateFacing();
+        if (_benchmarkMixed)
+        {
+            ConfigureMixedBenchmark();
+        }
     }
 
     private void UpdateFacing()

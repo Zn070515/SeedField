@@ -388,14 +388,13 @@ public partial class Main : Node2D
     public override void _Process(double delta)
     {
         _frame++;
-
+        TrackMixedBenchmark();
         if (_benchmarkJint)
         {
             RunJintBenchmarkTick();
             QueueRedraw();
             return;
         }
-
         if (_benchmarkMain)
         {
             UpdateMainBenchmark(delta);
