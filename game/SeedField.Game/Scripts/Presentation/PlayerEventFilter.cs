@@ -33,8 +33,13 @@ public static class PlayerEventFilter
             ConstructionQueued queued => queued.CivilizationId == "A",
             ConstructionCancelled cancelled => cancelled.CivilizationId == "A",
             ConstructionFailed failed => failed.CivilizationId == "A",
-            MessageQueued queued => queued.ToCivilizationId == "A",
-            MessageDelivered delivered => delivered.ToCivilizationId == "A",
+            // Incoming traffic plus any transmission from an entity the player can see.
+            MessageQueued queued =>
+                queued.ToCivilizationId == "A" ||
+                visibleEntityIds.Contains(queued.FromEntityId.Value),
+            MessageDelivered delivered =>
+                delivered.ToCivilizationId == "A" ||
+                visibleEntityIds.Contains(delivered.FromEntityId.Value),
             MessageExpired expired => expired.CivilizationId == "A",
             ControlPointCaptured => true,
             MatchEnded => true,
@@ -47,6 +52,7 @@ public static class PlayerEventFilter
             BreakerLockedOut lockedOut => lockedOut.CivilizationId == "A",
             BreakerMaintained maintained => maintained.CivilizationId == "A",
             PowerShipped shipped => shipped.CivilizationId == "A",
+            PowerArrived arrived => arrived.CivilizationId == "A",
             PowerShortfall shortfall =>
                 shortfall.CivilizationId == "A" &&
                 visibleEntityIds.Contains(shortfall.EntityId.Value),

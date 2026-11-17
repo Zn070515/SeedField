@@ -94,16 +94,16 @@ def concrete(size: int, seed: int) -> Image.Image:
     draw = ImageDraw.Draw(image)
     rng = random.Random(seed + 7)
     for _ in range(14):
-        x = rng.randrange(size)
-        y = rng.randrange(size)
+        x = rng.randrange(48, size - 48)
+        y = rng.randrange(48, size - 48)
         for _ in range(rng.randrange(18, 48)):
-            nx = (x + rng.choice((-2, -1, 0, 1, 2))) % size
-            ny = (y + rng.choice((-2, -1, 0, 1, 2))) % size
+            nx = min(size - 8, max(8, x + rng.choice((-2, -1, 0, 1, 2))))
+            ny = min(size - 8, max(8, y + rng.choice((-2, -1, 0, 1, 2))))
             draw.line((x, y, nx, ny), fill=(20, 24, 29, 190), width=1)
             x, y = nx, ny
     for _ in range(18):
-        x = rng.randrange(size)
-        y = rng.randrange(size)
+        x = rng.randrange(12, size - 12)
+        y = rng.randrange(12, size - 12)
         draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=(88, 64, 38, 180))
     return image
 
@@ -124,7 +124,10 @@ def road(size: int, seed: int) -> Image.Image:
             )
     draw = ImageDraw.Draw(image)
     for x in range(0, size, 96):
-        draw.rectangle((x, size // 2 - 3, x + 42, size // 2 + 3), fill=(126, 92, 34, 210))
+        draw.rectangle((x, size // 2 - 3, min(size, x + 42), size // 2 + 3), fill=(126, 92, 34, 210))
+        wrap = x + 42 - size
+        if wrap > 0:
+            draw.rectangle((0, size // 2 - 3, wrap, size // 2 + 3), fill=(126, 92, 34, 210))
     return image
 
 

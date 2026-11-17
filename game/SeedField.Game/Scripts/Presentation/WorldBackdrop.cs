@@ -21,7 +21,7 @@ public static class WorldBackdrop
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
         float mapScale,
-        IReadOnlyList<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints,
+        IEnumerable<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints,
         Texture2D? ground = null,
         Texture2D? road = null)
     {
@@ -30,7 +30,7 @@ public static class WorldBackdrop
         canvas.DrawRect(new Rect2(origin, size), new Color(0.055f, 0.075f, 0.100f, 1f));
         if (ground is not null)
         {
-            var tile = 140f * (mapScale / 0.055f);
+            var tile = 140f * (mapScale / Main.BaseMapScale);
             for (var y = 0f; y < size.Y; y += tile)
             {
                 for (var x = 0f; x < size.X; x += tile)
@@ -48,8 +48,8 @@ public static class WorldBackdrop
         }
 
         DrawPlates(canvas, map, mapScale);
-        DrawRoadTexture(canvas, map, mapScale, road);
         DrawRoads(canvas, map, mapScale);
+        DrawRoadTexture(canvas, map, mapScale, road);
         DrawRuins(canvas, map, mapScale);
         DrawControlPads(canvas, map, mapScale, controlPoints);
         DrawCornerHazards(canvas, map, mapScale);
@@ -122,8 +122,8 @@ public static class WorldBackdrop
         canvas.DrawTextureRect(
             road,
             new Rect2(
-                map(new Vec2(1_000, 3_850)),
-                new Vector2(14_000 * mapScale, 300 * mapScale)),
+                map(new Vec2(1_000, 3_870)),
+                new Vector2(14_000 * mapScale, 260 * mapScale)),
             false,
             new Color(0.78f, 0.82f, 0.88f, 0.82f));
     }
@@ -226,7 +226,7 @@ public static class WorldBackdrop
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
         float mapScale,
-        IReadOnlyList<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints)
+        IEnumerable<(Vec2 Position, int RadiusMm, string? Owner)> controlPoints)
     {
         foreach (var point in controlPoints)
         {
@@ -275,7 +275,7 @@ public static class WorldBackdrop
             var start = map(origin);
             for (var index = 0; index < 4; index++)
             {
-                var offset = new Vector2(index * 9f * mapScale * 20f, 0);
+                var offset = new Vector2(index * 10f, 0);
                 canvas.DrawLine(
                     start + offset,
                     start + offset + new Vector2(8f, 8f),

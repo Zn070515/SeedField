@@ -17,7 +17,7 @@ public partial class Main : Node2D
 
     private const int ViewWidth = 1280;
     private const int ViewHeight = 720;
-    private const float BaseMapScale = 0.055f;
+    internal const float BaseMapScale = 0.055f;
     private const float MinZoom = 0.70f;
     private const float MaxZoom = 1.35f;
 

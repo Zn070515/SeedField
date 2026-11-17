@@ -294,14 +294,11 @@ public partial class Main
         _effects.Draw(this, Map, _world.Tick, MapScale);
     }
 
-    private CoreVisualState CurrentCoreState()
-    {
-        var snapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
-        return CoreVisualStateRules.Classify(
-            snapshot,
-            _world.Tick,
-            _bootstrapUntilTick);
-    }
+    private CoreVisualState CurrentCoreState() =>
+        ClassifyCoreState(CoreRecoveryDiagnosticsBuilder.Build(_world, "A"));
+
+    private CoreVisualState ClassifyCoreState(CoreRecoverySnapshot snapshot) =>
+        CoreVisualStateRules.Classify(snapshot, _world.Tick, _bootstrapUntilTick);
 
     private void RunModuleSwapSmoke()
     {

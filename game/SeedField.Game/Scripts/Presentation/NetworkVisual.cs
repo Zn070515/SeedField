@@ -15,7 +15,7 @@ public static class NetworkVisual
     public static void Draw(
         CanvasItem canvas,
         Func<Vec2, Vector2> map,
-        IReadOnlyList<(Vec2 Position, string? Owner)> points,
+        IEnumerable<(Vec2 Position, string? Owner)> points,
         bool aPowered,
         bool bPowered,
         long tick,

@@ -58,8 +58,7 @@ public partial class Main
             Map,
             MapScale,
             _world.ControlPoints.Values
-                .Select(point => (point.Position, point.RadiusMm, point.OwnerCivilizationId))
-                .ToList(),
+                .Select(point => (point.Position, point.RadiusMm, point.OwnerCivilizationId)),
             _worldCatalog.Get("terrain_concrete")?.Diffuse,
             _worldCatalog.Get("terrain_road")?.Diffuse);
     }
@@ -77,8 +76,7 @@ public partial class Main
             this,
             Map,
             _world.ControlPoints.Values
-                .Select(point => (point.Position, point.OwnerCivilizationId))
-                .ToList(),
+                .Select(point => (point.Position, point.OwnerCivilizationId)),
             frontier.GetEnergy("A") > 0 && GridClosed("A"),
             frontier.GetEnergy("B") > 0 && GridClosed("B"),
             _world.Tick,
@@ -126,10 +124,7 @@ public partial class Main
     private void DrawPresentationCore()
     {
         var snapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");
-        var state = CoreVisualStateRules.Classify(
-            snapshot,
-            _world.Tick,
-            _bootstrapUntilTick);
+        var state = ClassifyCoreState(snapshot);
         if (state == CoreVisualState.Absent)
         {
             return;
@@ -180,6 +175,6 @@ public partial class Main
             state,
             _world.Tick,
             _debugVisible,
-            _zoom);
+            1f);
     }
 }
