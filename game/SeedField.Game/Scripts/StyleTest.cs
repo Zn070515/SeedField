@@ -69,10 +69,12 @@ public partial class StyleTest : Node2D
 
         var path = ProjectSettings.GlobalizePath(
             $"res://screenshots/art-{_route}-{_zoom}-{_overlay}.png");
+        var exitCode = 0;
         var image = GetViewport().GetTexture().GetImage();
         if (image is null)
         {
             GD.PushError($"ART_SCREENSHOT_FAILED viewport image unavailable: {path}");
+            exitCode = 1;
         }
         else
         {
@@ -84,10 +86,11 @@ public partial class StyleTest : Node2D
             else
             {
                 GD.PushError($"ART_SCREENSHOT_FAILED {error}: {path}");
+                exitCode = 1;
             }
         }
 
-        GetTree().Quit();
+        GetTree().Quit(exitCode);
     }
 
     private void ParseArgs()
