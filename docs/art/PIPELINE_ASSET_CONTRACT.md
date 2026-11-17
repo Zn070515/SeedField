@@ -108,23 +108,24 @@ Godot 4.7 的 2D 渲染提供 `CanvasTexture` 的 diffuse/normal/specular 贴图
 - https://docs.godotengine.org/en/4.7/tutorials/2d/2d_lights_and_shadows.html
 - https://docs.godotengine.org/en/4.7/tutorials/shaders/shader_reference/canvas_item_shader.html
 
-## 7. 首个导出工具
+## 7. 当前导出工具
 
-`tools/art/render_asset.py` 为 **Blender 后台单图导出器**，强制调用用户指定的正交相机、透明背景 RGBA 和固定画布尺寸，同时生成哈希与配置记录；
-它**不是**“自动设计优质机械外观”的模型生成器，真正的机械形体仍需在 .blend 中按 Art Bible 设计。
-
-运行示例（Windows PowerShell，使用已安装的 Blender 路径替换 `blender`）：
+本仓库已实现的实际管线：
 
 ```powershell
-blender -b assets/source/core/seed_core.blend `
-  -P tools/art/render_asset.py -- `
-  --asset-id seed_core.v1 `
-  --camera ART_CAMERA `
-  --output assets/runtime/core/seed_core.png `
-  --size 512
+blender --background --factory-startup `
+  --python art/blender/render_style_assets.py -- `
+  --route oblique --output art/generated/style_oblique --size 512
+python tools/build_art_manifest.py
 ```
 
-输出为 `seed_core.png` 与 `seed_core.png.meta.json`；必须在本机检查透明度、实际方向与边距。该工具不自动写入 Godot 工程状态。
+- `art/blender/render_style_assets.py`：批量构建三件程序化资产，固定正交相机、透明背景 RGBA、512 画布与方向帧；
+  它**不是**“自动设计优质机械外观”的模型生成器，真正的机械形体仍需按 Art Bible 设计。
+- `tools/build_art_manifest.py`：从已提交的运行时 PNG 重新计算哈希、alpha 包围盒、pivot 与方向帧，写入
+  `game/SeedField.Game/Art/manifest.json`。
+- `tools/make_art_sheets.py`：从运行时资产与真实 Godot 截图生成 A/B 对比表。
+
+`tools/art/render_asset.py` 与 `tools/art/check_render_asset.py` 是早期计划中的单图工具，**当前仓库不存在**；不要按旧路径运行。
 
 ## 8. 资产校验 / 可持续维护
 
@@ -137,7 +138,10 @@ blender -b assets/source/core/seed_core.blend `
 ## 9. 导出完整性门禁（不代替视觉验收）
 
 ```powershell
-python tools/art/check_render_asset.py assets/runtime/core/seed_core.png
+python tools/build_art_manifest.py --check
+dotnet test tests/SeedField.Repository.Tests --filter "FullyQualifiedName~ArtAssetTests"
 ```
 
-该命令检查：PNG 签名与 IHDR、RGBA/带 alpha 像素类型、画布分辨率、Manifest 与文件哈希一致。它**不能**证明贴图美观、构图合理、像素每处透明、模型与游戏坐标对齐或版权合法。
+门禁检查：清单新鲜度、PNG 签名与 IHDR、RGBA/8bit、alpha 覆盖率与留边、`alphaBBox`、斜俯视/俯视
+pivot、方向帧数量/角度/文件名、路径安全与 SHA-256。它**不能**证明贴图美观、构图合理、模型与游戏
+坐标完全对齐或版权合法。
