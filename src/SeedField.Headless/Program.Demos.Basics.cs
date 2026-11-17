@@ -1,10 +1,35 @@
 using SeedField.Runtime.Js;
+using SeedField.Runtime.Js.Worker;
 using SeedField.Simulation;
 
 namespace SeedField.Headless;
 
 internal static partial class Program
 {
+    private static int RunWorkerOpponentDemo()
+    {
+        var inProcess = RunScenario();
+        ControllerFactory workerFactory = (civilizationId, script, options) =>
+            new WorkerController(
+                civilizationId,
+                script,
+                new WorkerControllerOptions
+                {
+                    ControllerOptions = options ?? new JsControllerOptions(),
+                });
+
+        var first = RunScenario(workerFactory);
+        var second = RunScenario(workerFactory);
+        var match = inProcess.FinalHash == first.FinalHash &&
+                    first.FinalHash == second.FinalHash;
+        Console.WriteLine(
+            $"WORKER_OPPONENT inProcess={inProcess.FinalHash:x16} " +
+            $"worker1={first.FinalHash:x16} worker2={second.FinalHash:x16} " +
+            $"match={match}");
+
+        return match ? 0 : 1;
+    }
+
     private static int RunMultiRegionDemo()
     {
         var world = new WorldBuilder()

@@ -1,4 +1,5 @@
 ﻿using SeedField.Runtime.Js;
+using SeedField.Runtime.Js.Worker;
 using SeedField.Simulation;
 
 namespace SeedField.Headless;
@@ -112,6 +113,11 @@ internal static partial class Program
             return RunWreckDemo();
         }
 
+        if (args.Contains("--worker-opponent"))
+        {
+            return RunWorkerOpponentDemo();
+        }
+
         if (args.Contains("--ruins"))
         {
             return RunRuinDemo();
@@ -212,15 +218,17 @@ internal static partial class Program
             Material: 0,
             Comm: new CommModule(1, EnergyCostPerMessage: 0));
 
-    private static RunReport RunScenario()
+    private static RunReport RunScenario(ControllerFactory? opponentFactory = null)
     {
         var world = BuildWorld();
         var engine = new SimulationEngine(world);
 
         using var controllerA = new JsController("A", ScriptA);
-        using var controllerB = new JsController("B", ScriptB);
+        using var controllerB = opponentFactory is null
+            ? (IController)new JsController("B", ScriptB)
+            : opponentFactory("B", ScriptB, null);
 
-        var controllers = new (string Civilization, JsController Controller)[]
+        var controllers = new (string Civilization, IController Controller)[]
         {
             ("A", controllerA),
             ("B", controllerB),
