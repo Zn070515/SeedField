@@ -99,6 +99,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --wreck
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --combat-rng
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --replay-record replay.json
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --replay-play replay.json
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --region-scale
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --worker-opponent
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --package-check <dir> --allow-unsigned --confirm

@@ -135,6 +135,11 @@ internal static partial class Program
             return RunCombatRandomnessDemo();
         }
 
+        if (args.Contains("--region-scale"))
+        {
+            return RunRegionScaleDemo();
+        }
+
         if (args.Contains("--worker-opponent"))
         {
             return RunWorkerOpponentDemo();
