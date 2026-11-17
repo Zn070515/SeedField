@@ -16,12 +16,12 @@ public partial class Main : Node2D
 
         DrawGrid();
         DrawStagingZones();
-        DrawControlPoint();
         if (!_classicVisuals)
         {
             DrawPresentationNetworks();
         }
 
+        DrawControlPoint();
         if (_classicVisuals)
         {
             DrawRanges();
