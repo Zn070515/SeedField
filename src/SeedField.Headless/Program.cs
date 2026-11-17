@@ -19,28 +19,31 @@ internal static partial class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        var observationBenchmarkIndex = Array.IndexOf(args, "--benchmark-observation");
-        if (observationBenchmarkIndex >= 0 &&
-            observationBenchmarkIndex + 1 < args.Length &&
-            int.TryParse(args[observationBenchmarkIndex + 1], out var observationDevices))
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-observation",
+                out var observationDevices,
+                out var observationInvalid))
         {
-            return RunObservationBenchmark(observationDevices);
+            return observationInvalid ? 2 : RunObservationBenchmark(observationDevices);
         }
 
-        var serializeBenchmarkIndex = Array.IndexOf(args, "--benchmark-serialize");
-        if (serializeBenchmarkIndex >= 0 &&
-            serializeBenchmarkIndex + 1 < args.Length &&
-            int.TryParse(args[serializeBenchmarkIndex + 1], out var serializeDevices))
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-serialize",
+                out var serializeDevices,
+                out var serializeInvalid))
         {
-            return RunSerializeBenchmark(serializeDevices);
+            return serializeInvalid ? 2 : RunSerializeBenchmark(serializeDevices);
         }
 
-        var jintBenchmarkIndex = Array.IndexOf(args, "--benchmark-jint");
-        if (jintBenchmarkIndex >= 0 &&
-            jintBenchmarkIndex + 1 < args.Length &&
-            int.TryParse(args[jintBenchmarkIndex + 1], out var jintDevices))
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-jint",
+                out var jintDevices,
+                out var jintInvalid))
         {
-            return RunJintBenchmark(jintDevices);
+            return jintInvalid ? 2 : RunJintBenchmark(jintDevices);
         }
 
         if (args.Contains("--multi-region"))
@@ -167,6 +170,37 @@ internal static partial class Program
             : "MISMATCH: state hashes differ.");
 
         return first.FinalHash == second.FinalHash ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Reads <c>&lt;flag&gt; &lt;positive device count&gt;</c>. A present-but-invalid flag
+    /// reports an error instead of silently falling through to the default demo, which
+    /// would look like a successful benchmark run.
+    /// </summary>
+    private static bool TryReadBenchmarkDevices(
+        string[] args,
+        string flag,
+        out int devices,
+        out bool invalid)
+    {
+        devices = 0;
+        invalid = false;
+
+        var index = Array.IndexOf(args, flag);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (index + 1 >= args.Length ||
+            !int.TryParse(args[index + 1], out devices) ||
+            devices <= 0)
+        {
+            Console.Error.WriteLine($"{flag} requires a positive device count.");
+            invalid = true;
+        }
+
+        return true;
     }
 
     private static void AdvanceToTick(

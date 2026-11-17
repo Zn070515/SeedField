@@ -33,7 +33,10 @@ internal static partial class Program
                 engine.BuildDeviceObservation(id);
             }
 
+            // Step() is engine work, not observation work; keep it out of the timed region.
+            stopwatch.Stop();
             engine.Step();
+            stopwatch.Start();
         }
 
         stopwatch.Stop();
@@ -50,9 +53,11 @@ internal static partial class Program
     {
         var world = BuildPerfWorld(devices);
         var engine = new SimulationEngine(world);
+        // Serialize the compact controller view that Main actually ships, not the
+        // full device view that only tests/tools use.
         var observations = world.EnumerateEntities()
             .Where(entity => entity.CivilizationId == "A")
-            .Select(entity => engine.BuildDeviceObservation(entity.Id))
+            .Select(entity => engine.BuildControllerObservation(entity.Id))
             .ToList();
         for (var index = 0; index < 2; index++)
         {
@@ -84,9 +89,12 @@ internal static partial class Program
     {
         var world = BuildPerfWorld(devices);
         var engine = new SimulationEngine(world);
+        // A device-scoped script: the compact view contains only the viewer and sensed
+        // enemies, so the civilization-level ScriptA would return no intents for almost
+        // every device and would measure an idle script rather than real controller work.
         var controllers = world.EnumerateEntities()
             .Where(entity => entity.CivilizationId == "A")
-            .Select(entity => new JsController("A", ScriptA))
+            .Select(entity => new JsController("A", PerfDeviceScript))
             .ToList();
         var aIds = world.EnumerateEntities()
             .Where(entity => entity.CivilizationId == "A")
@@ -163,10 +171,62 @@ internal static partial class Program
         return 0;
     }
 
+    /// <summary>
+    /// Device-scoped stand-in for the shipped controller script. It only commands its
+    /// own viewer, so every device does comparable work under the compact observation.
+    /// </summary>
+    private const string PerfDeviceScript = """
+        function decide(obs) {
+            var me = null;
+            for (var i = 0; i < obs.entities.length; i++) {
+                if (obs.entities[i].entityId === obs.viewerEntityId) {
+                    me = obs.entities[i];
+                }
+            }
+            if (!me) {
+                return [];
+            }
+
+            var enemies = obs.entities.filter(function (e) { return !e.isSelf; });
+            var target = null;
+            var best = 1e18;
+            for (var j = 0; j < enemies.length; j++) {
+                var dx = enemies[j].x - me.x;
+                var dy = enemies[j].y - me.y;
+                var d = Math.sqrt(dx * dx + dy * dy);
+                if (d < best) {
+                    best = d;
+                    target = enemies[j];
+                }
+            }
+
+            if (!target) {
+                return [{ type: "move", entityId: me.entityId, target: { x: 10000, y: 10000 } }];
+            }
+
+            if (me.hasWeapon && best <= me.weaponRangeMm) {
+                return [{ type: "attack", entityId: me.entityId, targetId: target.entityId }];
+            }
+
+            return [{
+                type: "move",
+                entityId: me.entityId,
+                target: { x: target.x, y: target.y }
+            }];
+        }
+        """;
+
     private static WorldState BuildPerfWorld(int devices)
     {
-        var builder = new WorldBuilder().AddRegion("frontier", 20_000, 20_000);
-        var columns = (int)Math.Ceiling(Math.Sqrt(devices));
+        var columns = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(devices)));
+        var rows = Math.Max(1, (int)Math.Ceiling(devices / (double)columns));
+
+        // Size the region to the grid. A fixed 20 km region silently placed entities
+        // outside its bounds once devices > ~121, and the spatial index clamps
+        // out-of-bounds positions into border cells, which made the query degenerate.
+        var width = Math.Max(20_000, 2_800 + (columns - 1) * 1_800);
+        var height = Math.Max(20_000, 2_800 + (rows - 1) * 1_800);
+        var builder = new WorldBuilder().AddRegion("frontier", width, height);
         for (var index = 0; index < devices; index++)
         {
             var column = index % columns;

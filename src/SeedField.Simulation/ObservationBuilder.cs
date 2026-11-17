@@ -127,76 +127,57 @@ public static class ObservationBuilder
     /// Messages and shipments are filtered to the device's region, so knowledge does not
     /// fuse across the civilization for free.
     /// </summary>
-    public static Observation BuildForEntity(WorldState world, EntityId entityId) =>
-        BuildForEntity(world, entityId, cache: null);
+    public static Observation BuildForEntity(WorldState world, EntityId entityId)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        return BuildForEntity(world, entityId, ObservationCache.Build(world));
+    }
 
     internal static Observation BuildForEntity(
         WorldState world,
         EntityId entityId,
-        ObservationCache? cache,
+        ObservationCache cache,
         bool includeAllies = true)
     {
         ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(cache);
 
         var viewer = world.FindEntity(entityId)
             ?? throw new ArgumentException($"Entity '{entityId}' does not exist.", nameof(entityId));
         var region = world.Regions[viewer.RegionId];
 
-        List<ObservedEntity> visible;
-        if (cache is null)
-        {
-            var sorted = new SortedDictionary<long, ObservedEntity>();
-            foreach (var candidate in region.Entities.Values)
+        // One visibility path: own entities come from the shared per-tick cache, and
+        // foreign entities are resolved through the region index. Keeping a second
+        // full-scan implementation here invited the two rules to drift apart.
+        var visible = includeAllies
+            ? new List<ObservedEntity>(cache.Own(region.Id, viewer.CivilizationId))
+            : new List<ObservedEntity>
             {
-                if (candidate.Id != viewer.Id &&
-                    !string.Equals(candidate.CivilizationId, viewer.CivilizationId, StringComparison.Ordinal) &&
+                cache.Observe(viewer, viewer.CivilizationId, isSelf: true),
+            };
+        if (viewer.Sensor is { RangeMm: > 0 })
+        {
+            var candidates = new List<EntityState>();
+            cache.Index(region.Id).Query(viewer.Position, viewer.Sensor.RangeMm, candidates);
+            foreach (var candidate in candidates)
+            {
+                if (candidate.Id == viewer.Id ||
+                    string.Equals(
+                        candidate.CivilizationId,
+                        viewer.CivilizationId,
+                        StringComparison.Ordinal) ||
                     !VisibilityRules.IsSensedBy(viewer, candidate))
                 {
                     continue;
                 }
 
-                sorted[candidate.Id.Value] = ToObserved(
+                visible.Add(cache.Observe(
                     candidate,
-                    isSelf: string.Equals(
-                        candidate.CivilizationId,
-                        viewer.CivilizationId,
-                        StringComparison.Ordinal));
+                    viewer.CivilizationId,
+                    isSelf: false));
             }
 
-            visible = sorted.Values.ToList();
-        }
-        else
-        {
-            visible = includeAllies
-                ? new List<ObservedEntity>(cache.Own(region.Id, viewer.CivilizationId))
-                : new List<ObservedEntity>
-                {
-                    cache.Observe(viewer, viewer.CivilizationId, isSelf: true),
-                };
-            if (viewer.Sensor is { RangeMm: > 0 })
-            {
-                var candidates = new List<EntityState>();
-                cache.Index(region.Id).Query(viewer.Position, viewer.Sensor.RangeMm, candidates);
-                foreach (var candidate in candidates)
-                {
-                    if (candidate.Id == viewer.Id ||
-                        string.Equals(
-                            candidate.CivilizationId,
-                            viewer.CivilizationId,
-                            StringComparison.Ordinal) ||
-                        !VisibilityRules.IsSensedBy(viewer, candidate))
-                    {
-                        continue;
-                    }
-
-                    visible.Add(cache.Observe(
-                        candidate,
-                        viewer.CivilizationId,
-                        isSelf: false));
-                }
-
-                visible.Sort((left, right) => left.EntityId.CompareTo(right.EntityId));
-            }
+            visible.Sort((left, right) => left.EntityId.CompareTo(right.EntityId));
         }
 
         var messages = world.GetInbox(viewer.CivilizationId)

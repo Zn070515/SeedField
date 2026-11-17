@@ -4,7 +4,7 @@
 - 日期：2026-11-17
 - 关联决策：PERF-01、PERF-02、SEC-01
 - 前置：ADR-0005、ADR-0023
-- 编号说明：ADR-0024–0026 属于未合并的 Gate 3 PR #5；本性能分支独立使用 0027
+- 编号说明：ADR-0024/0025 已随 Gate 2 合入；0026 预留给未合并的 Gate 3 PR #5，本分支使用 0027
 
 ## 背景
 
@@ -31,7 +31,10 @@
 
 - 按 World.Tick 构建/复用；
 - 缓存区域索引、己方 `ObservedEntity` 列表和每实体 DTO；
-- `SimulationEngine.BuildDeviceObservation` 使用该缓存。
+- 区域索引按需（首次查询该区域时）构建，单区域观测不为其他区域建索引；
+- `SimulationEngine.BuildDeviceObservation` 使用该缓存；
+- 任何不推进 Tick 的主机命令（部署、恢复、外交、电力、废墟、遗迹、区域激活）
+  必须使缓存失效，否则同一 Tick 内会返回旧快照。
 
 ### 3. 控制器观测视图
 
@@ -72,7 +75,8 @@ Golden/Headless hash 与优化前一致，测试全绿。
 
 ## 后果
 
-- 100 台控制器从约 200 ms/tick 降到约 26 ms/tick（开发机 Debug，Headless）。
+- 100 台控制器从约 200 ms/tick 降到约 31 ms/tick（开发机 Debug，Headless，
+  设备作用域基准脚本；早先 26 ms 的读数使用了在 compact 视图下几乎空转的文明级脚本）。
 - 观测构建本身约 5.8× 提速；控制器 JSON 体积随“只含自机 + 感知敌人”显著下降。
 - 控制器脚本不能依赖同文明其他设备的实体列表；需要协同信息时必须通过消息/文明级接口。
 - 后续若引入更复杂传感器/障碍物，可在现有 `RegionSpatialIndex` 上扩展，不需要重写观测层。

@@ -26,9 +26,12 @@ Headless Debug、20 Tick、每 Tick 对所有 A 设备构建观测：
 
 | 设备 | 优化前 avg/obs | 优化后 avg/obs | 总耗时前 | 总耗时后 | 提升 |
 |---:|---:|---:|---:|---:|---:|
-| 10 | 0.008 ms | 0.005 ms | 1.63 ms | 0.92 ms | 1.8× |
-| 50 | 0.047 ms | 0.010 ms | 46.56 ms | 10.35 ms | 4.5× |
-| 100 | 0.089 ms | 0.015 ms | 178.37 ms | 30.69 ms | 5.8× |
+| 10 | 0.008 ms | 0.004 ms | 1.63 ms | 0.89 ms | 1.8× |
+| 50 | 0.047 ms | 0.010 ms | 46.56 ms | 9.86 ms | 4.7× |
+| 100 | 0.089 ms | 0.015 ms | 178.37 ms | 29.87 ms | 6.0× |
+
+说明：表格中的“优化后”耗时已重新测量，计时区间只包含观测构建。旧的基准把
+`engine.Step()` 也计入了同一 stopwatch，因此“优化前”列略偏高，6.0× 是上限估计。
 
 ## 4. 真实 Jint 前后
 
@@ -36,25 +39,29 @@ Headless Debug、20 Tick、每 Tick 对所有 A 设备构建观测：
 
 | 设备 | 优化前 ms/tick | 优化后 ms/tick | 优化前 ticks/s | 优化后 ticks/s |
 |---:|---:|---:|---:|---:|
-| 10 | 3.26 | 0.54 | 306.9 | 1854.3 |
-| 50 | 87.56 | 8.41 | 11.4 | 118.9 |
-| 100 | 200.72 | 26.24 | 5.0 | 38.1 |
+| 10 | 3.26 | 0.66 | 306.9 | 1505.5 |
+| 50 | 87.56 | 11.50 | 11.4 | 87.0 |
+| 100 | 200.72 | 31.10 | 5.0 | 32.2 |
 
 100 台拆分（优化后）：
 
 ```text
-obsMs=1.31  serMs=3.11  runMs=21.74  avgTickMs=26.24
+obsMs=2.25  serMs=2.53  runMs=26.14  avgTickMs=31.10
 ```
 
-Release 复测（100 台）：
+Release 复测（100 台，当前设备作用域基准）：
 
 ```text
-JINT_BENCH avgTickMs=21.42 ticksPerSec=46.7
-obsMs=1.13 serMs=2.93 runMs=17.29
+JINT_BENCH avgTickMs=33.42 ticksPerSec=29.9
+obsMs=2.16 serMs=2.56 runMs=28.52
 ```
 
 说明：优化后 Jint 数字使用真实 Main 的 compact controller view；旧数字使用
-完整 device observation。对比的是实际游戏路径，而不是把两个不同 API 混在一起。
+完整 device observation。旧基准对每个设备都复用文明级 `ScriptA`，在 compact
+视图下除设备 1/2 外几乎不产生 intent，会让“优化后 runMs”偏低；现在基准改用
+设备作用域的 `PerfDeviceScript`，每个设备都执行真实的感知/选择/移动工作，
+因此上表的优化后数字比早先记录更高（100 台 26.24 → 31.10 ms/tick），但仍为
+6.5× 提升。严格的前后对比仍受脚本工作量差异影响，只能作为量级参考。
 
 ## 5. 命令
 
@@ -69,8 +76,13 @@ dotnet test SeedField.slnx
 
 - `DeviceObservationTests` 新增 compact view 测试：自己 + 感知敌人，不含同文明盟友；
   完整 `BuildDeviceObservation` 仍包含盟友。
-- 334 tests passed（18 repository / 231 simulation / 85 Runtime.Js）。
-- Headless 双跑哈希：`34886c1bb93164a1`，与优化前一致。
+- 新增宽传感器（`int.MaxValue`）跨格可见性测试，覆盖空间索引范围溢出。
+- 新增同 Tick 部署后缓存刷新测试：`ExecuteDeploymentCommand` 不推进 Tick，
+  观测缓存必须失效，否则新设备在同一 Tick 内不可见。
+- 336 tests passed（18 repository / 233 simulation / 85 Runtime.Js）。
+- Headless 双跑哈希：`34886c1bb93164a1`，与优化前一致。注意：默认 Headless
+  场景使用文明级 `BuildObservation`，不经过设备观测/空间索引路径；该哈希只证明
+  仿真规则未变，不覆盖本次新增缓存与索引。设备路径由上面的单元测试覆盖。
 - Golden scenario 未变。
 
 ## 7. 未采用的算法
@@ -85,4 +97,8 @@ dotnet test SeedField.slnx
 
 - 控制器观测不再包含同文明其他设备；依赖盟友列表的脚本需要改用消息/文明级接口。
 - 这是 Debug 构建的开发机数据；Release 和不同硬件需复测。
-- 空间索引为每 Tick 全量重建；区域实体数很大时可改为增量更新。
+- 空间索引为每 Tick 全量重建；区域实体数很大时可改为增量更新。索引现按区域惰性
+  构建，单区域观测不再为全世界建索引。
+- 观测缓存以 Tick 为键；所有不推进 Tick 的主机命令（部署/恢复/外交/电力/废墟/
+  遗迹/区域激活）都会显式失效缓存。绕过 `SimulationEngine` 直接调用
+  `DeploymentService` 的宿主需自行保证不在同一 Tick 内复用观测。

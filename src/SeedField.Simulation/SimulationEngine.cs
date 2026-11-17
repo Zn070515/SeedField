@@ -40,6 +40,8 @@ public sealed partial class SimulationEngine
 
     public void ActivateRegion(string regionId)
     {
+        InvalidateObservationCache();
+
         if (!_inactiveRegions.Remove(regionId))
         {
             return;
@@ -144,33 +146,36 @@ public sealed partial class SimulationEngine
 
     private ObservationCache? _observationCache;
 
-    public Observation BuildDeviceObservation(EntityId entityId)
-    {
-        if (_observationCache is null || _observationCache.Tick != World.Tick)
-        {
-            _observationCache = ObservationCache.Build(World);
-        }
-
-        return ObservationBuilder.BuildForEntity(World, entityId, _observationCache);
-    }
+    public Observation BuildDeviceObservation(EntityId entityId) =>
+        ObservationBuilder.BuildForEntity(World, entityId, GetObservationCache());
 
     /// <summary>
     /// Device-scoped view for controller execution: self plus sensed enemies.
     /// The civilization observation still includes all own entities.
     /// </summary>
-    public Observation BuildControllerObservation(EntityId entityId)
+    public Observation BuildControllerObservation(EntityId entityId) =>
+        ObservationBuilder.BuildForEntity(
+            World,
+            entityId,
+            GetObservationCache(),
+            includeAllies: false);
+
+    /// <summary>
+    /// Per-tick cache, rebuilt after a tick advance or after any host command that
+    /// mutated the world without advancing the tick (for example a deployment).
+    /// Command paths call <see cref="InvalidateObservationCache"/>.
+    /// </summary>
+    private ObservationCache GetObservationCache()
     {
         if (_observationCache is null || _observationCache.Tick != World.Tick)
         {
             _observationCache = ObservationCache.Build(World);
         }
 
-        return ObservationBuilder.BuildForEntity(
-            World,
-            entityId,
-            _observationCache,
-            includeAllies: false);
+        return _observationCache;
     }
+
+    private void InvalidateObservationCache() => _observationCache = null;
 
     public TickResult Step(IReadOnlyList<Intent>? intents = null)
     {
@@ -251,6 +256,7 @@ public sealed partial class SimulationEngine
     public DeploymentCommandResult ExecuteDeploymentCommand(DeploymentCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
+        InvalidateObservationCache();
         var tick = World.Tick;
 
         try

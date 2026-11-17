@@ -51,6 +51,61 @@ public sealed class DeviceObservationTests
     }
 
     [Fact]
+    public void WideSensorStillSeesEnemiesInFarCells()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 20_000, 20_000)
+            .AddEntity(Unit(1, "A", new Vec2(100, 100), sensor: int.MaxValue))
+            .AddEntity(Unit(2, "B", new Vec2(15_000, 15_000), sensor: null))
+            .Build();
+        var engine = new SimulationEngine(world);
+
+        var observation = engine.BuildDeviceObservation(new EntityId(1));
+
+        Assert.Equal(
+            new long[] { 1, 2 },
+            observation.Entities.Select(entity => entity.EntityId));
+    }
+
+    [Fact]
+    public void DeploymentAfterAnObservationRefreshesTheCachedView()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 100)
+            .AddEntity(Unit(1, "A", new Vec2(100, 100), sensor: 1_000))
+            .Build();
+        var blueprint = world.Workshop.Publish(new DeviceBlueprint(
+            "probe",
+            0,
+            "Probe",
+            20,
+            10,
+            Sensor: new SensorModule(1_000),
+            Power: new PowerModule(1, 10),
+            MaterialCost: 10));
+        var engine = new SimulationEngine(world);
+
+        // Populate the per-tick cache before mutating the world at the same tick.
+        Assert.Equal(
+            new long[] { 1 },
+            engine.BuildControllerObservation(new EntityId(1))
+                .Entities.Select(entity => entity.EntityId));
+
+        var deployed = engine.ExecuteDeploymentCommand(new DeployCommand(
+            "A",
+            blueprint,
+            "r0",
+            new Vec2(200, 100)));
+        Assert.True(deployed.Success);
+
+        var deployedId = deployed.EntityId!.Value.Value;
+        Assert.Contains(
+            engine.BuildDeviceObservation(new EntityId(1)).Entities,
+            entity => entity.EntityId == deployedId);
+    }
+
+    [Fact]
     public void DeviceMessagesAreFilteredToItsRegion()
     {
         var world = new WorldBuilder()

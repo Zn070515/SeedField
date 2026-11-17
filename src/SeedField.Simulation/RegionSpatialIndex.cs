@@ -47,10 +47,17 @@ internal sealed class RegionSpatialIndex
             return;
         }
 
-        var minX = Math.Clamp((center.X - radiusMm) / CellSizeMm, 0, _columns - 1);
-        var maxX = Math.Clamp((center.X + radiusMm) / CellSizeMm, 0, _columns - 1);
-        var minY = Math.Clamp((center.Y - radiusMm) / CellSizeMm, 0, _rows - 1);
-        var maxY = Math.Clamp((center.Y + radiusMm) / CellSizeMm, 0, _rows - 1);
+        // Wide ranges (including int.MaxValue "unlimited" sensors) would overflow int
+        // here and silently collapse the query to the origin cell, hiding enemies the
+        // old full-region scan could see. Keep the extent in long.
+        var minX = (int)Math.Clamp(
+            ((long)center.X - radiusMm) / CellSizeMm, 0L, _columns - 1L);
+        var maxX = (int)Math.Clamp(
+            ((long)center.X + radiusMm) / CellSizeMm, 0L, _columns - 1L);
+        var minY = (int)Math.Clamp(
+            ((long)center.Y - radiusMm) / CellSizeMm, 0L, _rows - 1L);
+        var maxY = (int)Math.Clamp(
+            ((long)center.Y + radiusMm) / CellSizeMm, 0L, _rows - 1L);
         for (var y = minY; y <= maxY; y++)
         {
             for (var x = minX; x <= maxX; x++)

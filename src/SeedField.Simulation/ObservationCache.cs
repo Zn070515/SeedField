@@ -21,7 +21,6 @@ internal sealed class ObservationCache
         foreach (var region in world.Regions.Values)
         {
             _regions[region.Id] = region;
-            _indices[region.Id] = RegionSpatialIndex.Build(region);
         }
     }
 
@@ -33,7 +32,27 @@ internal sealed class ObservationCache
         return new ObservationCache(world);
     }
 
-    public RegionSpatialIndex Index(string regionId) => _indices[regionId];
+    /// <summary>
+    /// Lazily builds the index for one region. Observations only query the viewer's
+    /// region, so indexing every region up front would charge the world size to a
+    /// single-region read.
+    /// </summary>
+    public RegionSpatialIndex Index(string regionId)
+    {
+        if (_indices.TryGetValue(regionId, out var index))
+        {
+            return index;
+        }
+
+        if (!_regions.TryGetValue(regionId, out var region))
+        {
+            throw new KeyNotFoundException($"Region '{regionId}' is not in this observation cache.");
+        }
+
+        index = RegionSpatialIndex.Build(region);
+        _indices[regionId] = index;
+        return index;
+    }
 
     public IReadOnlyList<ObservedEntity> Own(string regionId, string civilizationId)
     {
