@@ -344,9 +344,10 @@ public partial class Main : Node2D
 
     private void StepOnce()
     {
-        var benchmarkWatch = _benchmarkMixed && _benchmarkMixedElapsed >= MixedWarmupSeconds
-            ? Stopwatch.StartNew()
-            : null;
+        var mixedSample = _benchmarkMixed &&
+                          _benchmarkMixedElapsed >= MixedWarmupSeconds;
+        var benchmarkWatch = mixedSample ? Stopwatch.StartNew() : null;
+        var observationWatch = mixedSample ? Stopwatch.StartNew() : null;
         var controllers = new List<DeviceControllerSlot>(_deviceControllers.Count);
         var entityIds = new List<EntityId>(_deviceControllers.Count);
         foreach (var controller in _deviceControllers)
@@ -363,6 +364,8 @@ public partial class Main : Node2D
         var observations = _engine.BuildControllerObservations(
             entityIds,
             _controllerBatch.MaxDegreeOfParallelism);
+        observationWatch?.Stop();
+        var decisionWatch = mixedSample ? Stopwatch.StartNew() : null;
         var items = new List<ControllerBatchItem>(controllers.Count);
         for (var index = 0; index < controllers.Count; index++)
         {
@@ -370,6 +373,8 @@ public partial class Main : Node2D
         }
 
         var decisions = _controllerBatch.Run(items);
+        decisionWatch?.Stop();
+        var stepWatch = mixedSample ? Stopwatch.StartNew() : null;
         var intents = new List<Intent>(decisions.Length);
         foreach (var decision in decisions)
         {
@@ -386,6 +391,8 @@ public partial class Main : Node2D
         }
 
         var result = _engine.Step(intents);
+        stepWatch?.Stop();
+        var presentationWatch = mixedSample ? Stopwatch.StartNew() : null;
         foreach (var simulationEvent in result.Events)
         {
             _history.Add(new TimedEvent(result.Tick, simulationEvent));
@@ -403,10 +410,15 @@ public partial class Main : Node2D
         UpdateFacing();
         PruneHistory();
         RefreshRecoveryIfReady();
+        presentationWatch?.Stop();
         benchmarkWatch?.Stop();
-        if (benchmarkWatch is not null)
+        if (mixedSample)
         {
-            _benchmarkTickMs.Add(benchmarkWatch.Elapsed.TotalMilliseconds);
+            _benchmarkTickMs.Add(benchmarkWatch!.Elapsed.TotalMilliseconds);
+            _benchmarkObsMs.Add(observationWatch!.Elapsed.TotalMilliseconds);
+            _benchmarkDecideMs.Add(decisionWatch!.Elapsed.TotalMilliseconds);
+            _benchmarkStepMs.Add(stepWatch!.Elapsed.TotalMilliseconds);
+            _benchmarkPresentMs.Add(presentationWatch!.Elapsed.TotalMilliseconds);
         }
     }
 

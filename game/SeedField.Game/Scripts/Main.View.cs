@@ -32,6 +32,10 @@ public partial class Main
     private TimeSpan _benchmarkMixedPauseStart;
     private readonly List<double> _benchmarkFrameMs = new();
     private readonly List<double> _benchmarkTickMs = new();
+    private readonly List<double> _benchmarkObsMs = new();
+    private readonly List<double> _benchmarkDecideMs = new();
+    private readonly List<double> _benchmarkStepMs = new();
+    private readonly List<double> _benchmarkPresentMs = new();
     private readonly Dictionary<string, int> _benchmarkMixedFaultCodes = new();
     private readonly Stopwatch _benchmarkMixedWall = new();
     private long _benchmarkMixedLastTimestamp;
@@ -78,6 +82,10 @@ public partial class Main
         _benchmarkMixedElapsed = 0;
         _benchmarkFrameMs.Clear();
         _benchmarkTickMs.Clear();
+        _benchmarkObsMs.Clear();
+        _benchmarkDecideMs.Clear();
+        _benchmarkStepMs.Clear();
+        _benchmarkPresentMs.Clear();
         _benchmarkMixedFaultCodes.Clear();
         _benchmarkMixedWall.Restart();
         _benchmarkMixedLastTimestamp = Stopwatch.GetTimestamp();
@@ -202,6 +210,10 @@ public partial class Main
             $"p99FrameMs={MixedPercentile(_benchmarkFrameMs, 0.99):0.00} " +
             $"avgTickMs={avgTickMs:0.00} " +
             $"p95TickMs={MixedPercentile(_benchmarkTickMs, 0.95):0.00} " +
+            $"obsMs={Average(_benchmarkObsMs):0.00} " +
+            $"decideMs={Average(_benchmarkDecideMs):0.00} " +
+            $"stepMs={Average(_benchmarkStepMs):0.00} " +
+            $"presentMs={Average(_benchmarkPresentMs):0.00} " +
             $"allocMBPerFrame={allocated / (1024.0 * 1024.0) / _benchmarkFrameMs.Count:0.00} " +
             $"allocMBPerTick={allocated / (1024.0 * 1024.0) / Math.Max(1, _benchmarkTickMs.Count):0.00} " +
             $"gc0={gc0} gc1={gc1} gc2={gc2} gcPauseMs={pauseMs:0.0} " +
@@ -211,6 +223,9 @@ public partial class Main
             $"gcServer={System.Runtime.GCSettings.IsServerGC}");
         GetTree().Quit();
     }
+
+    private static double Average(List<double> samples) =>
+        samples.Count == 0 ? 0 : samples.Average();
 
     private static double MixedPercentile(List<double> sorted, double percentile)
     {

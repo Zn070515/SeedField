@@ -17,6 +17,31 @@ public sealed class EntityVisual
         _catalog = catalog;
     }
 
+    /// <summary>
+    /// Crowd/far LOD: one textured quad per entity. Skips shadows, dust, bars and
+    /// labels, which are noise at this scale and multiply draw calls.
+    /// </summary>
+    public void DrawLod(
+        CanvasItem canvas,
+        VisualEntitySnapshot entity,
+        Vector2 position,
+        int direction)
+    {
+        var frame = _catalog.Get(entity.VisualAssetName, direction);
+        if (frame is null)
+        {
+            canvas.DrawCircle(
+                position,
+                3f,
+                entity.CivilizationId == "A" ? new Color("43d9e8") : new Color("f2a33a"));
+            return;
+        }
+
+        var size = frame.Footprint * ScreenScale;
+        var rect = new Rect2(position - frame.Pivot * size, new Vector2(size, size));
+        canvas.DrawTextureRect(frame.Diffuse, rect, false);
+    }
+
     public void Draw(
         CanvasItem canvas,
         VisualEntitySnapshot entity,

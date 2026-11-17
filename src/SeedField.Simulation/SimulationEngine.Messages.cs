@@ -342,6 +342,11 @@ public sealed partial class SimulationEngine
             .ThenBy(message => message.Id)
             .ToList();
 
+        // Storage is a property of the civilization's entities, not of each
+        // message. Cache it per delivery batch; scanning the whole world per
+        // message made 1000 local messages O(messages × entities).
+        var storageByCivilization =
+            new Dictionary<string, (bool HasStorage, int Capacity)>(StringComparer.Ordinal);
         foreach (var message in due)
         {
             World.InFlightMessages.Remove(message);
@@ -352,7 +357,15 @@ public sealed partial class SimulationEngine
                 World.Inboxes.Add(message.ToCivilizationId, inbox);
             }
 
-            var (hasStorage, capacity) = GetMessageStorage(message.ToCivilizationId);
+            if (!storageByCivilization.TryGetValue(
+                    message.ToCivilizationId,
+                    out var storage))
+            {
+                storage = GetMessageStorage(message.ToCivilizationId);
+                storageByCivilization[message.ToCivilizationId] = storage;
+            }
+
+            var (hasStorage, capacity) = storage;
             if (hasStorage)
             {
                 if (capacity <= 0)
