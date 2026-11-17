@@ -52,6 +52,8 @@ public partial class Main : Node2D
     private CanvasLayer _diplomacyLayer = null!;
     private PowerPanel _power = null!;
     private CanvasLayer _powerLayer = null!;
+    private RecoveryPanel _recovery = null!;
+    private CanvasLayer _recoveryLayer = null!;
     private string _deployedSourceA = string.Empty;
     private int _workshopSpawnIndex;
     private string _capturePath = "res://screenshots/m0-combat.png";
@@ -65,6 +67,7 @@ public partial class Main : Node2D
     private bool _captureDiplomacy;
     private bool _captureDiplomacyAi;
     private bool _capturePower;
+    private bool _captureRecovery;
     private bool _captureVictory;
     private int _frame;
     private int _faultCount;
@@ -84,6 +87,7 @@ public partial class Main : Node2D
         BuildWorkshopPanel();
         BuildDiplomacyPanel();
         BuildPowerPanel();
+        BuildRecoveryPanel();
 
         if (arguments.Contains("--save-smoke"))
         {
@@ -115,11 +119,18 @@ public partial class Main : Node2D
             return;
         }
 
+        if (arguments.Contains("--recovery-smoke"))
+        {
+            RunRecoverySmoke();
+            return;
+        }
+
         _captureEditor = arguments.Contains("--capture-editor");
         _captureWorkshop = arguments.Contains("--capture-workshop");
         _captureDiplomacy = arguments.Contains("--capture-diplomacy");
         _captureDiplomacyAi = arguments.Contains("--capture-diplomacy-ai");
         _capturePower = arguments.Contains("--capture-power");
+        _captureRecovery = arguments.Contains("--capture-recovery");
         _captureVictory = arguments.Contains("--capture-victory");
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
@@ -127,6 +138,7 @@ public partial class Main : Node2D
                   _captureDiplomacy ||
                   _captureDiplomacyAi ||
                   _capturePower ||
+                  _captureRecovery ||
                   _captureVictory;
         _captureRequested = _paused;
         _capturePath = _captureEditor
@@ -139,9 +151,11 @@ public partial class Main : Node2D
                         ? "res://screenshots/m0-diplomacy.png"
                         : _capturePower
                             ? "res://screenshots/m0-power.png"
-                            : _captureVictory
-                                ? "res://screenshots/m0-victory.png"
-                                : "res://screenshots/m0-combat.png";
+                            : _captureRecovery
+                                ? "res://screenshots/m0-recovery.png"
+                                : _captureVictory
+                                    ? "res://screenshots/m0-victory.png"
+                                    : "res://screenshots/m0-combat.png";
 
         if (_captureEditor)
         {
@@ -202,6 +216,17 @@ public partial class Main : Node2D
                 "frontier grid drained · local buffers still active",
                 false);
             _status = "power diagnostics · paused";
+        }
+        else if (_captureRecovery)
+        {
+            OpenRecovery();
+            for (var i = 0; i < 40; i++)
+            {
+                StepOnce();
+            }
+
+            RecoverFromPanel();
+            _status = "core recovery · paused";
         }
         else if (_captureVictory)
         {
@@ -299,6 +324,13 @@ public partial class Main : Node2D
             return;
         }
 
+        if (key.Keycode == Key.F6)
+        {
+            ToggleRecovery();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (key.Keycode == Key.F1)
         {
             ToggleProgramEditor();
@@ -321,7 +353,8 @@ public partial class Main : Node2D
             _editorLayer.Visible ||
             _workshopLayer.Visible ||
             _diplomacyLayer.Visible ||
-            _powerLayer.Visible)
+            _powerLayer.Visible ||
+            _recoveryLayer.Visible)
         {
             return;
         }

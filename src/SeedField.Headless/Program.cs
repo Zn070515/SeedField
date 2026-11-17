@@ -112,6 +112,11 @@ internal static partial class Program
             return RunWreckDemo();
         }
 
+        if (args.Contains("--ruins"))
+        {
+            return RunRuinDemo();
+        }
+
         var first = RunScenario();
         var second = RunScenario();
 

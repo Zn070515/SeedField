@@ -16,7 +16,8 @@ public sealed record SeedCoreConfig(
     int RecoveryOverdraftCostPercent = 0,
     int AnchorRecoveryCostPercent = 0,
     int SiegeRecoveryCostPercent = 0,
-    int SiegeQuotaPenalty = 0)
+    int SiegeQuotaPenalty = 0,
+    long RecoveryMaintenanceMaterialCost = 0)
 {
     /// <summary>Zero window or quota disables the fast-recovery limit.</summary>
     public bool HasRecoveryQuota =>
@@ -91,6 +92,12 @@ public sealed record SeedCoreConfig(
         if (SiegeQuotaPenalty < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(SiegeQuotaPenalty));
+        }
+
+        if (RecoveryMaintenanceMaterialCost < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(RecoveryMaintenanceMaterialCost));
         }
     }
 }

@@ -31,7 +31,8 @@ public partial class Main : Node2D
 
         _deviceControllers.Clear();
 
-        foreach (var entity in _world.EnumerateEntities())
+        foreach (var entity in _world.EnumerateEntities()
+                     .Where(entity => entity.RegionId == "frontier"))
         {
             RegisterDeviceController(entity);
         }

@@ -14,6 +14,13 @@ public sealed record RestoreCoreProductCommand(
     long EnergyCost,
     long MaterialCost) : RecoveryCommand(CivilizationId);
 
+/// <summary>
+/// Core maintenance: pays the configured material cost and clears the recovery quota
+/// window and debt. It does not refill reserves or create an entity.
+/// </summary>
+public sealed record MaintainCoreCommand(
+    string CivilizationId) : RecoveryCommand(CivilizationId);
+
 public sealed record RecoveryCommandResult(
     bool Success,
     EntityId? EntityId,

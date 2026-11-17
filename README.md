@@ -96,19 +96,22 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --power
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --recovery-quota
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --core-siege
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --wrecks
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --ruins
 
-godot --path game/SeedField.Game                      # 实时；F1 程序编辑器，F2 工坊，F3 外交，F4 电网
+godot --path game/SeedField.Game                      # 实时；F1 程序，F2 工坊，F3 外交，F4 电网，F6 恢复
 godot --path game/SeedField.Game -- --capture         # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor  # 程序编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop # 工坊截图
 godot --path game/SeedField.Game -- --capture-diplomacy # 外交面板截图
 godot --path game/SeedField.Game -- --capture-diplomacy-ai # B 方外交响应截图
 godot --path game/SeedField.Game -- --capture-power    # 电网诊断截图
+godot --path game/SeedField.Game -- --capture-recovery # 核心恢复面板截图
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
 godot --path game/SeedField.Game -- --diplomacy-smoke  # 外交面板按钮接线冒烟
 godot --path game/SeedField.Game -- --diplomacy-ai-smoke # B 方自动响应冒烟
 godot --path game/SeedField.Game -- --diplomacy-counter-smoke # 面板反提议接线冒烟
 godot --path game/SeedField.Game -- --power-breaker-smoke # 面板断路器接线冒烟
+godot --path game/SeedField.Game -- --recovery-smoke  # 恢复面板 RECOVER/MAINTAIN 接线冒烟
 godot --path game/SeedField.Game -- --opponent-turtle  # 使用 Turtle 内置对手
 ```
 
@@ -153,6 +156,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`recovery quota`](docs/engineering/evidence/2026-11-17-recovery-quota.md) | 恢复配额、恢复债务、慢速模式与 v14 证据 |
 | [`core shell & siege`](docs/engineering/evidence/2026-11-17-core-shell-siege.md) | 外壳锚点、覆盖缺口、围困成本/配额与 v15 证据 |
 | [`device wrecks`](docs/engineering/evidence/2026-11-17-device-wrecks.md) | 设备残骸、原主/在场回收、v16 证据 |
+| [`ruin snapshots`](docs/engineering/evidence/2026-11-17-ruin-snapshots.md) | 本地离线快照、切片/老化/掠夺、数据-only 校验 |
+| [`recovery panel`](docs/engineering/evidence/2026-11-17-recovery-panel.md) | F6 配额/债务/锚点/围困面板、核心维护与 v17 证据 |
 
 ## 工程原则
 
@@ -168,4 +173,4 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 
 ## 当前限制
 
-Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，但锚点占领、仓储/产出加成、多跳围困、残骸老化/掠夺、离线文明废墟与恢复面板未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗仍无随机命中/伤害；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。
+Godot 画面仍是原型绘制；区域活动只是意图 gating（ADR-0004）；文明级 legacy 观察 API 仍保留给工具；核心区恢复已有统一配额、恢复债务、外壳锚点与围困成本/配额压力，但锚点占领、仓储/产出加成、多跳围困、残骸老化/掠夺、废墟实体/占领、快照签名/Workshop 流程未做；电网已有溢出入网、自动取电/储备、容量上限、抢占式优先级、延迟/损耗净额补偿、持久断路器、维护锁定与可复现随机故障，但无维护时长，也没有多电压/潮流方程；战斗仍无随机命中/伤害；跨文明协议已有 ACL/条约/贸易/外交面板/多轮反提议，但混合资源反提议、议价记忆、信誉/关税与消息签名仍未实现；PvE 对手、离线文明包、TypeScript `.d.ts`、导出模板与平衡数值均未实现。详细风险见[实现基线](docs/engineering/IMPLEMENTATION_BASELINE.md)。

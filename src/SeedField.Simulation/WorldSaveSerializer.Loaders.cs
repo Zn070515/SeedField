@@ -272,6 +272,7 @@ public static partial class WorldSaveSerializer
                 coreData.AnchorRecoveryCostPercent < 0 ||
                 coreData.SiegeRecoveryCostPercent < 0 ||
                 coreData.SiegeQuotaPenalty < 0 ||
+                coreData.RecoveryMaintenanceMaterialCost < 0 ||
                 coreData.LastRecoveryTick > data.Tick ||
                 coreData.RecoveryWindowStartTick > data.Tick ||
                 (coreData.RecoveryWindowTicks > 0 &&
@@ -296,7 +297,8 @@ public static partial class WorldSaveSerializer
                 coreData.RecoveryOverdraftCostPercent,
                 coreData.AnchorRecoveryCostPercent,
                 coreData.SiegeRecoveryCostPercent,
-                coreData.SiegeQuotaPenalty);
+                coreData.SiegeQuotaPenalty,
+                coreData.RecoveryMaintenanceMaterialCost);
             config.Validate();
 
             var core = new SeedCoreState(

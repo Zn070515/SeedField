@@ -11,10 +11,40 @@ internal static class Scenarios
     public const int WidthMm = 16_000;
     public const int HeightMm = 8_000;
 
+    public static readonly RecoveryBlueprint EmergencyRecovery = new(
+        "emergency-cell",
+        RequiredEnergy: 40,
+        RequiredMaterial: 30,
+        MaxHealth: 100,
+        Energy: 100,
+        EnergyCapacity: 1_000,
+        Material: 0,
+        Drive: new DriveModule(60, EnergyCostPerMove: 1),
+        Comm: new CommModule(1, EnergyCostPerMessage: 1));
+
     public static WorldState BuildWorld()
     {
         var world = new WorldBuilder()
+            .AddRegion("core-a", 2_000, 2_000, isCoreRegion: true)
             .AddRegion("frontier", WidthMm, HeightMm)
+            .AddLink("l-core", "core-a", "frontier", latencyTicks: 1)
+            .AddCore(
+                "A",
+                "core-a",
+                new SeedCoreConfig(
+                    EnergyPerTick: 2,
+                    MaterialPerTick: 2,
+                    MaxEnergyReserve: 100,
+                    MaxMaterialReserve: 100,
+                    RecoveryWindowTicks: 60,
+                    RecoveryQuotaPerWindow: 2,
+                    RecoveryCostGrowthPercent: 50,
+                    RecoveryStreakDecayTicks: 30,
+                    RecoveryOverdraftCostPercent: 200,
+                    AnchorRecoveryCostPercent: 25,
+                    SiegeRecoveryCostPercent: 100,
+                    SiegeQuotaPenalty: 1,
+                    RecoveryMaintenanceMaterialCost: 20))
             .AddStock("frontier", "A", 500)
             .AddStock("frontier", "B", 500)
             .AddControlPoint(
@@ -48,6 +78,15 @@ internal static class Scenarios
                 reserveEnergy: 10,
                 highPriorityThreshold: 5,
                 priorityReserveEnergy: 20)
+            .AddEntity(new EntityDefinition(
+                new EntityId(4),
+                "B",
+                "frontier",
+                new Vec2(15_000, 1_000),
+                MaxHealth: 1_000,
+                Energy: 0,
+                EnergyCapacity: 0,
+                Material: 0))
             .Build();
 
         world.Regions["frontier"].AddEnergy("A", 200);

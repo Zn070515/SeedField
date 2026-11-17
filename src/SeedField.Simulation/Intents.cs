@@ -119,6 +119,7 @@ public enum SimulationErrorCode
     RecoveryQuotaExhausted,
     WreckNotFound,
     WreckUnavailable,
+    RuinImportRejected,
 }
 
 public sealed record IntentResult(

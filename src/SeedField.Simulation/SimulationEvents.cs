@@ -179,6 +179,13 @@ public sealed record EntityBootstrapped(
     long EnergySpent,
     long MaterialSpent) : SimulationEvent(Tick);
 
+/// <summary>Core recovery quota/debt were cleared by a maintenance action.</summary>
+public sealed record CoreMaintained(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    long MaterialSpent) : SimulationEvent(Tick);
+
 /// <summary>A destroyed blueprint instance left salvageable material.</summary>
 public sealed record WreckCreated(
     long Tick,
@@ -195,6 +202,16 @@ public sealed record WreckSalvaged(
     string CivilizationId,
     string RegionId,
     long MaterialRecovered) : SimulationEvent(Tick);
+
+/// <summary>An offline snapshot slice was converted into wrecks in a shell region.</summary>
+public sealed record RuinImported(
+    long Tick,
+    string CivilizationId,
+    string RegionId,
+    string SourceCivilizationId,
+    int EntriesInSlice,
+    int WrecksCreated,
+    long MaterialTotal) : SimulationEvent(Tick);
 
 /// <summary>The fast-recovery quota is exhausted; the attempt was rejected.</summary>
 public sealed record RecoveryQuotaDenied(

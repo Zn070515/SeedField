@@ -262,6 +262,7 @@ public partial class Main : Node2D
                 _workshop?.Refresh(_world);
                 RefreshDiplomacyIfReady();
                 RefreshPowerIfReady();
+                RefreshRecoveryIfReady();
 
                 _status = $"loaded tick {_world.Tick} · A v{_slotA.Version}";
             }
@@ -305,6 +306,7 @@ public partial class Main : Node2D
         PreRunToCombat();
         RefreshDiplomacyIfReady();
         RefreshPowerIfReady();
+        RefreshRecoveryIfReady();
     }
 
     private void PreRunToCombat()
@@ -352,6 +354,7 @@ public partial class Main : Node2D
 
         RunOpponentDiplomacy();
         PruneHistory();
+        RefreshRecoveryIfReady();
     }
 
     private void RunOpponentDiplomacy()

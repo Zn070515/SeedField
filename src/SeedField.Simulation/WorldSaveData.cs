@@ -284,7 +284,8 @@ public sealed record CoreSaveData(
     int AnchorTarget = 0,
     int AnchorRecoveryCostPercent = 0,
     int SiegeRecoveryCostPercent = 0,
-    int SiegeQuotaPenalty = 0);
+    int SiegeQuotaPenalty = 0,
+    long RecoveryMaintenanceMaterialCost = 0);
 
 public sealed record MessageSaveData(
     long Id,

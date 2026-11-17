@@ -26,7 +26,7 @@ public sealed partial class SimulationEngine
         }
 
         var tick = World.Tick;
-        var pressure = CorePressure(core);
+        var pressure = CoreShellRules.EvaluatePressure(World, core);
         var quota = core.EvaluateRecoveryQuota(
             tick,
             pressure.QuotaPenalty,
@@ -131,6 +131,7 @@ public sealed partial class SimulationEngine
                     restore.Position,
                     restore.EnergyCost,
                     restore.MaterialCost)),
+            MaintainCoreCommand maintain => MaintainCore(maintain),
             _ => new RecoveryCommandResult(
                 false,
                 null,
@@ -147,6 +148,53 @@ public sealed partial class SimulationEngine
             result.ErrorCode,
             result.Message,
             result.Event);
+
+    private RecoveryCommandResult MaintainCore(MaintainCoreCommand command)
+    {
+        if (!World.Cores.TryGetValue(command.CivilizationId, out var core))
+        {
+            return new RecoveryCommandResult(
+                false,
+                null,
+                SimulationErrorCode.CoreNotAvailable,
+                "No seed core for civilization.",
+                null);
+        }
+
+        var cost = core.Config.RecoveryMaintenanceMaterialCost;
+        if (cost > 0 && core.MaterialReserve < cost)
+        {
+            return new RecoveryCommandResult(
+                false,
+                null,
+                SimulationErrorCode.InsufficientMaterial,
+                $"Core maintenance costs {cost} M; reserve is {core.MaterialReserve}.",
+                null);
+        }
+
+        if (cost > 0)
+        {
+            core.MaterialReserve -= cost;
+            World.Statistics.MaterialSpentTotal += cost;
+        }
+
+        core.RecoveriesInWindow = 0;
+        core.RecoveryStreak = 0;
+        core.RecoveryWindowStartTick = World.Tick;
+        core.LastRecoveryTick = -1;
+
+        var maintained = new CoreMaintained(
+            World.Tick,
+            core.CivilizationId,
+            core.RegionId,
+            cost);
+        return new RecoveryCommandResult(
+            true,
+            null,
+            SimulationErrorCode.None,
+            $"Core maintained; recovery debt cleared (−{cost} M).",
+            maintained);
+    }
 
     /// <summary>
     /// Restores the latest confirmed product for one branch directly from the core.
@@ -197,7 +245,7 @@ public sealed partial class SimulationEngine
             return BootstrapFailure(SimulationErrorCode.OutOfBounds, "Restore position is outside the core region.");
         }
 
-        var pressure = CorePressure(core);
+        var pressure = CoreShellRules.EvaluatePressure(World, core);
         var quota = core.EvaluateRecoveryQuota(
             tick,
             pressure.QuotaPenalty,

@@ -120,7 +120,8 @@ public partial class Main : Node2D
 
     private void DrawRanges()
     {
-        foreach (var entity in _world.EnumerateEntities())
+        foreach (var entity in _world.EnumerateEntities()
+                     .Where(entity => entity.RegionId == "frontier"))
         {
             var center = Map(entity.Position);
             var color = CivilizationColor(entity.CivilizationId);
@@ -212,6 +213,7 @@ public partial class Main : Node2D
                 true);
 
             var mate = _world.EnumerateEntities().FirstOrDefault(entity =>
+                entity.RegionId == "frontier" &&
                 entity.Id != sender.Id &&
                 string.Equals(entity.CivilizationId, sender.CivilizationId, StringComparison.Ordinal));
 
@@ -229,7 +231,8 @@ public partial class Main : Node2D
 
     private void DrawEntities()
     {
-        foreach (var entity in _world.EnumerateEntities())
+        foreach (var entity in _world.EnumerateEntities()
+                     .Where(entity => entity.RegionId == "frontier"))
         {
             var position = Map(entity.Position);
             var color = CivilizationColor(entity.CivilizationId);
@@ -389,7 +392,7 @@ public partial class Main : Node2D
             new Vector2(24, 716),
             $"OPPONENT {_opponent.Manifest.PackageId} " +
             $"v{_opponent.Manifest.Version} · " +
-            "SPACE pause · N step · F1 program · F2 workshop · F3 diplomacy · F4 power · F5 save · F9 load · F12 screenshot",
+            "SPACE pause · N step · F1 program · F2 workshop · F3 diplomacy · F4 power · F6 recovery · F5 save · F9 load · F12 screenshot",
             HorizontalAlignment.Left,
             -1,
             11,
