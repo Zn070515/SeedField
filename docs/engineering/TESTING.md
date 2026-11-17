@@ -47,6 +47,8 @@
 
 性能基线：`docs/engineering/evidence/perf-baseline.json` + `tools/check_perf.py`
 用于固定机长窗口（avg/p95 +25%）回归；CI 只保留宽松 `--budget-ms` 门禁。
+完整方法、分档数据与发行 GC 要求见
+[`performance/PERFORMANCE_GUIDE.md`](performance/PERFORMANCE_GUIDE.md)。
 
 ## 4. 不变量 fuzz
 

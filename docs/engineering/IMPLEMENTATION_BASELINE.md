@@ -102,6 +102,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
+- 性能方法与发行验收指南：`docs/engineering/performance/PERFORMANCE_GUIDE.md`（测量命令、已测分档、GC 发行要求、确定性与下一轮计划）。
 - 性能发行验收：Benchmark 输出 avg/p50/p95/p99、分配速率、GC 次数/暂停、峰值内存；`tools/check_perf.py` 对固定机基线做 +25% 回归检查；CI 保留 60ms 宽松门禁；Godot 启动打印 GC 模式并在 Workstation 时警告，`tools/run-game.ps1` 设置 `DOTNET_gcServer=1`，smoke 验证两种模式。
 - Jint 墙钟超时边界：`SCRIPT_TIMEOUT` 是宿主安全阀，不参与游戏 C 算力结算；`SCRIPT_STATEMENT_LIMIT`/`SCRIPT_MEMORY_LIMIT` 是确定性边界；顺序/并行 Fault 一致性有测试（ADR-0036）。
 - 本地 SQLite 派生目录：`SeedField.Catalog` 索引回放/存档/包/基准；schema 迁移、WAL/并发、完整性检查与损坏备份重建、缺失标记、SHA-256；`--catalog-rebuild`/`--catalog-list`/`--catalog-check`/`--benchmark-jint-parallel --catalog-db`；不进入 Tick/哈希（ADR-0035）。

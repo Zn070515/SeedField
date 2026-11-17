@@ -137,6 +137,9 @@ Godot 宿主忽略项目 runtimeconfig）。开发/验收可用
 `pwsh tools/run-game.ps1`；游戏启动会打印 `gcServer`，Workstation 时给出警告。
 Headless 已在项目文件中启用。正式导出/Steam 启动项仍按 Issue #14 验收。
 
+性能数据、测量方法、核心/GC 分档与下一轮验收计划见
+[`docs/engineering/performance/PERFORMANCE_GUIDE.md`](docs/engineering/performance/PERFORMANCE_GUIDE.md)。
+
 Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲染同一套仿真事件。
 
 ## 文档入口
