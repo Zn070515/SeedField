@@ -1,6 +1,6 @@
 # SeedField Art Vertical Slice (v0)
 
-> 状态：`[PROPOSED]` Gate 2 样片完成。Gate 1 已选 **A 斜俯视 35°**；
+> 状态：`[PROPOSED]` Gate 2 样片完成，Gate 3 世界切片进行中。Gate 1 已选 **A 斜俯视 35°**；
 > B 严格俯视保留为对照证据；仍不是正式美术验收。
 > 不改 SimulationCore / 存档 / Jint / 离线包安全契约。
 > 工作分支：`art/visual-slice`；决策见 ADR-0024、ADR-0025。
@@ -154,10 +154,19 @@ godot --path game/SeedField.Game res://Scenes/VisualBench.tscn -- --devices=100 
 
 当前没有购买任何技能；如需其一，告诉我，我会先确认价格/余额再加载。
 
-## 9. 下一步 Gate
+## 9. Gate 3 世界切片（第一轮）
 
-1. 正式量产前补齐工体 8 方向法线/发光，而不是只做正面帧。
-2. 生产构建仍不启用 Main 2D 灯光；先在目标 GPU/最低配置上复测。
-3. 接入真实事件动画：射击、断电、围困、核心恢复、模块升级的逐帧回放。
-4. 工坊/程序编辑器的大预览使用真实模块组合，而不是单张概念图。
-5. 记录目标硬件 1/10/50/100 设备 FPS；VisualBench 开发机数据不能当最低配置。
+- `WorldBackdrop`：工业板块、道路、遗迹、弹坑、控制点基座与危险条纹；不再只有网格。
+- `NetworkVisual`：控制点到 A/B 出口的能量/信息连线与 tick 脉冲；核芯 `EXIT` 线也由真实储备驱动。
+- `EntityVisual`：单位放大到 26%，移动时产生履带扬尘，`ShotFired` 命中后 6 Tick 闪红。
+- `CoreVisual`：四态环 + 5 个随 tick 旋转的分支指示点。
+- 默认仍只画已感知敌人；F10 全知调试保留。
+- 截图：`art-main-combat/tactical/debug/omniscient.png`。
+
+## 10. 下一步 Gate
+
+1. 继续补工业建筑/墙体和正式地表材质，减少程序化占比。
+2. 工坊/程序编辑器的大预览使用真实模块组合，而不是单张概念图。
+3. 射击、断电、围困、核心恢复、模块升级的逐帧事件演出。
+4. 目标硬件 1/10/50/100 设备的真实 Main 可读性与 FPS；VisualBench 只是上限参考。
+5. 正式量产前补齐工体 8 方向法线/发光。
