@@ -24,7 +24,8 @@ Gate 2 已完成世界空间相机、接触阴影、核心/工体轮廓分化与
   `art/renders/direction-4-8-16.png`。
 - 4 方向体积约 422 KB、8 方向约 882 KB、16 方向约 1795 KB（512px）。
 - **移动工体锁定 8 方向**；建筑/核心保持 1–4 方向。16 只用于对比，不量产。
-- 8 方向资产：`worker_frame`、`worker_frame_drill`、`worker_frame_sensor`。
+- 8 方向资产：`worker_frame`、`worker_frame_drill`、`worker_frame_sensor`、
+  `worker_frame_weapon`。
 
 ### 2. 核心四态
 
@@ -38,17 +39,24 @@ Gate 2 已完成世界空间相机、接触阴影、核心/工体轮廓分化与
 ### 3. 模块
 
 - `worker_frame`：空插槽；`worker_frame_drill`：大型挖掘臂；
-  `worker_frame_sensor`：桅杆/阵列。三者同底盘、同 pivot、8 方向。
+  `worker_frame_sensor`：桅杆/阵列；`worker_frame_weapon`：炮塔/炮管。
+  四者同底盘、同 pivot、8 方向。
 - 场景新增 `scout` Mk3 `Breacher`（同机架，Sensor + Weapon），通过现有
   `UpgradeCommand` 切换；`VisualEntitySnapshot.VisualAssetName` 由模块决定：
-  Weapon→drill，Sensor→sensor，否则 base。
-- `--module-swap-smoke` 断言 sensor→drill；Blender 表 `module-swap.png` 提供
-  三态剪影。
+  Weapon→weapon，Sensor→sensor，否则 base。
+- `--module-swap-smoke` 断言 sensor→weapon；Blender 表 `module-swap.png` 提供
+  四态剪影。
+- 武器外观独立为 `worker_frame_weapon`；不再用 `HasWeapon ? drill` 推断
+  机体，drill 只留给未来采矿蓝图。
 
 ### 4. Main 接入
 
 - `EntityVisual`、`CoreVisual`、`TacticalOverlay`、`DebugOverlay` 只接收
   `VisualEntitySnapshot`/帧数据，不接收可变 `WorldState`。
+- 普通画面只画 A 方自己与 `ObservationBuilder.Build(world,"A")` 已感知的敌方；
+  F10 / `--omniscient-debug` 才是显式全知。
+- 核心在独立区域 `core-a`，Main 用左侧 `CORE-A REGION` 面板 + `EXIT` 链接展示，
+  不把核心本体画在 frontier 坐标。
 - 默认：精灵 + 血/能量条 + 核心状态；不画范围圈/实体 ID。
 - F7：sensor/weapon 范围、控制点半径、ID；F8：sprite bounds/pivot、
   tick/FPS/坐标。

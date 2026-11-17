@@ -6,8 +6,7 @@
 ## 1. 范围
 
 - 表现层验证，不改 `SeedField.Simulation`、存档 schema、Jint、离线包。
-- 资产：`power_node`、`seed_core` 四态、`worker_frame_sensor`、
-  `worker_frame_drill`；法线/发光只做正面帧，控制仓库体积。
+- 资产：`power_node`、`seed_core` 四态、`worker_frame_sensor`、`worker_frame_drill`、`worker_frame_weapon`；法线/发光只做正面帧，控制仓库体积。
 - 场景：`VisualBench.tscn`（只读资产目录，不构建 `WorldState`）。
 
 ## 2. 法线与发光资产

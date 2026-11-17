@@ -51,22 +51,36 @@ CORE_STATE_SMOKE idle=Idle bootstrap=Bootstrap regenerating=Regenerating besiege
 ## 4. 模块替换
 
 - 资产：`worker_frame`（空插槽）、`worker_frame_drill`（挖掘臂）、
-  `worker_frame_sensor`（桅杆/阵列），各 8 方向。
+  `worker_frame_sensor`（桅杆/阵列）、`worker_frame_weapon`（炮塔/炮管），各 8 方向。
 - 场景新增 `scout` Mk3 `Breacher`（Sensor + Weapon），走现有 `UpgradeCommand`。
-- `VisualEntitySnapshot.VisualAssetName`：Weapon→drill，Sensor→sensor，否则 base。
-- 模块对比表：`art/renders/module-swap.png`（空插槽/drill/sensor）；Main 升级后截图
+- `VisualEntitySnapshot.VisualAssetName`：Weapon→weapon，Sensor→sensor，否则 base。
+- 模块对比表：`art/renders/module-swap.png`（空插槽/drill/sensor/weapon）；Main 升级后截图
   `screenshots/art-module-swap.png`。
 - smoke：
 
 ```text
-MODULE_SWAP_SMOKE before=worker_frame_sensor after=worker_frame_drill version=3 ok=True
+MODULE_SWAP_SMOKE before=worker_frame_sensor after=worker_frame_weapon version=3 ok=True
 ```
 
-## 5. Main 接入
+## 5. 情报边界与核心区归属
+
+- `DrawPresentationEntities` 不再直接枚举 `WorldState` 画所有实体；普通画面只画 A 方
+  自己与 `ObservationBuilder.Build(world,"A")` 已感知的敌方实体。
+- 未侦察的 B4 默认不出现；F10 / `--omniscient-debug` 是显式全知调试开关。
+- 回归 smoke：
+
+```text
+VISIBILITY_SMOKE unseenB4=True omniscientB4=True ok=True
+```
+
+- 核心本体位于独立区域 `core-a`。Main 在左侧画独立 `CORE-A REGION` 面板，并用
+  `EXIT` 链接指向 frontier 的 A 出口；核心不占用 frontier 坐标。
+
+## 6. Main 接入
 
 - `Scripts/Presentation/VisualAssetCatalog.cs` 只读 manifest。
-- `VisualEntitySnapshot` 从 `EntityState` 复制不可变字段；绘图类不接收
-  `WorldState`。
+- `VisualEntitySnapshot` 对己方从 `EntityState` 复制不可变字段，对已感知敌方从
+  `ObservedEntity` 构造；绘图类不接收 `WorldState`。
 - `EntityVisual`：精灵、接触阴影、血/能量条、8 方向朝向；
   默认不画 ID。
 - `CoreVisual`：四态精灵 + 状态环 + 文字。
@@ -80,9 +94,10 @@ MODULE_SWAP_SMOKE before=worker_frame_sensor after=worker_frame_drill version=3 
 screenshots/art-main-combat.png
 screenshots/art-main-tactical.png
 screenshots/art-main-debug.png
+screenshots/art-main-omniscient.png   # explicit F10/--capture-omniscient
 ```
 
-## 6. 法线/发光
+## 7. 法线/发光
 
 - 正面帧 normal/emissive：power、四个 core 状态、worker drill/sensor。
 - `Art/manifest.json` schemaVersion 3 记录逐帧 pass 路径/SHA/alphaBBox。
@@ -93,7 +108,7 @@ screenshots/art-main-debug.png
 - 性能表见 `2026-11-17-art-gate2-masks-benchmark.md`；开发机 100 台
   masks-on 约 1831 FPS（vsync 关闭、上限参考），约为 masks-off 的 56%。
 
-## 7. 验证与哈希
+## 8. 验证与哈希
 
 ```text
 dotnet build SeedField.slnx
@@ -119,13 +134,14 @@ Godot 实机运行：
 ```text
 --module-swap-smoke       ok=True
 --core-state-smoke        ok=True
+--visibility-smoke        ok=True
 --capture-visual          SCREENSHOT_SAVED ... art-main-combat.png
 --capture-tactical        SCREENSHOT_SAVED ... art-main-tactical.png
 --capture-debug           SCREENSHOT_SAVED ... art-main-debug.png
 --classic-visuals --capture  SCREENSHOT_SAVED ... m0-combat.png
 ```
 
-## 8. 未验证/风险
+## 9. 未验证/风险
 
 - VisualBench 只测开发机 RTX 4090；不是最低配置，也未测 4K/其他 GPU。
 - Main 暂不启用 2D 灯光；只验证了 VisualBench 中的 CanvasTexture 法线。

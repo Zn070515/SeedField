@@ -42,15 +42,16 @@
 | 资产 | 内容 |
 |---|---|
 | `worker_frame` | 空模块插槽，8 方向 |
-| `worker_frame_drill` | 挖掘臂模块，8 方向 |
+| `worker_frame_drill` | 挖掘臂模块，8 方向（Main 暂未使用） |
 | `worker_frame_sensor` | 桅杆/传感阵列，8 方向 |
+| `worker_frame_weapon` | 炮塔/炮管，8 方向 |
 | `seed_core` | idle，2 方向 |
 | `seed_core_regenerating/bootstrap/besieged` | 各 1 方向，共享 pivot/footprint |
 | `direction_probe` | drill 工体 16 方向，只用于对比 |
 
 - 模块切换走现有 `UpgradeCommand`：scout v1（sensor）→ Mk3（sensor+weapon），
-  Main 精灵从 sensor 变为 drill；`--module-swap-smoke` 断言。
-  `screenshots/art-module-swap.png` 是升级后的 Main 截图；三种模块剪影见
+  Main 精灵从 sensor 变为 weapon；`--module-swap-smoke` 断言。
+  `screenshots/art-module-swap.png` 是升级后的 Main 截图；四种模块剪影见
   `art/renders/module-swap.png`。
 - 核心四态由 `CoreVisualStateRules` 分类：Besieged > Bootstrap > Regenerating > Idle。
 - 默认 PvE 场景真实处于 besieged；idle/regenerating/bootstrap 截图使用 peaceful 场景。
@@ -94,9 +95,11 @@ godot --path game/SeedField.Game res://Scenes/StyleTest.tscn -- --route=topdown 
 godot --path game/SeedField.Game -- --capture-visual
 godot --path game/SeedField.Game -- --capture-tactical
 godot --path game/SeedField.Game -- --capture-debug
+godot --path game/SeedField.Game -- --visibility-smoke
 godot --path game/SeedField.Game -- --module-swap-smoke
 godot --path game/SeedField.Game -- --core-state-smoke
 godot --path game/SeedField.Game -- --core-state=bootstrap
+godot --path game/SeedField.Game -- --capture-omniscient
 godot --path game/SeedField.Game -- --classic-visuals --capture
 
 # mask / 性能
