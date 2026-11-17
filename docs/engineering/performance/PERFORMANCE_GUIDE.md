@@ -77,7 +77,9 @@ python tools/check_perf.py `
 
 # 正式客户端混合负载（Godot windowed，真实 scout + 渲染）
 godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
-# 对照：不发消息的 quiet 脚本
+# 60 FPS 上限 / LOD 截图 / quiet 对照
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10 `
+  --benchmark-mixed-max-fps=60 --benchmark-mixed-capture
 godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10 `
   --benchmark-mixed-quiet
 ```
@@ -129,28 +131,33 @@ Godot 4.7.2、1280×720、vsync off、Server GC、真实 `program.scout.v1` +
 
 | 设备 | avgTick | p95Tick | FPS | Draw Calls | alloc/Tick | Fault |
 |---:|---:|---:|---:|---:|---:|---:|
-| 100（完整绘制） | 1.39 ms | 2.76 | 158.6 | 1169 | 11.9 MB | 0 |
-| 500（LOD） | 4.80 ms | 8.35 | 505.1 | 514 | 38.5 MB | 0 |
-| 1000（LOD） | **10.24 ms** | **12.05** | **371.9** | **722** | 88.6 MB | 0 |
+| 100（完整绘制） | 1.32 ms | 2.46 | 158 | 1169 | 10.3 MB | 0 |
+| 500（LOD+MultiMesh） | 4.99 ms | 14.29 | 684 | 244 | 22.6 MB | 0 |
+| 1000（LOD+MultiMesh） | **7.07 ms** | **12.16** | **614** | **244** | **41.1 MB** | 0 |
 
 优化链（1000 台）：
 
-| 阶段 | avgTick | FPS | Draw Calls | Fault |
+| 阶段 | avgTick | FPS | Draw Calls | alloc/Tick |
 |---|---:|---:|---:|---:|
-| 完整收件箱广播 | 309.32 ms | 5.3 | 5065 | 24 timeout |
-| + 观测消息最近 32 条（ADR-0037） | 27.96 ms | 28.4 | 4612 | 0 |
-| + 消息投递批缓存 | 9.85 ms | 590 | 240 | 0 |
-| + 人群 LOD（保留 8 方向） | 10.24 ms | 372 | 722 | 0 |
+| 完整收件箱广播 | 309.32 ms | 5.3 | 5065 | — |
+| + 观测消息最近 32 条（ADR-0037） | 27.96 ms | 28.4 | 4612 | — |
+| + 消息投递批缓存 | 9.85 ms | 590 | 240 | — |
+| + 人群 LOD（ADR-0038） | 10.24 ms | 372 | 722 | 88.6 MB |
+| + MultiMesh 纹理分组 | 9.90 ms | 599 | 244 | 89.6 MB |
+| + 共享观测缓存/友军排除/消息窗口/Jint 缓冲 | **7.07 ms** | **614** | 244 | **41.1 MB** |
 
-根因与修复见 ADR-0037/0038：
+根因与修复见 ADR-0037/0038/0039：
 
 - 收件箱消息广播放大 → 观测最近 32 条；
 - 每条消息都扫描全世界算存储容量 → 每批每文明缓存；
-- 1000 台按完整细节绘制约 4600 draw calls → 人群 LOD 只画朝向四边形，
-  视口裁剪，完整绘制保留给 400 以下/近景/调试。
+- 每 worker 重建空间索引、设备查询扫描全部友军 → 共享预热缓存 +
+  查询排除本文明；
+- 全量收件箱排序 → 两次遍历取最后 32 条；
+- 每实体纹理命令 → 按纹理分组 MultiMesh，实体 draw calls 降到个位数；
+- Jint 观测槽位短命数组 → ThreadStatic 复用。
 
-1000 台 p95 Tick 12.05 ms、p99 帧 14.27 ms，已进入 60 FPS 帧预算；
-quiet 脚本 1000 台约 5.2 ms/Tick 作为对照。
+60 FPS 上限（1000 台 3 s）：7.22 ms/Tick、p95 11.31 ms、p99 帧 16.74 ms、
+32.2 MB/Tick、GC 暂停 64 ms/3 s。quiet 1000 台约 5.2 ms/Tick 作为对照。
 
 ## 5. GC 发行要求
 
@@ -208,10 +215,10 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 
 按优先级：
 
-1. **正式客户端混合负载**：已加入 `--benchmark-mixed`，并修复观测消息放大
-   与消息投递扫描、加入人群 LOD（ADR-0037/0038）；1000 台约 10.2 ms/Tick、
-   p95 12.1 ms、372 FPS（vsync off）。仍需正式导出、真实 GPU/低端硬件与
-   更长窗口验收。
+1. **正式客户端混合负载**：已加入 `--benchmark-mixed`，并完成消息放大、
+   投递扫描、人群 LOD、MultiMesh 与分配优化（ADR-0037/0038/0039）；
+   1000 台约 7.1 ms/Tick、p95 12.2 ms、614 FPS（vsync off），60 FPS 上限下
+   p99 帧 16.74 ms。仍需正式导出、真实 GPU/低端硬件与更长窗口验收。
 2. **真实 4/6/8 核硬件**：当前只有 `DOTNET_PROCESSOR_COUNT` 模拟；
    需要低端 CPU、不同内存档位的真实数据。
 3. **长时间稳定性**：10k+ Tick 的内存增长、P99 尾部、GC 暂停与泄漏。
@@ -243,8 +250,10 @@ Godot 宿主使用自己的 runtimeconfig，项目里的
 - ADR-0036：墙钟超时宿主安全阀
 - ADR-0037：观测消息历史确定性上限
 - ADR-0038：客户端人群 LOD 与消息投递批缓存
+- ADR-0039：混合客户端分配/GC 优化与 MultiMesh 批处理
 - 证据：`docs/engineering/evidence/2026-11-17-perf-release-acceptance.md`
 - 证据：`docs/engineering/evidence/2026-11-17-mixed-client-message-cap.md`
 - 证据：`docs/engineering/evidence/2026-11-17-mixed-client-lod-storage.md`
+- 证据：`docs/engineering/evidence/2026-11-17-allocation-and-multimesh.md`
 - 基线：`docs/engineering/evidence/perf-baseline.json`
 - 工具：`tools/check_perf.py`、`tools/run-game.ps1`

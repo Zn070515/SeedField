@@ -102,7 +102,7 @@ tests/SeedField.Runtime.Js.Tests/
 - 离线包隔离 Phase 1：`SeedField.Worker` 独立进程、长度前缀 IPC、Windows Job Object（128 MiB/单进程/kill-on-close）、控制器工厂、Headless B 方 worker 双跑哈希一致；第三方导入仍关闭（ADR-0021）。
 - 离线包信任 Phase 2a：`SeedField.PackageHost` 本地目录加载、ECDSA P-256 签名/内容哈希/信任库/显式同意、Job CPU 时间、磁盘看门狗、IPC fuzz、`--package-check`；AppContainer/OS 网络文件拒绝未做，导入仍关闭（ADR-0022）。
 - 核心区恢复命令：`BootstrapCoreCommand`/`RestoreCoreProductCommand` 经 `ExecuteRecoveryCommand`。
-- 正式客户端混合负载：`--benchmark-mixed=N [--benchmark-mixed-seconds=S] [--benchmark-mixed-quiet]`；真实 scout + 渲染 + 通信/战斗；观测消息历史限制最近 32 条（ADR-0037）；消息投递按文明批缓存、人群 LOD/裁剪（ADR-0038）；1000 台从 309 ms 降到约 10.2 ms/Tick、p95 12.1 ms、约 372 FPS（vsync off）、0 Fault。
+- 正式客户端混合负载：`--benchmark-mixed=N [--benchmark-mixed-seconds=S] [--benchmark-mixed-quiet] [--benchmark-mixed-max-fps=S] [--benchmark-mixed-capture]`；真实 scout + 渲染 + 通信/战斗；观测最近 32 条（ADR-0037）、投递批缓存/人群 LOD（ADR-0038）、共享观测缓存/友军排除/MultiMesh/Jint 缓冲（ADR-0039）；1000 台 309→7.07 ms/Tick、p95 12.16 ms、614 FPS、244 Draw Calls、41.1 MB/Tick。
 - 性能方法与发行验收指南：`docs/engineering/performance/PERFORMANCE_GUIDE.md`（测量命令、已测分档、GC 发行要求、确定性与下一轮计划）。
 - 性能发行验收：Benchmark 输出 avg/p50/p95/p99、分配速率、GC 次数/暂停、峰值内存；`tools/check_perf.py` 对固定机基线做 +25% 回归检查；CI 保留 60ms 宽松门禁；Godot 启动打印 GC 模式并在 Workstation 时警告，`tools/run-game.ps1` 设置 `DOTNET_gcServer=1`，smoke 验证两种模式。
 - Jint 墙钟超时边界：`SCRIPT_TIMEOUT` 是宿主安全阀，不参与游戏 C 算力结算；`SCRIPT_STATEMENT_LIMIT`/`SCRIPT_MEMORY_LIMIT` 是确定性边界；顺序/并行 Fault 一致性有测试（ADR-0036）。
@@ -424,6 +424,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0036](adr/ADR-0036-wall-clock-timeout-host-safety-valve.md) | Jint 墙钟超时是宿主安全阀 |
 | [ADR-0037](adr/ADR-0037-observation-message-history-bound.md) | 观测消息历史确定性上限 |
 | [ADR-0038](adr/ADR-0038-client-lod-and-message-delivery-cache.md) | 客户端人群 LOD 与消息投递批缓存 |
+| [ADR-0039](adr/ADR-0039-mixed-load-allocation-and-multimesh.md) | 混合客户端分配/GC 优化与 MultiMesh 批处理 |
 
 ## 8. 下一步（按依赖顺序）
 
