@@ -35,7 +35,7 @@ public static class WorkerLocator
         {
             if (File.Exists(Path.Combine(directory.FullName, "SeedField.slnx")))
             {
-                foreach (var configuration in new[] { "Debug", "Release" })
+                foreach (var configuration in PreferredConfigurations())
                 {
                     var candidate = Path.Combine(
                         directory.FullName,
@@ -60,6 +60,31 @@ public static class WorkerLocator
         throw new WorkerIsolationException(
             "WORKER_NOT_FOUND",
             $"Could not locate '{executableName}'. Build SeedField.Worker first.");
+    }
+
+    /// <summary>
+    /// Prefer the configuration matching the host. A stale Debug copy must not
+    /// shadow a current Release worker when both exist in a development tree.
+    /// </summary>
+    private static IEnumerable<string> PreferredConfigurations()
+    {
+        var baseDirectory = AppContext.BaseDirectory;
+        var separator = Path.DirectorySeparatorChar;
+        if (baseDirectory.Contains($"{separator}Release{separator}", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return "Release";
+            yield return "Debug";
+        }
+        else if (baseDirectory.Contains($"{separator}Debug{separator}", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return "Debug";
+            yield return "Release";
+        }
+        else
+        {
+            yield return "Debug";
+            yield return "Release";
+        }
     }
 
     private static bool HasWorkerAssembly(string executable)
