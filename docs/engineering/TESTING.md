@@ -45,6 +45,9 @@
 
 当前基准：`0x77e84c31f71f63ba`（40 Tick，移动/等待/攻击/冷却；v18 战斗规则字段加入哈希）。
 
+性能基线：`docs/engineering/evidence/perf-baseline.json` + `tools/check_perf.py`
+用于固定机长窗口（avg/p95 +25%）回归；CI 只保留宽松 `--budget-ms` 门禁。
+
 ## 4. 不变量 fuzz
 
 - 固定种子 `1..30`，每个场景 20 Tick，随机 move/draw/sendEnergy/transfer。

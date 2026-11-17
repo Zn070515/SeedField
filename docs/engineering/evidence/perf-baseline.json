@@ -1,0 +1,17 @@
+{
+  "cpu": "AMD Ryzen 9 9950X (16C/32T)",
+  "captured": "2026-11-17",
+  "command": "dotnet run --project src/SeedField.Headless -c Release -- --benchmark-jint-parallel <devices> --ticks 3000",
+  "jintParallel100": {
+    "avgTickMs": 1.24,
+    "p50Ms": 0.97,
+    "p95Ms": 3.31,
+    "p99Ms": 4.21
+  },
+  "jintParallel1000": {
+    "avgTickMs": 7.55,
+    "p50Ms": 5.83,
+    "p95Ms": 11.53,
+    "p99Ms": 22.77
+  }
+}
