@@ -23,6 +23,23 @@ public readonly record struct VisualEntitySnapshot(
     bool HasDrive,
     bool HasComm)
 {
+    public static VisualEntitySnapshot FromObserved(ObservedEntity entity) => new(
+        entity.EntityId,
+        entity.CivilizationId,
+        entity.Position,
+        entity.Health,
+        entity.MaxHealth,
+        Energy: 0,
+        EnergyCapacity: 0,
+        BlueprintId: null,
+        BlueprintVersion: 0,
+        entity.HasSensor,
+        entity.SensorRangeMm,
+        entity.HasWeapon,
+        entity.WeaponRangeMm,
+        entity.HasDrive,
+        entity.HasComm);
+
     public static VisualEntitySnapshot From(EntityState entity) => new(
         entity.Id.Value,
         entity.CivilizationId,
@@ -44,8 +61,10 @@ public readonly record struct VisualEntitySnapshot(
         string.Equals(BlueprintId, "power", StringComparison.Ordinal)
             ? "power_node"
             : HasWeapon
-                ? "worker_frame_drill"
-                : HasSensor
-                    ? "worker_frame_sensor"
-                    : "worker_frame";
+                ? "worker_frame_weapon"
+                : BlueprintId is { } id && id.Contains("drill", StringComparison.Ordinal)
+                    ? "worker_frame_drill"
+                    : HasSensor
+                        ? "worker_frame_sensor"
+                        : "worker_frame";
 }

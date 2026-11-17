@@ -104,7 +104,7 @@ public static class DebugOverlay
             $"tick {tick} · entities {entities} · fps {Engine.GetFramesPerSecond():0}",
             $"process {Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000f:0.0} ms",
             "cyan = sprite bounds · amber = pivot",
-            "F7 tactical · F8 debug · F12 screenshot",
+            "F7 tactical · F8 debug · F10 omniscient · F12 screenshot",
         };
 
         canvas.DrawRect(

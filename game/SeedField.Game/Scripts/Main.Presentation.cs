@@ -6,6 +6,7 @@ namespace SeedField.Game;
 public partial class Main
 {
     private readonly Dictionary<long, FacingState> _facing = new();
+    private readonly List<VisualEntitySnapshot> _visibleEntities = new();
     private VisualAssetCatalog _visualCatalog = null!;
     private EntityVisual _entityVisual = null!;
     private CoreVisual _coreVisual = null!;
@@ -13,12 +14,14 @@ public partial class Main
     private bool _tacticalVisible;
     private bool _debugVisible;
     private bool _classicVisuals;
+    private bool _omniscientDebug;
 
     private readonly record struct FacingState(Vec2 Position, int Direction);
 
     private void InitializePresentation(string[] arguments)
     {
         _classicVisuals = arguments.Contains("--classic-visuals");
+        _omniscientDebug = arguments.Contains("--omniscient-debug");
         if (_classicVisuals)
         {
             return;
@@ -27,30 +30,59 @@ public partial class Main
         _visualCatalog = VisualAssetCatalog.Load();
         _entityVisual = new EntityVisual(_visualCatalog);
         _coreVisual = new CoreVisual(_visualCatalog);
+        UpdateFacing();
     }
 
     private void UpdateFacing()
     {
-        if (_classicVisuals)
-        {
-            return;
-        }
+        RefreshVisibleEntities();
 
         var alive = new HashSet<long>();
-        foreach (var entity in _world.EnumerateEntities()
-                     .Where(entity => entity.RegionId == "frontier"))
+        foreach (var entity in _visibleEntities)
         {
-            alive.Add(entity.Id.Value);
-            var direction = _facing.TryGetValue(entity.Id.Value, out var previous)
+            alive.Add(entity.EntityId);
+            var direction = _facing.TryGetValue(entity.EntityId, out var previous)
                 ? DirectionFor(previous.Position, entity.Position, previous.Direction)
                 : 0;
-            _facing[entity.Id.Value] = new FacingState(entity.Position, direction);
+            _facing[entity.EntityId] = new FacingState(entity.Position, direction);
         }
 
         foreach (var stale in _facing.Keys.Where(id => !alive.Contains(id)).ToList())
         {
             _facing.Remove(stale);
         }
+    }
+
+    private void RefreshVisibleEntities()
+    {
+        _visibleEntities.Clear();
+        if (_classicVisuals)
+        {
+            return;
+        }
+
+        var own = _world.EnumerateEntities()
+            .Where(entity => entity.RegionId == "frontier" &&
+                             string.Equals(entity.CivilizationId, "A", StringComparison.Ordinal))
+            .Select(VisualEntitySnapshot.From);
+        _visibleEntities.AddRange(own);
+
+        if (_omniscientDebug)
+        {
+            _visibleEntities.AddRange(_world.EnumerateEntities()
+                .Where(entity => entity.RegionId == "frontier" &&
+                                 !string.Equals(entity.CivilizationId, "A", StringComparison.Ordinal))
+                .Select(VisualEntitySnapshot.From));
+        }
+        else
+        {
+            var observation = ObservationBuilder.Build(_world, "A");
+            _visibleEntities.AddRange(observation.Entities
+                .Where(entity => !entity.IsSelf && entity.RegionId == "frontier")
+                .Select(VisualEntitySnapshot.FromObserved));
+        }
+
+        _visibleEntities.Sort((left, right) => left.Position.Y.CompareTo(right.Position.Y));
     }
 
     private static int DirectionFor(Vec2 previous, Vec2 current, int fallback)
@@ -71,11 +103,7 @@ public partial class Main
 
     private void DrawPresentationEntities()
     {
-        var snapshots = _world.EnumerateEntities()
-            .Where(entity => entity.RegionId == "frontier")
-            .Select(VisualEntitySnapshot.From)
-            .OrderBy(entity => entity.Position.Y)
-            .ToList();
+        var snapshots = _visibleEntities;
 
         if (_tacticalVisible)
         {
@@ -118,9 +146,47 @@ public partial class Main
             return;
         }
 
+        // The core lives in its own region (core-a). Show it in a separate
+        // region panel and connect it to the frontier staging exit; never place
+        // the core body itself on frontier coordinates.
+        var origin = new Vector2(24, 214);
+        DrawRect(new Rect2(origin, new Vector2(156, 230)), new Color(0.03f, 0.06f, 0.10f, 0.94f));
+        DrawRect(new Rect2(origin, new Vector2(156, 230)), new Color(0.55f, 0.42f, 0.20f, 0.85f), false, 1f);
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(12, 20),
+            "CORE-A REGION",
+            HorizontalAlignment.Left,
+            -1,
+            12,
+            new Color(0.95f, 0.78f, 0.40f));
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(12, 36),
+            "separate from frontier",
+            HorizontalAlignment.Left,
+            -1,
+            9,
+            new Color(0.55f, 0.66f, 0.74f));
+
+        var corePosition = origin + new Vector2(78, 136);
+        var exit = Map(new Vec2(2_000, 4_000));
+        DrawLine(
+            origin + new Vector2(150, 136),
+            exit,
+            new Color(0.95f, 0.78f, 0.40f, 0.55f),
+            1.4f);
+        DrawString(
+            ThemeDB.FallbackFont,
+            origin + new Vector2(154, 130),
+            "EXIT",
+            HorizontalAlignment.Left,
+            -1,
+            9,
+            new Color(0.95f, 0.78f, 0.40f, 0.80f));
         _coreVisual.Draw(
             this,
-            Map(new Vec2(900, 2_000)),
+            corePosition,
             state,
             _world.Tick,
             _debugVisible);
@@ -130,7 +196,7 @@ public partial class Main
     {
         DebugOverlay.Draw(
             this,
-            new Vector2(24, 130),
+            new Vector2(900, 130),
             _world.EnumerateEntities().Count(),
             _world.Tick);
     }
@@ -175,10 +241,24 @@ public partial class Main
             : "<destroyed>";
         var ok = result.Success &&
                  before == "worker_frame_sensor" &&
-                 after == "worker_frame_drill";
+                 after == "worker_frame_weapon";
         GD.Print(
             $"MODULE_SWAP_SMOKE before={before} after={after} " +
             $"version={latest.Version} ok={ok}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
+    private void RunVisibilitySmoke()
+    {
+        ResetScenario(peaceful: false, preRun: true);
+        RefreshVisibleEntities();
+        var hidden = _visibleEntities.All(entity => entity.EntityId != 4);
+        _omniscientDebug = true;
+        RefreshVisibleEntities();
+        var omniscient = _visibleEntities.Any(entity => entity.EntityId == 4);
+        var ok = hidden && omniscient;
+        GD.Print(
+            $"VISIBILITY_SMOKE unseenB4={hidden} omniscientB4={omniscient} ok={ok}");
         GetTree().Quit(ok ? 0 : 1);
     }
 

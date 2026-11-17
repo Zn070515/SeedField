@@ -72,6 +72,7 @@ public partial class Main : Node2D
     private bool _captureVisual;
     private bool _captureTactical;
     private bool _captureDebug;
+    private bool _captureOmniscient;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -106,6 +107,12 @@ public partial class Main : Node2D
         if (arguments.Contains("--capture-module-swap"))
         {
             ConfigureModuleSwapCapture();
+            return;
+        }
+
+        if (arguments.Contains("--visibility-smoke"))
+        {
+            RunVisibilitySmoke();
             return;
         }
 
@@ -167,8 +174,10 @@ public partial class Main : Node2D
         _captureVisual = arguments.Contains("--capture-visual");
         _captureTactical = arguments.Contains("--capture-tactical");
         _captureDebug = arguments.Contains("--capture-debug");
+        _captureOmniscient = arguments.Contains("--capture-omniscient");
         _tacticalVisible = _captureTactical;
-        _debugVisible = _captureDebug;
+        _debugVisible = _captureDebug || _captureOmniscient;
+        _omniscientDebug |= _captureOmniscient;
         _paused = arguments.Contains("--capture") ||
                   _captureEditor ||
                   _captureWorkshop ||
@@ -179,7 +188,8 @@ public partial class Main : Node2D
                   _captureVictory ||
                   _captureVisual ||
                   _captureTactical ||
-                  _captureDebug;
+                  _captureDebug ||
+                  _captureOmniscient;
         _captureRequested = _paused;
         _capturePath = _captureEditor
             ? "res://screenshots/m0-program-editor.png"
@@ -201,7 +211,10 @@ public partial class Main : Node2D
                                             ? "res://screenshots/art-main-tactical.png"
                                             : _captureDebug
                                                 ? "res://screenshots/art-main-debug.png"
-                                                : "res://screenshots/m0-combat.png";
+                                                : _captureOmniscient
+                                                    ? "res://screenshots/art-main-omniscient.png"
+                                                    : "res://screenshots/m0-combat.png";
+        UpdateFacing();
 
         if (_captureEditor)
         {
@@ -388,6 +401,15 @@ public partial class Main : Node2D
         if (key.Keycode == Key.F8)
         {
             _debugVisible = !_debugVisible;
+            QueueRedraw();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (key.Keycode == Key.F10)
+        {
+            _omniscientDebug = !_omniscientDebug;
+            UpdateFacing();
             QueueRedraw();
             GetViewport().SetInputAsHandled();
             return;
