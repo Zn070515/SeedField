@@ -8,8 +8,12 @@ public sealed record ControllerExecutionOptions
 {
     public int MinBatchSize { get; init; } = 8;
 
+    /// <summary>
+    /// Physical-core heuristic: SMT siblings do not speed up allocation-heavy Jint
+    /// work and made 1000-device ticks slower on the 32-thread dev machine.
+    /// </summary>
     public int MaxDegreeOfParallelism { get; init; } =
-        Math.Max(1, Environment.ProcessorCount);
+        Math.Clamp(Environment.ProcessorCount, 1, 16);
 
     public void Validate()
     {

@@ -24,6 +24,8 @@ public sealed class ControllerBatchRunner
 
     public int LastUsedDegreeOfParallelism { get; private set; } = 1;
 
+    public int MaxDegreeOfParallelism => _options.MaxDegreeOfParallelism;
+
     public ControllerDecision[] Run(IReadOnlyList<ControllerBatchItem> items)
     {
         ArgumentNullException.ThrowIfNull(items);

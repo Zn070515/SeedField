@@ -173,6 +173,102 @@ internal static partial class Program
         return 0;
     }
 
+    private static int RunParallelJintBenchmark(int devices, int dof, double budgetMs)
+    {
+        var world = BuildPerfWorld(devices);
+        var engine = new SimulationEngine(world);
+        var options = new ControllerExecutionOptions
+        {
+            MinBatchSize = 1,
+            MaxDegreeOfParallelism = dof > 0 ? dof : Environment.ProcessorCount,
+        };
+        var runner = new ControllerBatchRunner(options);
+        var controllers = world.EnumerateEntities()
+            .Where(entity => entity.CivilizationId == "A")
+            .Select(entity => new DeviceControllerSlot(entity.Id, "A", PerfDeviceScript))
+            .ToList();
+        var entityIds = controllers.Select(controller => controller.EntityId).ToList();
+
+        for (var tick = 0; tick < 2; tick++)
+        {
+            var warmupObservations = engine.BuildControllerObservations(
+                entityIds,
+                runner.MaxDegreeOfParallelism);
+            var warmup = new List<ControllerBatchItem>(controllers.Count);
+            for (var index = 0; index < controllers.Count; index++)
+            {
+                warmup.Add(new ControllerBatchItem(
+                    index,
+                    controllers[index],
+                    warmupObservations[index]));
+            }
+
+            engine.Step(runner.Run(warmup)
+                .SelectMany(decision => decision.Intents)
+                .ToList());
+        }
+
+        var observationMs = 0.0;
+        var decideMs = 0.0;
+        var stepMs = 0.0;
+        var total = Stopwatch.StartNew();
+        for (var tick = 0; tick < 10; tick++)
+        {
+            var phase = Stopwatch.StartNew();
+            var observations = engine.BuildControllerObservations(
+                entityIds,
+                runner.MaxDegreeOfParallelism);
+            var items = new List<ControllerBatchItem>(controllers.Count);
+            for (var index = 0; index < controllers.Count; index++)
+            {
+                items.Add(new ControllerBatchItem(
+                    index,
+                    controllers[index],
+                    observations[index]));
+            }
+
+            phase.Stop();
+            observationMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            var decisions = runner.Run(items);
+            phase.Stop();
+            decideMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            engine.Step(decisions
+                .SelectMany(decision => decision.Intents)
+                .ToList());
+            phase.Stop();
+            stepMs += phase.Elapsed.TotalMilliseconds;
+        }
+
+        total.Stop();
+        foreach (var controller in controllers)
+        {
+            controller.Dispose();
+        }
+
+        const int ticks = 10;
+        var avgTickMs = total.Elapsed.TotalMilliseconds / ticks;
+        var peakMb = Process.GetCurrentProcess().PeakWorkingSet64 / (1024.0 * 1024.0);
+        Console.WriteLine(
+            $"JINT_PARALLEL devices={devices} entities={world.EnumerateEntities().Count()} " +
+            $"ticks={ticks} avgTickMs={avgTickMs:0.00} " +
+            $"ticksPerSec={1000.0 / avgTickMs:0.0} obsMs={observationMs / ticks:0.00} " +
+            $"decideMs={decideMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
+            $"dof={runner.LastUsedDegreeOfParallelism} peakWorkingSetMb={peakMb:0.0}");
+
+        if (budgetMs > 0 && avgTickMs > budgetMs)
+        {
+            Console.WriteLine(
+                $"BUDGET_EXCEEDED avgTickMs={avgTickMs:0.00} budgetMs={budgetMs:0.00}");
+            return 2;
+        }
+
+        return 0;
+    }
+
     /// <summary>
     /// Device-scoped stand-in for the shipped controller script. It only commands its
     /// own viewer, so every device does comparable work under the compact observation.

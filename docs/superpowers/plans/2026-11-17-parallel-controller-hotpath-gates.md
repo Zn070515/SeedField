@@ -10,6 +10,172 @@
 
 ---
 
+### Task 4: Headless parallel benchmark and budget gate
+
+**Files:**
+- Modify: `src/SeedField.Headless/Program.cs:40-47`
+- Modify: `src/SeedField.Headless/Program.Perf.cs:88-174`
+
+- [ ] **Step 1: Parse the flags**
+
+In `Program.cs`, before the existing `--benchmark-jint` branch, add:
+
+```csharp
+        if (TryReadBenchmarkDevices(
+                args,
+                "--benchmark-jint-parallel",
+                out var parallelDevices,
+                out var parallelInvalid))
+        {
+            var dof = ReadIntFlag(args, "--parallel-dof", 0);
+            var budget = ReadDoubleFlag(args, "--budget-ms", 0);
+            return parallelInvalid
+                ? 2
+                : RunParallelJintBenchmark(parallelDevices, dof, budget);
+        }
+```
+
+Add these helpers beside `TryReadBenchmarkDevices`:
+
+```csharp
+    private static int ReadIntFlag(string[] args, string flag, int fallback)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && index + 1 < args.Length &&
+               int.TryParse(args[index + 1], out var value)
+            ? value
+            : fallback;
+    }
+
+    private static double ReadDoubleFlag(string[] args, string flag, double fallback)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && index + 1 < args.Length &&
+               double.TryParse(
+                   args[index + 1],
+                   System.Globalization.NumberStyles.Float,
+                   System.Globalization.CultureInfo.InvariantCulture,
+                   out var value)
+            ? value
+            : fallback;
+    }
+```
+
+- [ ] **Step 2: Add the benchmark method**
+
+At the end of `Program.Perf.cs`:
+
+```csharp
+    private static int RunParallelJintBenchmark(int devices, int dof, double budgetMs)
+    {
+        var world = BuildPerfWorld(devices);
+        var engine = new SimulationEngine(world);
+        var options = new ControllerExecutionOptions
+        {
+            MinBatchSize = 1,
+            MaxDegreeOfParallelism = dof > 0 ? dof : Environment.ProcessorCount,
+        };
+        var runner = new ControllerBatchRunner(options);
+        var controllers = world.EnumerateEntities()
+            .Where(entity => entity.CivilizationId == "A")
+            .Select(entity => new DeviceControllerSlot(entity.Id, "A", PerfDeviceScript))
+            .ToList();
+
+        for (var tick = 0; tick < 2; tick++)
+        {
+            var items = controllers
+                .Select((controller, index) => new ControllerBatchItem(
+                    index,
+                    controller,
+                    engine.BuildControllerObservation(controller.EntityId)))
+                .ToList();
+            engine.Step(runner.Run(items).SelectMany(decision => decision.Intents).ToList());
+        }
+
+        var observationMs = 0.0;
+        var decideMs = 0.0;
+        var stepMs = 0.0;
+        var total = Stopwatch.StartNew();
+        for (var tick = 0; tick < 10; tick++)
+        {
+            var phase = Stopwatch.StartNew();
+            var items = new List<ControllerBatchItem>(controllers.Count);
+            for (var index = 0; index < controllers.Count; index++)
+            {
+                items.Add(new ControllerBatchItem(
+                    index,
+                    controllers[index],
+                    engine.BuildControllerObservation(controllers[index].EntityId)));
+            }
+
+            phase.Stop();
+            observationMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            var decisions = runner.Run(items);
+            phase.Stop();
+            decideMs += phase.Elapsed.TotalMilliseconds;
+
+            phase.Restart();
+            engine.Step(decisions.SelectMany(decision => decision.Intents).ToList());
+            phase.Stop();
+            stepMs += phase.Elapsed.TotalMilliseconds;
+        }
+
+        total.Stop();
+        foreach (var controller in controllers) controller.Dispose();
+
+        var ticks = 10;
+        var avgTickMs = total.Elapsed.TotalMilliseconds / ticks;
+        Console.WriteLine(
+            $"JINT_PARALLEL devices={devices} entities={world.EnumerateEntities().Count()} " +
+            $"ticks={ticks} avgTickMs={avgTickMs:0.00} " +
+            $"ticksPerSec={1000.0 / avgTickMs:0.0} obsMs={observationMs / ticks:0.00} " +
+            $"decideMs={decideMs / ticks:0.00} stepMs={stepMs / ticks:0.00} " +
+            $"dof={runner.LastUsedDegreeOfParallelism}");
+
+        if (budgetMs > 0 && avgTickMs > budgetMs)
+        {
+            Console.WriteLine($"BUDGET_EXCEEDED avgTickMs={avgTickMs:0.00} budgetMs={budgetMs:0.00}");
+            return 2;
+        }
+
+        return 0;
+    }
+```
+
+Add `using SeedField.Runtime.Js;` at the top of `Program.Perf.cs` if it is missing.
+
+- [ ] **Step 3: Run the benchmark at 100 and 1000 devices**
+
+```powershell
+dotnet build SeedField.slnx -c Release
+dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark-jint-parallel 100 --parallel-dof 16 > logs/bench-parallel-100.log 2>&1
+dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark-jint-parallel 1000 --parallel-dof 16 > logs/bench-parallel-1000.log 2>&1
+```
+
+Expected: logs contain `JINT_PARALLEL` lines. Record the values for the evidence
+file. 100 devices should be far below 16.7 ms; 1000 devices should be below 167 ms.
+If 1000 devices exceeds 167 ms, re-run with `--parallel-dof 32`; if still over,
+record the number and continue with the hot-path task before re-measuring.
+
+- [ ] **Step 4: Verify the budget exit code**
+
+```powershell
+dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark-jint-parallel 100 --budget-ms 0.01
+echo $LASTEXITCODE
+```
+
+Expected: `BUDGET_EXCEEDED` and exit code `2`.
+
+- [ ] **Step 5: Commit**
+
+```powershell
+git add src/SeedField.Headless/Program.cs src/SeedField.Headless/Program.Perf.cs
+git commit -m "feat(perf): SeedField 并行 Jint 基准与预算门禁"
+```
+
+
 ### Task 5: Conservative hot path
 
 **Files:**
@@ -275,3 +441,16 @@ dotnet run --project src/SeedField.Headless -c Release --no-build -- --benchmark
 
 Include: purpose, ADR IDs, schema (none), files, build command, tests, performance/memory,
 unverified risks, next/rollback.
+
+## Verification
+
+- `dotnet build SeedField.slnx` and `dotnet test SeedField.slnx` pass.
+- The byte-limit test rejects oversized observations before parsing.
+- Device observation tests still pass with the cached per-region slices.
+- Release benchmarks are recorded in the evidence file.
+
+## Rollback
+
+Revert the hot-path commit; `JsController` returns to the name lookup and
+full byte count, and `BuildForEntity` returns to inline LINQ. No schema or script
+contract changes are involved.

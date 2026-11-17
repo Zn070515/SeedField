@@ -336,7 +336,8 @@ public partial class Main : Node2D
 
     private void StepOnce()
     {
-        var items = new List<ControllerBatchItem>(_deviceControllers.Count);
+        var controllers = new List<DeviceControllerSlot>(_deviceControllers.Count);
+        var entityIds = new List<EntityId>(_deviceControllers.Count);
         foreach (var controller in _deviceControllers)
         {
             if (_world.FindEntity(controller.EntityId) is null)
@@ -344,10 +345,17 @@ public partial class Main : Node2D
                 continue;
             }
 
-            items.Add(new ControllerBatchItem(
-                items.Count,
-                controller,
-                _engine.BuildControllerObservation(controller.EntityId)));
+            controllers.Add(controller);
+            entityIds.Add(controller.EntityId);
+        }
+
+        var observations = _engine.BuildControllerObservations(
+            entityIds,
+            _controllerBatch.MaxDegreeOfParallelism);
+        var items = new List<ControllerBatchItem>(controllers.Count);
+        for (var index = 0; index < controllers.Count; index++)
+        {
+            items.Add(new ControllerBatchItem(index, controllers[index], observations[index]));
         }
 
         var decisions = _controllerBatch.Run(items);
