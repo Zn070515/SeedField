@@ -23,6 +23,12 @@ public static class PlayerEventFilter
             ShotFired shot =>
                 visibleEntityIds.Contains(shot.AttackerId.Value) &&
                 visibleEntityIds.Contains(shot.TargetId.Value),
+            ShotMissed missed =>
+                visibleEntityIds.Contains(missed.AttackerId.Value) &&
+                visibleEntityIds.Contains(missed.TargetId.Value),
+            CombatLootGranted loot =>
+                loot.CivilizationId == "A" ||
+                visibleEntityIds.Contains(loot.SourceEntityId.Value),
             EntityDamaged damaged => visibleEntityIds.Contains(damaged.EntityId.Value),
             EntityDestroyed destroyed => visibleEntityIds.Contains(destroyed.EntityId.Value),
             EntityMoved moved => visibleEntityIds.Contains(moved.EntityId.Value),

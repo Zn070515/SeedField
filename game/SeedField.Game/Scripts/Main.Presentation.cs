@@ -231,6 +231,20 @@ public partial class Main
 
             _hitUntil.Remove(destroyed.EntityId.Value);
         }
+        else if (simulationEvent is CombatLootGranted loot &&
+                 loot.CivilizationId == "A")
+        {
+            var position = _facing.TryGetValue(loot.SourceEntityId.Value, out var last)
+                ? last.Position
+                : Scenarios.AStagingPosition;
+            _effects.Add(
+                position,
+                new Color(0.85f, 0.78f, 0.40f),
+                loot.Tick,
+                24,
+                180f,
+                $"+{loot.Material}M");
+        }
         else if (simulationEvent is PowerBlackout blackout &&
                  blackout.CivilizationId == "A")
         {

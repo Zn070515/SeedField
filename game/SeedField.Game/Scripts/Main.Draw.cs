@@ -195,7 +195,8 @@ public partial class Main : Node2D
     {
         foreach (var item in _history)
         {
-            if (item.Event is not ShotFired shot || !IsPlayerVisible(item.Event))
+            if (!IsPlayerVisible(item.Event) ||
+                item.Event is not (ShotFired or ShotMissed))
             {
                 continue;
             }
@@ -207,11 +208,31 @@ public partial class Main : Node2D
             }
 
             var alpha = 1f - (age / 8f);
-            var from = Map(shot.From);
-            var target = Map(shot.Target);
+            var (fromPoint, targetPoint, hit) = item.Event switch
+            {
+                ShotFired shot => (shot.From, shot.Target, true),
+                ShotMissed missed => (missed.From, missed.Target, false),
+                _ => default,
+            };
+            var from = Map(fromPoint);
+            var target = Map(targetPoint);
 
-            DrawLine(from, target, new Color(1f, 0.45f, 0.20f, alpha), 2.6f, true);
-            DrawCircle(target, 4f + (age * 0.9f), new Color(1f, 0.58f, 0.24f, alpha * 0.85f));
+            DrawLine(
+                from,
+                target,
+                hit
+                    ? new Color(1f, 0.45f, 0.20f, alpha)
+                    : new Color(0.75f, 0.62f, 0.45f, alpha * 0.65f),
+                hit ? 2.6f : 1.6f,
+                true);
+            if (hit)
+            {
+                DrawCircle(
+                    target,
+                    4f + (age * 0.9f),
+                    new Color(1f, 0.58f, 0.24f, alpha * 0.85f));
+            }
+
             DrawCircle(from, 2.4f, new Color(1f, 0.86f, 0.55f, alpha));
         }
     }
@@ -460,6 +481,8 @@ public partial class Main : Node2D
 
     private static bool IsLogworthy(SimulationEvent simulationEvent) =>
         simulationEvent is ShotFired
+            or ShotMissed
+            or CombatLootGranted
             or EntityDestroyed
             or MessageDelivered
             or MessageQueued
@@ -496,6 +519,8 @@ public partial class Main : Node2D
         simulationEvent switch
         {
             ShotFired => new Color(1f, 0.58f, 0.30f),
+            ShotMissed => new Color(0.72f, 0.62f, 0.48f),
+            CombatLootGranted => new Color(0.85f, 0.78f, 0.40f),
             EntityDestroyed => Red,
             MessageDelivered => Amber,
             MessageQueued => new Color(0.75f, 0.66f, 0.40f),
