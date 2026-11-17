@@ -15,10 +15,16 @@ public sealed class DeviceControllerSlot : IDisposable
         string civilizationId,
         string initialScript,
         JsControllerOptions? options = null,
-        int version = 1)
+        int version = 1,
+        ControllerFactory? factory = null)
     {
         EntityId = entityId;
-        _slot = new ControllerSlot(civilizationId, initialScript, options, version);
+        _slot = new ControllerSlot(
+            civilizationId,
+            initialScript,
+            options,
+            version,
+            factory);
     }
 
     public EntityId EntityId { get; }

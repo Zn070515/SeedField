@@ -15,6 +15,20 @@ public static class ScriptFaultCodes
 
 public sealed record ControllerFault(string Code, string Message);
 
+/// <summary>Raw script result before intent parsing; used by the worker process.</summary>
+public sealed record ControllerRunResult(
+    bool Success,
+    string? IntentsJson,
+    string? FaultCode,
+    string? FaultMessage)
+{
+    public static ControllerRunResult Ok(string intentsJson) =>
+        new(true, intentsJson, null, null);
+
+    public static ControllerRunResult Fault(string code, string message) =>
+        new(false, null, code, message);
+}
+
 /// <summary>
 /// Result of one controller invocation. A fault never mutates the world; the engine
 /// receives only the valid intents, if any.

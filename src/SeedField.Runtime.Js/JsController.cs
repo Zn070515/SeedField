@@ -12,8 +12,10 @@ namespace SeedField.Runtime.Js;
 /// array of intent objects. Observation is handed over as JSON text and intents come
 /// back as JSON text, so the script never receives a CLR object reference.
 /// </summary>
-public sealed class JsController : IDisposable
+public sealed class JsController : IController
 {
+    public const int MaxObservationBytes = 4 * 1024 * 1024;
+
     private const string Harness = """
         function __seedfield_run(json) {
             var result = decide(JSON.parse(json));
@@ -82,33 +84,65 @@ public sealed class JsController : IDisposable
                 "Observation belongs to a different civilization.");
         }
 
-        var observationJson = ObservationJson.Serialize(observation);
+        var run = RunJson(SerializeObservation(observation));
+        return run.Success
+            ? ParseDecision(run.IntentsJson!, CivilizationId)
+            : ControllerDecision.Fault(run.FaultCode!, run.FaultMessage!);
+    }
+
+    public static string SerializeObservation(Observation observation)
+    {
+        ArgumentNullException.ThrowIfNull(observation);
+        return ObservationJson.Serialize(observation);
+    }
+
+    public static ControllerDecision ParseDecisionJson(string json, string civilizationId) =>
+        ParseDecision(json, civilizationId);
+
+    /// <summary>
+    /// Runs the script against already-serialized observation JSON. Used by the worker
+    /// process, which must never receive a WorldState or CLR observation object.
+    /// </summary>
+    public ControllerRunResult RunJson(string observationJson)
+    {
+        if (string.IsNullOrWhiteSpace(observationJson))
+        {
+            return ControllerRunResult.Fault(
+                ScriptFaultCodes.InvalidIntentSchema,
+                "Observation JSON is empty.");
+        }
+
+        if (System.Text.Encoding.UTF8.GetByteCount(observationJson) > MaxObservationBytes)
+        {
+            return ControllerRunResult.Fault(
+                ScriptFaultCodes.Fault,
+                $"Observation exceeds {MaxObservationBytes} bytes.");
+        }
 
         try
         {
             var result = _engine.Invoke("__seedfield_run", observationJson);
-            var resultJson = result.AsString();
-            return ParseDecision(resultJson, CivilizationId);
+            return ControllerRunResult.Ok(result.AsString());
         }
         catch (TimeoutException exception)
         {
-            return ControllerDecision.Fault(ScriptFaultCodes.Timeout, exception.Message);
+            return ControllerRunResult.Fault(ScriptFaultCodes.Timeout, exception.Message);
         }
         catch (StatementsCountOverflowException exception)
         {
-            return ControllerDecision.Fault(ScriptFaultCodes.StatementLimit, exception.Message);
+            return ControllerRunResult.Fault(ScriptFaultCodes.StatementLimit, exception.Message);
         }
         catch (MemoryLimitExceededException exception)
         {
-            return ControllerDecision.Fault(ScriptFaultCodes.MemoryLimit, exception.Message);
+            return ControllerRunResult.Fault(ScriptFaultCodes.MemoryLimit, exception.Message);
         }
         catch (JavaScriptException exception)
         {
-            return ControllerDecision.Fault(ScriptFaultCodes.Fault, exception.Message);
+            return ControllerRunResult.Fault(ScriptFaultCodes.Fault, exception.Message);
         }
         catch (Exception exception)
         {
-            return ControllerDecision.Fault(ScriptFaultCodes.Fault, exception.Message);
+            return ControllerRunResult.Fault(ScriptFaultCodes.Fault, exception.Message);
         }
     }
 

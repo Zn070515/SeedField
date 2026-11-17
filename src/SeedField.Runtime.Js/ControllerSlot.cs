@@ -19,13 +19,15 @@ public sealed record ControllerDeploymentResult(bool Success, int Version, strin
 public sealed class ControllerSlot : IDisposable
 {
     private readonly JsControllerOptions? _options;
-    private JsController _controller;
+    private readonly ControllerFactory _factory;
+    private IController _controller;
 
     public ControllerSlot(
         string civilizationId,
         string initialScript,
         JsControllerOptions? options = null,
-        int version = 1)
+        int version = 1,
+        ControllerFactory? factory = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(civilizationId);
         ArgumentNullException.ThrowIfNull(initialScript);
@@ -36,7 +38,9 @@ public sealed class ControllerSlot : IDisposable
 
         CivilizationId = civilizationId;
         _options = options;
-        _controller = new JsController(civilizationId, initialScript, options);
+        _factory = factory ?? ((civ, script, jsOptions) =>
+            new JsController(civ, script, jsOptions));
+        _controller = _factory(civilizationId, initialScript, options);
         DeployedScript = initialScript;
         Version = version;
     }
@@ -53,10 +57,10 @@ public sealed class ControllerSlot : IDisposable
     {
         ArgumentNullException.ThrowIfNull(script);
 
-        JsController next;
+        IController next;
         try
         {
-            next = new JsController(CivilizationId, script, _options);
+            next = _factory(CivilizationId, script, _options);
         }
         catch (Exception exception)
         {
