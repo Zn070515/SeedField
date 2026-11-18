@@ -252,6 +252,7 @@ public partial class Main : Node2D
                 _slotA = slotA;
                 _slotB = slotB;
                 _world = loaded.World;
+                _tutorial = new TutorialProgress("A");
                 _engine = new SimulationEngine(_world);
                 _deployedSourceA = _slotA.DeployedScript;
                 RebuildDeviceControllers();
@@ -297,6 +298,7 @@ public partial class Main : Node2D
         _opponentDiplomacy = OpponentDiplomacyProfiles.ForPackage(
             _opponent.Manifest.PackageId);
         _world = Scenarios.BuildWorld(peaceful);
+        _tutorial = new TutorialProgress("A");
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
         _slotB = new ControllerSlot("B", _opponent.ProgramSource);
@@ -397,6 +399,7 @@ public partial class Main : Node2D
         stepWatch?.Stop();
         var allocAfterStep = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var presentationWatch = mixedSample ? Stopwatch.StartNew() : null;
+        _tutorial.Observe(_world, result.Events);
         foreach (var simulationEvent in result.Events)
         {
             _history.Add(new TimedEvent(result.Tick, simulationEvent));

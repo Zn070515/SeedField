@@ -48,6 +48,7 @@ public partial class Main : Node2D
 
     private WorldState _world = null!;
     private SimulationEngine _engine = null!;
+    private TutorialProgress _tutorial = new("A");
     private ControllerSlot _slotA = null!;
     private ControllerSlot _slotB = null!;
     private readonly List<DeviceControllerSlot> _deviceControllers = new();

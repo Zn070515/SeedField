@@ -26,8 +26,13 @@
 - 对手选择写入游戏存档；工坊建造队列 UI 与取消按钮。
 - 跨文明消息策略、建造失败退款、非活动区发电延迟与补算。
 - `.github` CI、依赖审查、Dependabot、Issue/PR 模板与提交规范。
+- M1 教程准入：五分支最低可用由仿真事实验证，Godot HUD 教程面板与 `--tutorial` 演示（ADR-0040）。
+- 美术方向：世界层改为 Mindustry 式正交俯视废土地块地图，新增 `MindustryStyle` 样片（ADR-0041）。
 
 ### Changed
+
+- 归档已完成的 superpowers spec/plan 与 2026-11-17 斜俯视美术指导，新增归档索引并更新链接。
+
 
 - 运行时目标统一为 .NET 10.0。
 - Godot 探针与 net10.0 工程兼容性验证完成。

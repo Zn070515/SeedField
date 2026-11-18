@@ -9,8 +9,8 @@
   "files": [
     {
       "path": "00-START-HERE/DECISION_REGISTER.md",
-      "size_bytes": 4522,
-      "sha256": "5baf847a6b5ae45dc5c6c7f6c5acfea6ed4f68058aceac766d416db1330041ab"
+      "size_bytes": 4714,
+      "sha256": "26997184f300855ccca4c9f56a29fd092980b61f76161b8e167747898ae83b51"
     },
     {
       "path": "00-START-HERE/MASTER_GDD.md",
@@ -114,8 +114,8 @@
     },
     {
       "path": "05-PRESENTATION/ART_DIRECTION_AND_VFX.md",
-      "size_bytes": 2386,
-      "sha256": "8697e7d46ddd0179ab65e25facb4328f139fd8e1292e9d079192843c191b6e09"
+      "size_bytes": 3173,
+      "sha256": "ec9a8b571aff428b81e4ea3e739e0ed1947676fa36f94b63bc59e09883add950"
     },
     {
       "path": "05-PRESENTATION/UI_UX_AUDIO_AND_ACCESSIBILITY.md",
