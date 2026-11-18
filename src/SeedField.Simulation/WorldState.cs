@@ -63,6 +63,8 @@ public sealed class SimulationStatistics
 
     public long MaterialSalvagedTotal { get; internal set; }
 
+    public long MaterialMinedTotal { get; internal set; }
+
     public long ShotsMissed { get; internal set; }
 
     public long MaterialLootedTotal { get; internal set; }
@@ -95,6 +97,11 @@ public sealed class WorldState
     public long NextPowerShipmentId { get; internal set; } = 1;
 
     public long NextWreckId { get; internal set; } = 1;
+
+    public long NextDepositId { get; internal set; } = 1;
+
+    /// <summary>Finite material deposits by stable id.</summary>
+    public SortedDictionary<long, ResourceDepositState> Deposits { get; } = new();
 
     /// <summary>Scenario rule: percent of blueprint material left as a wreck.</summary>
     public int WreckRecoveryPercent { get; internal set; }

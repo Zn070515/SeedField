@@ -31,7 +31,8 @@ public sealed record DeviceBlueprint(
     string? ControllerProgramId = null,
     long MaterialCost = 0,
     int BuildTicks = 0,
-    bool IsCoreAnchor = false)
+    bool IsCoreAnchor = false,
+    DrillModule? Drill = null)
 {
     public DeviceBranch Branches
     {
@@ -59,7 +60,7 @@ public sealed record DeviceBlueprint(
                 branches |= DeviceBranch.State;
             }
 
-            if (Weapon is not null || Drive is not null)
+            if (Weapon is not null || Drive is not null || Drill is not null)
             {
                 branches |= DeviceBranch.Execution;
             }
@@ -220,6 +221,13 @@ public sealed class WorkshopService
         if (blueprint.Drive is { SpeedMmPerTick: < 0 } or { EnergyCostPerMove: < 0 })
         {
             throw new BlueprintValidationException("INVALID_DRIVE", "Drive values must be non-negative.");
+        }
+
+        if (blueprint.Drill is { RatePerTick: < 0 } or { RangeMm: < 1 } or { EnergyCostPerTick: < 0 })
+        {
+            throw new BlueprintValidationException(
+                "INVALID_DRILL",
+                "Drill rate and energy must be non-negative and range positive.");
         }
     }
 

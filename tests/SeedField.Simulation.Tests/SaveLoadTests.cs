@@ -119,6 +119,26 @@ public sealed class SaveLoadTests
     }
 
     [Fact]
+    public void V19SaveWithoutDepositsLoadsEmptyDeposits()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .Build();
+
+        var v19Data = WorldSaveSerializer.ToData(world) with
+        {
+            SchemaVersion = 19,
+            Deposits = null,
+            NextDepositId = 0,
+        };
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.SaveData(v19Data));
+
+        Assert.Empty(loaded.Deposits);
+        Assert.Equal(1, loaded.NextDepositId);
+    }
+
+    [Fact]
     public void V1SaveIsMigratedToCurrentSchema()
     {
         var world = new WorldBuilder()

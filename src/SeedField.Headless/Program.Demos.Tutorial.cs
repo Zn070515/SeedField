@@ -18,6 +18,12 @@ internal static partial class Program
             return true;
         }
 
+        if (args.Contains("--mining"))
+        {
+            exitCode = RunMiningDemo();
+            return true;
+        }
+
         exitCode = 0;
         return false;
     }

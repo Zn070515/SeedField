@@ -66,6 +66,7 @@ public static class PlayerEventFilter
             EnergyDrawn drawn => visibleEntityIds.Contains(drawn.EntityId.Value),
             EnergyStored stored => visibleEntityIds.Contains(stored.EntityId.Value),
             EnergyWasted wasted => wasted.CivilizationId == "A",
+            MaterialMined mined => visibleEntityIds.Contains(mined.EntityId.Value),
             MaterialShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             EnergyShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             WreckCreated wreck => wreck.OwnerCivilizationId == "A",

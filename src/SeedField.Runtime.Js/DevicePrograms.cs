@@ -14,6 +14,7 @@ public static class DevicePrograms
     public const string ScoutId = "builtin.scout.v1";
     public const string SentryId = "builtin.sentry.v1";
     public const string RelayId = "builtin.relay.v1";
+    public const string HarvesterId = "builtin.harvester.v1";
 
     private const string Helpers = """
         var __seedfieldLastReportTick = -1000;
@@ -199,10 +200,21 @@ public static class DevicePrograms
         }
         """;
 
+    private const string HarvesterBody = """
+        function decide(obs) {
+            var me = __seedfieldSelf(obs);
+            if (!me) {
+                return [];
+            }
+            return [{ type: "mine", entityId: me.entityId }];
+        }
+        """;
+
     public const string IdleSource = Helpers + IdleBody;
     public const string ScoutSource = Helpers + ScoutBody;
     public const string SentrySource = Helpers + SentryBody;
     public const string RelaySource = Helpers + RelayBody;
+    public const string HarvesterSource = Helpers + HarvesterBody;
 
     public static bool TryGetSource(string? programId, out string source)
     {
@@ -219,6 +231,9 @@ public static class DevicePrograms
                 return true;
             case RelayId:
                 source = RelaySource;
+                return true;
+            case HarvesterId:
+                source = HarvesterSource;
                 return true;
             default:
                 source = string.Empty;
@@ -237,7 +252,8 @@ public static class DevicePrograms
             blueprint.Sensor is not null,
             blueprint.Weapon is not null,
             blueprint.Drive is not null,
-            blueprint.Comm is not null);
+            blueprint.Comm is not null,
+            blueprint.Drill is not null);
     }
 
     public static string SuggestId(EntityState entity)
@@ -247,11 +263,22 @@ public static class DevicePrograms
             entity.Sensor is not null,
             entity.Weapon is not null,
             entity.Drive is not null,
-            entity.Comm is not null);
+            entity.Comm is not null,
+            entity.Drill is not null);
     }
 
-    public static string SuggestId(bool sensor, bool weapon, bool drive, bool comm)
+    public static string SuggestId(
+        bool sensor,
+        bool weapon,
+        bool drive,
+        bool comm,
+        bool drill = false)
     {
+        if (drill)
+        {
+            return HarvesterId;
+        }
+
         if (sensor && weapon)
         {
             return SentryId;

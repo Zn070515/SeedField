@@ -309,6 +309,46 @@ public sealed class WorldBuilder
         return this;
     }
 
+    public WorldBuilder AddDeposit(
+        OreKind kind,
+        string regionId,
+        Vec2 position,
+        int radiusMm,
+        long remaining,
+        long yieldPerTick,
+        long? depositId = null)
+    {
+        if (!_world.Regions.TryGetValue(regionId, out var region))
+        {
+            throw new InvalidOperationException($"Unknown region '{regionId}'.");
+        }
+
+        if (!region.Contains(position))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(position),
+                "Deposit position is outside the region.");
+        }
+
+        var id = depositId ?? _world.NextDepositId;
+        if (_world.Deposits.ContainsKey(id))
+        {
+            throw new InvalidOperationException($"Deposit '{id}' already exists.");
+        }
+
+        var deposit = new ResourceDepositState(
+            id,
+            regionId,
+            kind,
+            position,
+            radiusMm,
+            remaining,
+            yieldPerTick);
+        _world.Deposits.Add(id, deposit);
+        _world.NextDepositId = Math.Max(_world.NextDepositId, id + 1);
+        return this;
+    }
+
     public WorldBuilder AddStock(string regionId, string civilizationId, long material)
     {
         if (!_world.Regions.TryGetValue(regionId, out var region))

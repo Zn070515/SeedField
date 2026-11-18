@@ -46,7 +46,9 @@ public sealed record WorldSaveData(
     int CombatHitChancePercent = 100,
     int CombatDamageVariancePercent = 0,
     int CombatLootChancePercent = 0,
-    long CombatLootMaterial = 0);
+    long CombatLootMaterial = 0,
+    DepositSaveData[]? Deposits = null,
+    long NextDepositId = 0);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
@@ -190,7 +192,19 @@ public sealed record RegionSaveData(
     EntitySaveData[] Entities,
     StockSaveData[]? Stocks = null);
 
+public sealed record DepositSaveData(
+    long Id,
+    string RegionId,
+    OreKind Kind,
+    int X,
+    int Y,
+    int RadiusMm,
+    long Remaining,
+    long YieldPerTick);
+
 public sealed record StockSaveData(string CivilizationId, long Material, long Energy = 0);
+
+public sealed record DrillSaveData(long RatePerTick, int RangeMm, long EnergyCostPerTick);
 
 public sealed record EntitySaveData(
     long Id,
@@ -213,7 +227,8 @@ public sealed record EntitySaveData(
     string? ControllerProgramId = null,
     PowerSaveData? Power = null,
     StateSaveData? State = null,
-    bool IsCoreAnchor = false);
+    bool IsCoreAnchor = false,
+    DrillSaveData? Drill = null);
 
 public sealed record SensorSaveData(int RangeMm);
 
@@ -248,7 +263,8 @@ public sealed record BlueprintSaveData(
     string? ControllerProgramId,
     long MaterialCost = 0,
     int BuildTicks = 0,
-    bool IsCoreAnchor = false);
+    bool IsCoreAnchor = false,
+    DrillSaveData? Drill = null);
 
 public sealed record WreckSaveData(
     long Id,
@@ -350,7 +366,8 @@ public sealed record StatisticsSaveData(
     long EnergyWastedTotal = 0,
     long MaterialSalvagedTotal = 0,
     long ShotsMissed = 0,
-    long MaterialLootedTotal = 0);
+    long MaterialLootedTotal = 0,
+    long MaterialMinedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

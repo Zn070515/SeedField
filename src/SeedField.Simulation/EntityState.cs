@@ -22,7 +22,8 @@ public sealed record EntityDefinition(
     string? ControllerProgramId = null,
     PowerModule? Power = null,
     StateModule? State = null,
-    bool IsCoreAnchor = false);
+    bool IsCoreAnchor = false,
+    DrillModule? Drill = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -51,6 +52,7 @@ public sealed class EntityState
         Power = definition.Power;
         State = definition.State;
         IsCoreAnchor = definition.IsCoreAnchor;
+        Drill = definition.Drill;
     }
 
     public EntityId Id { get; }
@@ -93,6 +95,9 @@ public sealed class EntityState
 
     /// <summary>Optional compute/storage capability. Limits intents per tick.</summary>
     public StateModule? State { get; internal set; }
+
+    /// <summary>Optional material extraction. Requires a deposit in range.</summary>
+    public DrillModule? Drill { get; internal set; }
 
     /// <summary>
     /// A damageable shell anchor outside the protected core region. Losing anchors

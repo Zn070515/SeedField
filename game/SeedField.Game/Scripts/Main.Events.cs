@@ -14,6 +14,9 @@ public partial class Main
             CombatLootGranted loot =>
                 $"t{loot.Tick,4}  {loot.CivilizationId} looted {loot.Material}M " +
                 $"from {loot.SourceEntityId} in {loot.RegionId}",
+            MaterialMined mined =>
+                $"t{mined.Tick,4}  {mined.EntityId} mined {mined.Amount}M " +
+                $"{mined.Kind} from deposit {mined.DepositId} ({mined.Remaining} left)",
             EntityDestroyed destroyed => $"t{destroyed.Tick,4}  {destroyed.EntityId} destroyed",
             MessageDelivered delivered =>
                 $"t{delivered.Tick,4}  message {delivered.MessageId} delivered to {delivered.ToCivilizationId}",

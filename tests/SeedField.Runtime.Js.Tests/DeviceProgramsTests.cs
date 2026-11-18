@@ -152,6 +152,40 @@ public sealed class DeviceProgramsTests
     }
 
     [Fact]
+    public void HarvesterTemplateEmitsMineIntent()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddDeposit(OreKind.Copper, "r0", new Vec2(500, 500), 200, 50, 5)
+            .AddEntity(Entity(1, "A", new Vec2(400, 500)) with
+            {
+                Drill = new DrillModule(5, 600, 1),
+            })
+            .Build();
+        var engine = new SimulationEngine(world);
+        using var controller = new JsController("A", DevicePrograms.HarvesterSource);
+
+        var decision = controller.Decide(
+            engine.BuildControllerObservation(new EntityId(1)));
+
+        Assert.IsType<MineIntent>(Assert.Single(decision.Intents));
+    }
+
+    [Fact]
+    public void DrillRoleSuggestsHarvester()
+    {
+        var blueprint = new DeviceBlueprint(
+            "drill",
+            0,
+            "Drill",
+            MaxHealth: 10,
+            EnergyCapacity: 0,
+            Drill: new DrillModule(5, 600, 1));
+
+        Assert.Equal(DevicePrograms.HarvesterId, DevicePrograms.SuggestId(blueprint));
+    }
+
+    [Fact]
     public void IdleTemplateReturnsNoIntents()
     {
         var world = World(Entity(1, "A", new Vec2(100, 100)));

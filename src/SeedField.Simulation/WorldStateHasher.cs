@@ -30,6 +30,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Random.Seed);
         Append(ref hash, world.Random.State);
         Append(ref hash, world.NextWreckId);
+        Append(ref hash, world.NextDepositId);
         Append(ref hash, world.WreckRecoveryPercent);
         Append(ref hash, world.CombatHitChancePercent);
         Append(ref hash, world.CombatDamageVariancePercent);
@@ -67,6 +68,7 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.MaterialSalvagedTotal);
         Append(ref hash, world.Statistics.ShotsMissed);
         Append(ref hash, world.Statistics.MaterialLootedTotal);
+        Append(ref hash, world.Statistics.MaterialMinedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -88,6 +90,24 @@ public static class WorldStateHasher
             {
                 Append(ref hash, capacity.Key);
                 Append(ref hash, capacity.Value);
+            }
+
+            var deposits = world.Deposits.Values
+                .Where(deposit => string.Equals(
+                    deposit.RegionId,
+                    region.Id,
+                    StringComparison.Ordinal))
+                .ToList();
+            Append(ref hash, deposits.Count);
+            foreach (var deposit in deposits)
+            {
+                Append(ref hash, deposit.Id);
+                Append(ref hash, (int)deposit.Kind);
+                Append(ref hash, deposit.Position.X);
+                Append(ref hash, deposit.Position.Y);
+                Append(ref hash, deposit.RadiusMm);
+                Append(ref hash, deposit.Remaining);
+                Append(ref hash, deposit.YieldPerTick);
             }
 
             Append(ref hash, region.Entities.Count);
@@ -129,6 +149,8 @@ public static class WorldStateHasher
                     Append(ref hash, entity.State.ComputePerTick);
                     Append(ref hash, entity.State.StorageCapacity);
                 }
+
+                AppendModule(ref hash, entity.Drill);
             }
         }
 
@@ -488,6 +510,17 @@ public static class WorldStateHasher
         {
             Append(ref hash, module.SpeedMmPerTick);
             Append(ref hash, module.EnergyCostPerMove);
+        }
+    }
+
+    private static void AppendModule(ref ulong hash, DrillModule? module)
+    {
+        Append(ref hash, module is not null);
+        if (module is not null)
+        {
+            Append(ref hash, module.RatePerTick);
+            Append(ref hash, module.RangeMm);
+            Append(ref hash, module.EnergyCostPerTick);
         }
     }
 

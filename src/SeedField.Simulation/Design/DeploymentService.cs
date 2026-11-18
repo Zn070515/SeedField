@@ -116,7 +116,8 @@ public static class DeploymentService
             blueprint.ControllerProgramId,
             blueprint.Power,
             blueprint.State,
-            blueprint.IsCoreAnchor);
+            blueprint.IsCoreAnchor,
+            blueprint.Drill);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
@@ -161,6 +162,7 @@ public static class DeploymentService
         entity.Comm = blueprint.Comm;
         entity.Power = blueprint.Power;
         entity.State = blueprint.State;
+        entity.Drill = blueprint.Drill;
         entity.BlueprintVersion = blueprint.Version;
         entity.ControllerProgramId = blueprint.ControllerProgramId;
         entity.IsCoreAnchor = blueprint.IsCoreAnchor;
