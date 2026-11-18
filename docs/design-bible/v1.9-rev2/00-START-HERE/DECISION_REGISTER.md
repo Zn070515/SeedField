@@ -36,6 +36,7 @@
 | C-01 | 基础科技通过探索/研究；高级依构造验证+编程 | CONFIRMED | Rev2 Q8 C |
 | C-02 | 多文明级终局，终局后继续沙盒 | CONFIRMED | Rev2 Q7 C |
 | A-01 | 精致 2D + Blender 预渲染 + Shader，具体路线样片比较 | BASELINE/VALIDATE | V1.5 |
+| A-02 | 世界地图采用 Mindustry 式正交俯视地块 + 末日废土美术：90° 俯视、网格地块、地表资源矿脉、块状锈蚀建筑 | CONFIRMED | 2026-11-18 用户明示 |
 | N-01 | 极轻剧情、系统沙盒优先，不围绕生物/意识 | BASELINE | 历史讨论 |
 | O-01 | 玩家脚本跨区消息延迟、权限、预算要真实受限 | BASELINE | V1.5 / M0 |
 

@@ -44,7 +44,7 @@ dotnet test  SeedField.slnx   → 396 passed / 0 failed
   仿真 267 · Runtime.Js 102 · 仓库门禁 19 · Catalog 8
 ```
 
-- 规模：227 个 `.cs` / 36,605 行；160 个 `.md` / 9,933 行；40 篇 ADR；51 篇证据。
+- 规模：228 个 `.cs` / 37,053 行；162 个 `.md` / 10,037 行；41 篇 ADR；52 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -134,6 +134,7 @@ tests/SeedField.Repository.Tests/
 - 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；默认 DOF = 逻辑核数；Headless Server GC；`Engine.PrepareScript` 跨引擎复用；进程内 `Decide` 用 `JsObject.Create` + 共享布局直接构造观测对象，worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试；100 台 33.96→1.18 ms/tick、1000 台 180.36→7.9 ms/tick（3000 Tick 稳态），1000 台启动 205→127 ms；`--benchmark-jint-parallel`、`--benchmark-jint-preserialized`、`--benchmark-startup`、`--ticks`、`--chunk-size` 与 `--budget-ms` 门禁（ADR-0028）。
 
 - M1 教程准入：`TutorialProgress` 从世界与事件派生五分支最低可用事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），效率不参与判定；五步完成即 `PveUnlocked`；Godot HUD 教程面板与 `--tutorial` 演示；不新增世界状态/hash（ADR-0040）。
+- 美术方向：世界层改为 Mindustry 式正交俯视地块 + 末日废土（A-02、ADR-0041）；`MindustryStyle` 样片含四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；旧 35° 斜俯视降为历史对照，Main 迁移顺序见 ADR。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
@@ -449,6 +450,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0038](adr/ADR-0038-client-lod-and-message-delivery-cache.md) | 客户端人群 LOD 与消息投递批缓存 |
 | [ADR-0039](adr/ADR-0039-mixed-load-allocation-and-multimesh.md) | 混合客户端分配/GC 优化与 MultiMesh 批处理 |
 | [ADR-0040](adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
+| [ADR-0041](adr/ADR-0041-wasteland-topdown-map-art-direction.md) | 世界层美术改为废土正交俯视地块地图 |
 
 ## 8. 下一步（按依赖顺序）
 

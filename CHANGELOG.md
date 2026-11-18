@@ -27,6 +27,7 @@
 - 跨文明消息策略、建造失败退款、非活动区发电延迟与补算。
 - `.github` CI、依赖审查、Dependabot、Issue/PR 模板与提交规范。
 - M1 教程准入：五分支最低可用由仿真事实验证，Godot HUD 教程面板与 `--tutorial` 演示（ADR-0040）。
+- 美术方向：世界层改为 Mindustry 式正交俯视废土地块地图，新增 `MindustryStyle` 样片（ADR-0041）。
 
 ### Changed
 

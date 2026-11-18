@@ -42,6 +42,7 @@
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
 | 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
 | M1 教程准入 | 五分支最低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`，HUD 显示进度 |
+| 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
 | 跨区物流 | 多跳链路运输 M，途中不可用，按路径总延迟到达；链路物资容量可限制 |
 | 跨区能源 | 区域电网库存；实体可存入/抽取；跨区运输带延迟与链路能源容量 |
@@ -197,6 +198,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`art vertical slice`](docs/engineering/evidence/2026-11-17-art-vertical-slice.md) | A/B 相机、Blender 资产、Godot 层叠/缩放截图与资产门禁 |
 | [`M1 tutorial admission`](docs/engineering/evidence/2026-11-18-m1-tutorial-admission.md) | 五分支事实判定、Headless 演示、HUD 面板与测试证据 |
 | [`ADR-0040`](docs/engineering/adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
+| [`ADR-0041`](docs/engineering/adr/ADR-0041-wasteland-topdown-map-art-direction.md) | 世界层改为废土正交俯视地块地图 |
+| [`wasteland map sample`](docs/engineering/evidence/2026-11-18-wasteland-map-style.md) | 正交俯视地块、矿脉、锈蚀建筑样片与截图 |
 
 ## 工程原则
 

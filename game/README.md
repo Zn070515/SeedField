@@ -22,6 +22,7 @@ godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-sec
 | 路径 | 内容 |
 |---|---|
 | `Scenes/Main.tscn` | 单场景入口 |
+| `Scenes/MindustryStyle.tscn` | 废土正交俯视美术样片（独立，无仿真） |
 | `Scripts/Main.cs` | 场景生命周期、仿真步进、事件 HUD、保存/读取、截图 |
 | `Scripts/ProgramEditor.cs` | A 方 JavaScript 编辑器与部署按钮 |
 | `Scripts/WorkshopPanel.cs` | 五分支覆盖、蓝图部署与实例升级 |
@@ -48,6 +49,13 @@ godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-sec
 - 五分支覆盖由蓝图注册表计算；`5/5` 时 HUD 显示 `PvE READY`。
 - 部署从区域本地库存扣除蓝图 M 成本；不足时拒绝并显示原因。
 - 收件箱受己方 `StateModule.StorageCapacity` 总和控制，超限时最旧消息过期。
+
+## 美术样片（废土正交俯视）
+
+- 运行：`godot --path game/SeedField.Game res://Scenes/MindustryStyle.tscn`
+- 截图：`... -- --capture-art` → `screenshots/art-mindustry-style.png`
+- 严格 90° 俯视、64 px 地块、四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；全部为程序化占位。
+- 这是 ADR-0041 的风格样片；`Main` 仍是旧斜俯视样片，迁移顺序见 ADR。
 
 ## 教程准入（M1）
 
