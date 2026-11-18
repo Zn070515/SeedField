@@ -117,7 +117,9 @@ public static class DeploymentService
             blueprint.Power,
             blueprint.State,
             blueprint.IsCoreAnchor,
-            blueprint.Drill);
+            blueprint.Drill,
+            blueprint.Armor,
+            blueprint.Shield);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
@@ -163,6 +165,14 @@ public static class DeploymentService
         entity.Power = blueprint.Power;
         entity.State = blueprint.State;
         entity.Drill = blueprint.Drill;
+        var hadShield = entity.Shield is not null;
+        entity.Armor = blueprint.Armor;
+        entity.Shield = blueprint.Shield;
+        entity.ShieldEnergy = blueprint.Shield is null
+            ? 0
+            : hadShield
+                ? Math.Min(entity.ShieldEnergy, blueprint.Shield.Capacity)
+                : blueprint.Shield.Capacity;
         entity.BlueprintVersion = blueprint.Version;
         entity.ControllerProgramId = blueprint.ControllerProgramId;
         entity.IsCoreAnchor = blueprint.IsCoreAnchor;

@@ -9,9 +9,9 @@ namespace SeedField.Simulation.Tests;
 public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
-    // v20 adds deposit state and NextDepositId to the hash. This scenario has no
-    // deposits, so only the empty deposit count/next id change; behavior is unchanged.
-    private const ulong ExpectedHash = 0x031797d3b50f5165UL;
+    // v21 adds armor, shields, weapon kind and shield statistics. The golden scenario
+    // now gives A armor/shield and B a beam weapon, so damage resolution changes too.
+    private const ulong ExpectedHash = 0x97a028939518b3c5UL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

@@ -156,55 +156,6 @@ public partial class Main : Node2D
         }
     }
 
-    private void DrawDeposits()
-    {
-        foreach (var deposit in _world.Deposits.Values)
-        {
-            var center = Map(deposit.Position);
-            var radius = Math.Max(9f, deposit.RadiusMm * MapScale);
-            var color = OreVisualColor(deposit.Kind);
-            var depleted = deposit.IsDepleted;
-            DrawCircle(center, radius, new Color(color, depleted ? 0.05f : 0.14f));
-            DrawArc(
-                center,
-                radius,
-                0,
-                Mathf.Tau,
-                40,
-                new Color(color, depleted ? 0.25f : 0.75f),
-                1.6f,
-                true);
-
-            for (var index = 0; index < 6; index++)
-            {
-                var angle = (Mathf.Tau * index / 6f) + (deposit.Id * 0.7f);
-                var offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius * 0.55f;
-                DrawCircle(center + offset, 2.6f, new Color(color, depleted ? 0.25f : 0.9f));
-            }
-
-            DrawString(
-                HudFont,
-                center + new Vector2(-24, radius + 15),
-                depleted
-                    ? "DEPLETED"
-                    : $"{deposit.Kind.ToString().ToUpperInvariant()} {deposit.Remaining}",
-                HorizontalAlignment.Left,
-                -1,
-                10,
-                new Color(color, depleted ? 0.45f : 0.9f));
-        }
-    }
-
-    private static Color OreVisualColor(OreKind kind) =>
-        kind switch
-        {
-            OreKind.Copper => new Color("c47a45"),
-            OreKind.Lead => new Color("8e8494"),
-            OreKind.Titanium => new Color("78a8a0"),
-            OreKind.Coal => new Color("8a8780"),
-            _ => Muted,
-        };
-
     private void DrawRanges()
     {
         foreach (var entity in _world.EnumerateEntities()
@@ -353,6 +304,16 @@ public partial class Main : Node2D
             DrawArc(position, 10.5f, 0, Mathf.Tau, 36, color, 1.4f, true);
 
             DrawBar(position + new Vector2(-13f, -21f), 26f, 3f, (float)entity.Health / entity.MaxHealth, Green);
+            if (entity.Shield is { Capacity: > 0 } shield)
+            {
+                DrawBar(
+                    position + new Vector2(-13f, -25f),
+                    26f,
+                    2f,
+                    (float)entity.ShieldEnergy / shield.Capacity,
+                    Cyan);
+            }
+
             DrawBar(position + new Vector2(-13f, 17f), 26f, 2.5f, (float)entity.Energy / entity.EnergyCapacity, Blue);
 
             DrawString(
@@ -527,6 +488,7 @@ public partial class Main : Node2D
             or ShotMissed
             or CombatLootGranted
             or MaterialMined
+            or EntityDamaged
             or EntityDestroyed
             or MessageDelivered
             or MessageQueued
@@ -565,6 +527,7 @@ public partial class Main : Node2D
         {
             ShotFired => new Color(1f, 0.58f, 0.30f),
             ShotMissed => new Color(0.72f, 0.62f, 0.48f),
+            EntityDamaged => new Color(0.95f, 0.55f, 0.45f),
             CombatLootGranted => new Color(0.85f, 0.78f, 0.40f),
             MaterialMined => new Color(0.70f, 0.78f, 0.45f),
             EntityDestroyed => Red,

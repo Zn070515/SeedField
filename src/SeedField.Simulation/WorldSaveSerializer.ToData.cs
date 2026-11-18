@@ -58,7 +58,10 @@ public static partial class WorldSaveSerializer
                 world.Statistics.MaterialSalvagedTotal,
                 world.Statistics.ShotsMissed,
                 world.Statistics.MaterialLootedTotal,
-                world.Statistics.MaterialMinedTotal),
+                world.Statistics.MaterialMinedTotal,
+                world.Statistics.ShieldAbsorbedTotal,
+                world.Statistics.ArmorAbsorbedTotal,
+                world.Statistics.ShieldRegeneratedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(

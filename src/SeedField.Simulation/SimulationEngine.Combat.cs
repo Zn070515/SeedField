@@ -16,6 +16,18 @@ public sealed partial class SimulationEngine
             return;
         }
 
+        if (entity.IsCritical)
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.ModuleDisabled,
+                "Critical damage has disabled the drive.",
+                tick,
+                events,
+                results);
+            return;
+        }
+
         if (!region.Contains(intent.Target))
         {
             Reject(intent, SimulationErrorCode.OutOfBounds, "Move target is outside the region.", tick, events, results);
@@ -65,6 +77,18 @@ public sealed partial class SimulationEngine
         if (entity.Weapon is null)
         {
             Reject(intent, SimulationErrorCode.NoWeapon, "Entity has no weapon module.", tick, events, results);
+            return;
+        }
+
+        if (entity.IsCritical)
+        {
+            Reject(
+                intent,
+                SimulationErrorCode.ModuleDisabled,
+                "Critical damage has disabled the weapon.",
+                tick,
+                events,
+                results);
             return;
         }
 
@@ -158,19 +182,24 @@ public sealed partial class SimulationEngine
         }
 
         var rolledDamage = RollDamage(entity.Weapon.Damage);
-        var appliedDamage = Math.Min(rolledDamage, target.Health);
-        target.Health -= appliedDamage;
-        World.Statistics.DamageDealt += appliedDamage;
+        var applied = ApplyDamage(entity.Weapon, target, rolledDamage, tick);
+        World.Statistics.DamageDealt += applied.HealthDamage;
 
         events.Add(new ShotFired(
             tick,
             entity.Id,
             target.Id,
-            appliedDamage,
+            applied.HealthDamage,
             entity.Position,
             target.Position,
             cost));
-        events.Add(new EntityDamaged(tick, target.Id, appliedDamage, Math.Max(0, target.Health)));
+        events.Add(new EntityDamaged(
+            tick,
+            target.Id,
+            applied.HealthDamage,
+            Math.Max(0, target.Health),
+            applied.ShieldAbsorbed,
+            applied.ArmorAbsorbed));
 
         if (target.Health <= 0)
         {
@@ -188,7 +217,46 @@ public sealed partial class SimulationEngine
             GrantCombatLoot(entity, region, target, tick, events);
         }
 
-        Accept(intent, $"Hit {target.Id} for {appliedDamage}.", results);
+        Accept(intent, $"Hit {target.Id} for {applied.HealthDamage}.", results);
+    }
+
+    private readonly record struct AppliedDamage(
+        int HealthDamage,
+        long ShieldAbsorbed,
+        int ArmorAbsorbed);
+
+    /// <summary>
+    /// Armor reduces flat damage (minimum 1 point remains), shields absorb before
+    /// health, and beams ignore armor. A successful hit restarts the shield delay.
+    /// </summary>
+    private AppliedDamage ApplyDamage(
+        WeaponModule weapon,
+        EntityState target,
+        int rolledDamage,
+        long tick)
+    {
+        var armor = weapon.Kind == WeaponKind.Beam
+            ? 0
+            : target.Armor?.FlatReduction ?? 0;
+        var armorAbsorbed = Math.Min(armor, Math.Max(0, rolledDamage - 1));
+        var afterArmor = Math.Max(0, rolledDamage - armorAbsorbed);
+        var shieldAbsorbed = Math.Min(target.ShieldEnergy, afterArmor);
+        target.ShieldEnergy -= shieldAbsorbed;
+        var remaining = (int)Math.Max(0, afterArmor - shieldAbsorbed);
+        var healthDamage = Math.Min(remaining, target.Health);
+        target.Health -= healthDamage;
+
+        if ((shieldAbsorbed > 0 || healthDamage > 0) && target.Shield is not null)
+        {
+            target.ShieldRegenReadyTick = tick + target.Shield.RegenDelayTicks;
+        }
+
+        World.Statistics.ShieldAbsorbedTotal += shieldAbsorbed;
+        World.Statistics.ArmorAbsorbedTotal += armorAbsorbed;
+        return new AppliedDamage(
+            healthDamage,
+            shieldAbsorbed,
+            armorAbsorbed);
     }
 
     private bool RollChance(int percent) =>

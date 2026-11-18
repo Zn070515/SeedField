@@ -16,7 +16,8 @@ public static partial class WorldSaveSerializer
                     blueprint.Weapon.RangeMm,
                     blueprint.Weapon.Damage,
                     blueprint.Weapon.EnergyCost,
-                    blueprint.Weapon.CooldownTicks),
+                    blueprint.Weapon.CooldownTicks,
+                    blueprint.Weapon.Kind),
             blueprint.Drive is null
                 ? null
                 : new DriveSaveData(
@@ -48,7 +49,17 @@ public static partial class WorldSaveSerializer
                 : new DrillSaveData(
                     blueprint.Drill.RatePerTick,
                     blueprint.Drill.RangeMm,
-                    blueprint.Drill.EnergyCostPerTick));
+                    blueprint.Drill.EnergyCostPerTick),
+            blueprint.Armor is null
+                ? null
+                : new ArmorSaveData(blueprint.Armor.FlatReduction),
+            blueprint.Shield is null
+                ? null
+                : new ShieldSaveData(
+                    blueprint.Shield.Capacity,
+                    blueprint.Shield.RegenPerTick,
+                    blueprint.Shield.RegenDelayTicks,
+                    blueprint.Shield.EnergyCostPerRegen));
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -64,7 +75,8 @@ public static partial class WorldSaveSerializer
                     blueprint.Weapon.RangeMm,
                     blueprint.Weapon.Damage,
                     blueprint.Weapon.EnergyCost,
-                    blueprint.Weapon.CooldownTicks),
+                    blueprint.Weapon.CooldownTicks,
+                    blueprint.Weapon.Kind),
             blueprint.Drive is null
                 ? null
                 : new DriveModule(
@@ -96,7 +108,17 @@ public static partial class WorldSaveSerializer
                 : new DrillModule(
                     blueprint.Drill.RatePerTick,
                     blueprint.Drill.RangeMm,
-                    blueprint.Drill.EnergyCostPerTick));
+                    blueprint.Drill.EnergyCostPerTick),
+            blueprint.Armor is null
+                ? null
+                : new ArmorModule(blueprint.Armor.FlatReduction),
+            blueprint.Shield is null
+                ? null
+                : new ShieldModule(
+                    blueprint.Shield.Capacity,
+                    blueprint.Shield.RegenPerTick,
+                    blueprint.Shield.RegenDelayTicks,
+                    blueprint.Shield.EnergyCostPerRegen));
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -132,7 +154,8 @@ public static partial class WorldSaveSerializer
                     entity.Weapon.RangeMm,
                     entity.Weapon.Damage,
                     entity.Weapon.EnergyCost,
-                    entity.Weapon.CooldownTicks),
+                    entity.Weapon.CooldownTicks,
+                    entity.Weapon.Kind),
             entity.Drive is null
                 ? null
                 : new DriveSaveData(
@@ -164,7 +187,19 @@ public static partial class WorldSaveSerializer
                 : new DrillSaveData(
                     entity.Drill.RatePerTick,
                     entity.Drill.RangeMm,
-                    entity.Drill.EnergyCostPerTick));
+                    entity.Drill.EnergyCostPerTick),
+            entity.Armor is null
+                ? null
+                : new ArmorSaveData(entity.Armor.FlatReduction),
+            entity.Shield is null
+                ? null
+                : new ShieldSaveData(
+                    entity.Shield.Capacity,
+                    entity.Shield.RegenPerTick,
+                    entity.Shield.RegenDelayTicks,
+                    entity.Shield.EnergyCostPerRegen),
+            entity.ShieldEnergy,
+            entity.ShieldRegenReadyTick);
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(
