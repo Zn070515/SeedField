@@ -9,10 +9,13 @@
 
 | 层 | 位置 | 作用 |
 |---|---|---|
-| 仓库结构门禁 | `tests/SeedField.Repository.Tests` | 篇幅、目标框架、Godot 隔离、ADR/链接、运行产物、测试质量、架构约束、包边界 |
+| 仓库结构门禁 | `tests/SeedField.Repository.Tests` | 篇幅、目标框架、Godot 隔离、ADR/链接、运行产物、测试质量、架构约束、包边界、事件/意图契约 |
 | 仿真单元 | `tests/SeedField.Simulation.Tests` | 规则、确定性、存档往返、电网/恢复/外交/物流等 |
 | 黄金场景 | `GoldenScenarioTests` | 固定世界 + 固定意图 + 固定哈希，防行为漂移 |
+| 经济 golden fixture | `EconomyGoldenFixtureTests` + `tests/fixtures/economy/` | 实现无关的配方/产出样例；规则变更必须显式改 fixture |
 | 不变量 fuzz | `InvariantFuzzTests` | 固定种子随机场景，断言资源非负/容量/ID/存档哈希 |
+| 经济 fuzz | `EconomyInvariantFuzzTests` | 采矿/冶炼/生产开关随机组合；矿脉单调、矿石守恒、存档哈希 |
+| 损坏存档矩阵 | `SaveValidationMatrixTests` | 逐字段破坏并断言 typed `SaveFormatException` |
 | Jint/Worker | `tests/SeedField.Runtime.Js.Tests` | 沙箱、进程内控制器、IPC 帧、worker 生命周期、包校验、fuzz |
 | 包信任 | `PackageHostTests` | 内容哈希、ECDSA 签名、信任库、显式同意、路径/大小/UTF-8 |
 | Godot 冒烟 | `game/SeedField.Game` | `--save-smoke`、`--recovery-smoke`、截图；CI 不跑 Godot |
@@ -29,10 +32,24 @@
 | 运行产物 | `git ls-files` 不得包含 bin/obj/logs/TestResults/.godot/密钥/数据库/日志/zip/`__pycache__`/`*.pyc` |
 | `.gitignore` | 必须继续覆盖 bin/obj/logs/TestResults/.godot/`__pycache__`/`*.pyc` 等根目录 |
 | 美术资产 | 清单 schemaVersion 3；PNG 解码校验 alpha 覆盖率/留边/`alphaBBox`/pivot/方向帧/pass/SHA-256；`python tools/build_art_manifest.py --check` 防清单过期 |
-| ADR | 每个 ADR 被 README 或实现基线链接；ADR-0013+ 必须有 `## 非目标` 与 `## 后果` |
+| ADR | 每个 ADR 被 README 或实现基线链接；ADR-0013+ 必须有 `## 非目标` 与 `## 后果`；ADR-0040+ 必须有 `## 验证` 与 `## 回滚` |
+| 事件展示 | 每个 `SimulationEvent` 必须有 `PlayerEventFilter` 分支；非日志事件白名单只减不增；日志事件必须有 `Describe` case |
+| 意图契约 | 每个 `IntentKind` 必须有 wire name、Jint parser case 与 TypeScript 契约条目 |
 | 文档链接 | 本地 Markdown 链接必须解析到文件/目录 |
 | 计划 | 活跃 `docs/superpowers/plans/*.md` 必须有 Verification 与 Rollback，且无 TBD/TODO；已完成计划归档到 `docs/superpowers/archive/` |
 | 包边界 | `Runtime.Js/Opponents` 禁止文件/网络/进程/程序集 API；PackageHost 禁止网络/进程 API；`ThirdPartyImportEnabled=false` |
+
+## 2.1 门禁纪律（参考 ArtFlow）
+
+1. **规则必须能写成一两句可断言的话**；写不成就不加门禁。
+2. **先有反例，再加门禁**：说明它能抓住哪种提交，而不是只写 happy-path。
+3. **结构门禁放仓库测试，领域行为放仿真/黄金测试**；不要用源码字符串匹配
+   替代领域测试（事件/意图这类“展示与契约同步”检查除外）。
+4. **Golden 变更要区分规则与实现**：规则变了，同提交改 fixture 并解释；
+   实现回归不能让 fixture 迁就。
+5. **白名单只减不增**：`NonLogEvents` 等豁免一旦被日志覆盖必须移除，否则门禁失败。
+6. **不把偶然实现细节升级成永久约束**：临时重试、具体文案、一次性迁移值
+   记录为证据/事故，不进入门禁。
 
 ## 3. 黄金场景
 
@@ -43,7 +60,8 @@
 3. 在同一提交里说明为什么改变；
 4. 不要为了让测试通过而改场景输入而不说明。
 
-当前基准：`0x77e84c31f71f63ba`（40 Tick，移动/等待/攻击/冷却；v18 战斗规则字段加入哈希）。
+当前基准：`0xc834ab16690d8572`（40 Tick；v25 多矿种库存/配方加入哈希）。
+历史哈希是证据记录，不随 schema 回写。
 
 性能基线：`docs/engineering/evidence/perf-baseline.json` + `tools/check_perf.py`
 用于固定机长窗口（avg/p95 +25%）回归；CI 只保留宽松 `--budget-ms` 门禁。

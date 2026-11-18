@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "smelterOrePerTick": 4,
+  "cases": [
+    {
+      "kind": "Copper",
+      "orePerBatch": 1,
+      "materialPerBatch": 1,
+      "byproduct": "None",
+      "byproductPerBatch": 0,
+      "inputOre": 8,
+      "expectedBatches": 4,
+      "expectedMaterial": 4,
+      "expectedByproduct": 0
+    },
+    {
+      "kind": "Lead",
+      "orePerBatch": 2,
+      "materialPerBatch": 1,
+      "byproduct": "Components",
+      "byproductPerBatch": 1,
+      "inputOre": 8,
+      "expectedBatches": 2,
+      "expectedMaterial": 2,
+      "expectedByproduct": 2
+    },
+    {
+      "kind": "Titanium",
+      "orePerBatch": 2,
+      "materialPerBatch": 3,
+      "byproduct": "None",
+      "byproductPerBatch": 0,
+      "inputOre": 8,
+      "expectedBatches": 2,
+      "expectedMaterial": 6,
+      "expectedByproduct": 0
+    },
+    {
+      "kind": "Coal",
+      "orePerBatch": 2,
+      "materialPerBatch": 1,
+      "byproduct": "Energy",
+      "byproductPerBatch": 4,
+      "inputOre": 8,
+      "expectedBatches": 2,
+      "expectedMaterial": 2,
+      "expectedByproduct": 8
+    }
+  ]
+}

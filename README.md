@@ -64,7 +64,7 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **466 个测试通过**（315 仿真 + 124 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | **500 个测试通过**（346 仿真 + 124 Jint + 22 仓库门禁 + 8 本地目录）；经济 golden fixture、事件/意图契约门禁、经济 fuzz 与损坏存档矩阵已接入；CI 构建/测试/提交规范 |
 | 持久化 | 世界存档 schema v25（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
@@ -224,6 +224,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`discovery & control`](docs/engineering/evidence/2026-11-18-discovery-observation-production-control.md) | 侦察发现/观察字段/生产开关与 453 测试证据 |
 | [`ADR-0048`](docs/engineering/adr/ADR-0048-multi-ore-recipes-and-byproducts.md) | 多矿种配方与副产物 |
 | [`multi-ore recipes`](docs/engineering/evidence/2026-11-18-multi-ore-recipes.md) | 按矿种库存/配方/副产物与 466 测试证据 |
+| [`ADR-0049`](docs/engineering/adr/ADR-0049-test-system-hardening-artflow-inspired.md) | 测试体系加强：经济 golden/fuzz、事件与意图门禁 |
+| [`test hardening`](docs/engineering/evidence/2026-11-18-test-hardening.md) | golden/fuzz/损坏存档/事件与意图门禁及负向探针证据 |
 
 ## 工程原则
 

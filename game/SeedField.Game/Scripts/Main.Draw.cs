@@ -490,6 +490,16 @@ public partial class Main : Node2D
             or OreMined
             or OreSmelted
             or ComponentsFabricated
+            or EntityDeployed
+            or EntityUpgraded
+            or ConstructionQueued
+            or ConstructionCancelled
+            or ConstructionFailed
+            or CoreMaintained
+            or RuinImported
+            or MaterialArrived
+            or EnergyArrived
+            or IntentRejected
             or EntityDamaged
             or EntityDestroyed
             or MessageDelivered
@@ -534,6 +544,15 @@ public partial class Main : Node2D
             OreMined => new Color(0.70f, 0.78f, 0.45f),
             OreSmelted => new Color(0.85f, 0.70f, 0.40f),
             ComponentsFabricated => new Color(0.55f, 0.78f, 0.85f),
+            EntityDeployed or EntityUpgraded => Cyan,
+            ConstructionQueued => new Color(0.55f, 0.72f, 0.82f),
+            ConstructionCancelled => Muted,
+            ConstructionFailed => Red,
+            CoreMaintained => Green,
+            RuinImported => new Color(0.60f, 0.68f, 0.78f),
+            MaterialArrived => new Color(0.70f, 0.78f, 0.45f),
+            EnergyArrived => Cyan,
+            IntentRejected => new Color(0.85f, 0.55f, 0.42f),
             EntityDestroyed => Red,
             MessageDelivered => Amber,
             MessageQueued => new Color(0.75f, 0.66f, 0.40f),

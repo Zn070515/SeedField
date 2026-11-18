@@ -123,6 +123,42 @@ public partial class Main
             WreckSalvaged salvaged =>
                 $"t{salvaged.Tick,4}  {salvaged.CivilizationId} salvaged wreck " +
                 $"{salvaged.WreckId} in {salvaged.RegionId} (+{salvaged.MaterialRecovered}M)",
+            EntityDeployed deployed =>
+                $"t{deployed.Tick,4}  {deployed.CivilizationId} deployed " +
+                $"{deployed.BlueprintId} v{deployed.BlueprintVersion} in {deployed.RegionId}",
+            EntityUpgraded upgraded =>
+                $"t{upgraded.Tick,4}  {upgraded.CivilizationId} upgraded " +
+                $"{upgraded.BlueprintId} v{upgraded.OldVersion} → v{upgraded.NewVersion}",
+            ConstructionQueued queued =>
+                $"t{queued.Tick,4}  {queued.CivilizationId} queued " +
+                $"{queued.BlueprintId} v{queued.BlueprintVersion} for t{queued.CompleteTick}",
+            ConstructionCancelled cancelled =>
+                $"t{cancelled.Tick,4}  order {cancelled.OrderId} cancelled " +
+                $"(+{cancelled.MaterialRefunded}M" +
+                (cancelled.ComponentsRefunded > 0
+                    ? $" +{cancelled.ComponentsRefunded} components)"
+                    : ")"),
+            ConstructionFailed failed =>
+                $"t{failed.Tick,4}  order {failed.OrderId} failed: {failed.Reason} " +
+                $"(+{failed.MaterialRefunded}M" +
+                (failed.ComponentsRefunded > 0
+                    ? $" +{failed.ComponentsRefunded} components)"
+                    : ")"),
+            CoreMaintained maintained =>
+                $"t{maintained.Tick,4}  core {maintained.CivilizationId} maintained " +
+                $"in {maintained.RegionId} (−{maintained.MaterialSpent}M)",
+            RuinImported imported =>
+                $"t{imported.Tick,4}  {imported.CivilizationId} imported " +
+                $"{imported.WrecksCreated} wrecks from {imported.SourceCivilizationId}",
+            MaterialArrived arrived =>
+                $"t{arrived.Tick,4}  material shipment {arrived.ShipmentId} arrived " +
+                $"{arrived.ToRegionId} +{arrived.Amount}M",
+            EnergyArrived arrived =>
+                $"t{arrived.Tick,4}  energy shipment {arrived.ShipmentId} arrived " +
+                $"{arrived.ToRegionId} +{arrived.Amount}E",
+            IntentRejected rejected =>
+                $"t{rejected.Tick,4}  {rejected.EntityId} rejected " +
+                $"{rejected.ErrorCode}: {rejected.Detail}",
             _ => $"t{simulationEvent.Tick,4}  {simulationEvent.GetType().Name}",
         };
 
