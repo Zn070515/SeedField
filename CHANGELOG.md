@@ -33,6 +33,7 @@
 - 矿脉观察与 UI：`ObservedDeposit`/`hasDrill`/`drillRangeMm`、harvester 移动开采、HUD 余量/耗尽标签。
 - M4 战斗深度 v1：装甲、护盾、Beam 武器、低血量模块失效；世界存档 v21（ADR-0045）。
 - M2 生产链：钻机产 Ore、冶炼厂转 M、构件厂产 Components；构件成本/退款；世界存档 v22（ADR-0046）。
+- 矿脉侦察发现、装甲/护盾/生产模块观察字段、`SetProductionIntent` 生产开关；世界存档 v24（ADR-0047）。
 - 教程进度写入游戏存档 v4（完成步骤 + Tick），旧 v1–v3 存档按空进度读取。
 - M1 完成：内置 idle/scout/sentry/relay 策略模板、AND/OR 构造挑战目录、正常启动从 Tick 0 开始（ADR-0042）。
 

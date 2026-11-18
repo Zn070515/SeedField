@@ -10,6 +10,7 @@ public enum IntentKind
     SendEnergy = 5,
     DrawEnergy = 6,
     Mine = 7,
+    Production = 8,
 }
 
 /// <summary>
@@ -92,6 +93,12 @@ public sealed record DrawEnergyIntent(
 public sealed record MineIntent(EntityId EntityId) : Intent(EntityId)
 {
     public override IntentKind Kind => IntentKind.Mine;
+}
+
+/// <summary>Enables or pauses passive smelting/fabrication on this device.</summary>
+public sealed record SetProductionIntent(EntityId EntityId, bool Enabled) : Intent(EntityId)
+{
+    public override IntentKind Kind => IntentKind.Production;
 }
 
 /// <summary>Stable error codes surfaced both to diagnostics and to the UI.</summary>

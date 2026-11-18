@@ -261,6 +261,7 @@ public sealed partial class SimulationEngine
         UpdatePowerBreakers(tick, events);
         RegenerateShields(tick);
         ProduceMaterials(tick, events);
+        DiscoverDeposits();
 
         if (intents is { Count: > 0 })
         {

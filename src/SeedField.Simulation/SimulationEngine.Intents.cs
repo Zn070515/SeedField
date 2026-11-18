@@ -107,6 +107,13 @@ public sealed partial class SimulationEngine
             case MineIntent mine:
                 ProcessMine(entity, region, mine, tick, events, results);
                 break;
+            case SetProductionIntent production:
+                entity.ProductionEnabled = production.Enabled;
+                Accept(
+                    intent,
+                    production.Enabled ? "Production enabled." : "Production paused.",
+                    results);
+                break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
                 break;

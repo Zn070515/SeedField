@@ -37,16 +37,16 @@
 
 | 项目 | 说明 |
 |---|---|
-| 当前里程碑 | **M0/M1 完成**；M2–M3 主体已实现；下一步 M4 战斗深度与 M2 生产/算力闭环 |
+| 当前里程碑 | **M0/M1 完成**；M2 采集/生产链与 M4 战斗深度 v1 已实现；下一步 M4 任务/对手多样性与 M2 断联自治 |
 | 仿真核心 | 固定 Tick、意图归属/可见性校验、观察过滤、E/M、通信、直接交火、核心区保护与保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
 | 成长/工坊 | 五分支近低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区近新产品登记 |
 | M1 教程准入 | 五分支近低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`；HUD 显示进度、AND/OR 构造挑战并随游戏存档 v4 持久化 |
 | M1 默认策略 | `builtin.idle/scout/sentry/relay` 模板；蓝图显式 `ControllerProgramId` 启用，未知 id 回退文明程序；relay 心跳可独立完成通信分支 |
 | M1 首启流程 | 正常启动从 Tick 0 开始（截图/冒烟/基准仍预跑）；`--tutorial-smoke` 验证 `tick=0 tutorial=0/5 pve=False` |
-| M2 采集闭环 | 区域有限矿脉 + `DrillModule` + `MineIntent`；近近矿脉、扣能量、产 M、扣余量；矿脉进入 Observation，harvester 可先移动再开采；HUD 显示余量/耗尽；世界存档 v20（ADR-0044） |
-| M4 战斗深度 v1 | 装甲固定减伤、Beam 忽略装甲、护盾先吸收/延迟再生；≤25% 生命禁用武器/传感器/驱动；HUD 护盾条；世界存档 v21（ADR-0045） |
-| M2 生产链 | 钻机产 Ore → 冶炼厂转 M → 构件厂产 Components；高级蓝图 `ComponentCost`；建造队列同时扣 M/构件并按订单退款；BuildTicks 保留（ADR-0046） |
+| M2 采集闭环 | 区域有限矿脉 + `DrillModule` + `MineIntent`；矿脉需传感器/钻机侦察发现后才进入 Observation；harvester 可先移动再开采；HUD 显示余量/耗尽；世界存档 v23（ADR-0044/0047） |
+| M4 战斗深度 v1 | 装甲固定减伤、Beam 忽略装甲、护盾先吸收/延迟再生；≤25% 生命禁用武器/传感器/驱动；装甲/护盾/武器类型进入 Observation；HUD 护盾条（ADR-0045/0047） |
+| M2 生产链 | 钻机产 Ore → 冶炼厂转 M → 构件厂产 Components；`ComponentCost` 扣费/退款；生产模块与开关进入 Observation；`SetProductionIntent` 可暂停/恢复（ADR-0046/0047） |
 | 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
 | 废土资产包 v1 | Blender 9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；程序化锈蚀/凹凸与暖光；总览 `wasteland_pack_v1.png`（ADR-0043） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
@@ -64,8 +64,8 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **448 个测试通过**（298 仿真 + 123 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
-| 持久化 | 世界存档 schema v22（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
+| 验证 | **453 个测试通过**（302 仿真 + 124 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 持久化 | 世界存档 schema v24（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -220,6 +220,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`combat depth v1`](docs/engineering/evidence/2026-11-18-combat-depth-v1.md) | 护盾/装甲/Beam/模块损伤与 444 测试证据 |
 | [`ADR-0046`](docs/engineering/adr/ADR-0046-production-chain-ore-smelting-components.md) | M2 生产链：矿石、冶炼、构件与建造消耗 |
 | [`production chain`](docs/engineering/evidence/2026-11-18-production-chain.md) | Ore→M→Components、构件成本/退款与 448 测试证据 |
+| [`ADR-0047`](docs/engineering/adr/ADR-0047-deposit-discovery-observation-and-production-control.md) | 矿脉侦察发现、观察扩展与生产开关 |
+| [`discovery & control`](docs/engineering/evidence/2026-11-18-discovery-observation-production-control.md) | 侦察发现/观察字段/生产开关与 453 测试证据 |
 
 ## 工程原则
 

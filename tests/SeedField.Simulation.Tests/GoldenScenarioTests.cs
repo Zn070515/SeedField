@@ -9,10 +9,9 @@ namespace SeedField.Simulation.Tests;
 public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
-    // v22 adds ore/components stocks, smelter/fabricator modules and construction
-    // component costs. The scenario now smelts ore near the drill, so material flow
-    // changes as well.
-    private const ulong ExpectedHash = 0xae9700e72d33d1e5UL;
+    // v24 adds per-device production enable/disable state; the scenario's passive
+    // smelter defaults to enabled, so material flow is unchanged.
+    private const ulong ExpectedHash = 0x52c60485ec6d1c52UL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

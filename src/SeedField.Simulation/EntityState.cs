@@ -126,6 +126,9 @@ public sealed class EntityState
     /// <summary>Optional material→components conversion.</summary>
     public FabricatorModule? Fabricator { get; internal set; }
 
+    /// <summary>Scripts may pause passive smelting/fabrication for this device.</summary>
+    public bool ProductionEnabled { get; internal set; } = true;
+
     /// <summary>Half health or less: shield regeneration stops.</summary>
     public bool IsDamaged => Health * 2 <= MaxHealth;
 

@@ -239,7 +239,8 @@ public static partial class WorldSaveSerializer
                     entity.Fabricator.ComponentsPerTick,
                     entity.Fabricator.MaterialPerComponent,
                     entity.Fabricator.EnergyCostPerTick,
-                    entity.Fabricator.MaxComponents));
+                    entity.Fabricator.MaxComponents),
+            entity.ProductionEnabled);
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(

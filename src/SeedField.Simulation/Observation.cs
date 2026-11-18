@@ -19,7 +19,14 @@ public sealed record ObservedEntity(
     bool HasDrive,
     bool HasComm,
     bool HasDrill = false,
-    int DrillRangeMm = 0);
+    int DrillRangeMm = 0,
+    int Armor = 0,
+    long Shield = 0,
+    long MaxShield = 0,
+    string WeaponKind = "Direct",
+    bool HasSmelter = false,
+    bool HasFabricator = false,
+    bool ProductionEnabled = true);
 
 public sealed record ObservedDeposit(
     long DepositId,
@@ -113,4 +120,7 @@ public sealed record Observation(
     IReadOnlyList<ObservedTreaty>? Treaties = null,
     IReadOnlyList<ObservedTreatyProposal>? TreatyProposals = null,
     IReadOnlyList<ObservedTradeOffer>? TradeOffers = null,
-    IReadOnlyList<ObservedDeposit>? Deposits = null);
+    IReadOnlyList<ObservedDeposit>? Deposits = null,
+    long Material = 0,
+    long Ore = 0,
+    long Components = 0);

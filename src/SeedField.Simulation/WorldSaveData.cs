@@ -48,7 +48,8 @@ public sealed record WorldSaveData(
     int CombatLootChancePercent = 0,
     long CombatLootMaterial = 0,
     DepositSaveData[]? Deposits = null,
-    long NextDepositId = 0);
+    long NextDepositId = 0,
+    DiscoverySaveData[]? DiscoveredDeposits = null);
 
 public sealed record PowerPolicySaveData(
     string CivilizationId,
@@ -193,6 +194,8 @@ public sealed record RegionSaveData(
     EntitySaveData[] Entities,
     StockSaveData[]? Stocks = null);
 
+public sealed record DiscoverySaveData(string CivilizationId, long[] DepositIds);
+
 public sealed record DepositSaveData(
     long Id,
     string RegionId,
@@ -248,7 +251,8 @@ public sealed record EntitySaveData(
     long ShieldEnergy = 0,
     long ShieldRegenReadyTick = 0,
     SmelterSaveData? Smelter = null,
-    FabricatorSaveData? Fabricator = null);
+    FabricatorSaveData? Fabricator = null,
+    bool ProductionEnabled = true);
 
 public sealed record SensorSaveData(int RangeMm);
 

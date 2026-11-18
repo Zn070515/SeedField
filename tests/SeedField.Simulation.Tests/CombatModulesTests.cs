@@ -132,6 +132,43 @@ public sealed class CombatModulesTests
     }
 
     [Fact]
+    public void ObservationExposesArmorShieldAndProductionModules()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddStock("r0", "A", 11, ore: 7, components: 3)
+            .AddEntity(new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 100,
+                Energy: 50,
+                EnergyCapacity: 100,
+                Material: 0,
+                Sensor: new SensorModule(1_000),
+                Weapon: new WeaponModule(1_000, 5, 1, 1, WeaponKind.Beam),
+                Armor: new ArmorModule(4),
+                Shield: new ShieldModule(30, 2, 3, 1),
+                Smelter: new SmelterModule(3, 1),
+                Fabricator: new FabricatorModule(1, 2, 1, 10)))
+            .Build();
+        var observation = new SimulationEngine(world)
+            .BuildControllerObservation(new EntityId(1));
+        var entity = Assert.Single(observation.Entities);
+
+        Assert.Equal(4, entity.Armor);
+        Assert.Equal(30, entity.Shield);
+        Assert.Equal(30, entity.MaxShield);
+        Assert.Equal("Beam", entity.WeaponKind);
+        Assert.True(entity.HasSmelter);
+        Assert.True(entity.HasFabricator);
+        Assert.Equal(11, observation.Material);
+        Assert.Equal(7, observation.Ore);
+        Assert.Equal(3, observation.Components);
+    }
+
+    [Fact]
     public void SaveRoundTripKeepsArmorShieldAndCurrentShield()
     {
         var world = World(

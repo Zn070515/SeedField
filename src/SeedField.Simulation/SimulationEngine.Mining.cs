@@ -104,6 +104,36 @@ public sealed partial class SimulationEngine
     }
 
     /// <summary>
+    /// Scouting: a living own device with a sensor or drill discovers deposits inside
+    /// its effective range. Discovery is permanent per civilization.
+    /// </summary>
+    private void DiscoverDeposits()
+    {
+        foreach (var entity in World.EnumerateEntities())
+        {
+            var range = Math.Max(
+                entity.IsCritical ? 0 : entity.Sensor?.RangeMm ?? 0,
+                entity.Drill?.RangeMm ?? 0);
+            if (range <= 0 || !World.Regions.ContainsKey(entity.RegionId))
+            {
+                continue;
+            }
+
+            foreach (var deposit in World.Deposits.Values)
+            {
+                if (string.Equals(
+                        deposit.RegionId,
+                        entity.RegionId,
+                        StringComparison.Ordinal) &&
+                    entity.Position.IsWithinRange(deposit.Position, range))
+                {
+                    World.DiscoverDeposit(entity.CivilizationId, deposit.Id);
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Deterministic nearest selection: squared distance first, then stable deposit id.
     /// Depleted deposits stay in the world (so art/UI can show them) but are skipped.
     /// </summary>

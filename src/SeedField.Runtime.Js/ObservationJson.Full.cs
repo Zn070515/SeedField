@@ -49,6 +49,13 @@ internal static partial class ObservationJson
             writer.WriteBoolean("hasComm", entity.HasComm);
             writer.WriteBoolean("hasDrill", entity.HasDrill);
             writer.WriteNumber("drillRangeMm", entity.DrillRangeMm);
+            writer.WriteNumber("armor", entity.Armor);
+            writer.WriteNumber("shield", entity.Shield);
+            writer.WriteNumber("maxShield", entity.MaxShield);
+            writer.WriteString("weaponKind", entity.WeaponKind);
+            writer.WriteBoolean("hasSmelter", entity.HasSmelter);
+            writer.WriteBoolean("hasFabricator", entity.HasFabricator);
+            writer.WriteBoolean("productionEnabled", entity.ProductionEnabled);
             writer.WriteEndObject();
         }
 
@@ -208,6 +215,10 @@ internal static partial class ObservationJson
         }
 
         writer.WriteEndArray();
+
+        writer.WriteNumber("material", observation.Material);
+        writer.WriteNumber("ore", observation.Ore);
+        writer.WriteNumber("components", observation.Components);
         writer.WriteEndObject();
         writer.Flush();
         return Encoding.UTF8.GetString(buffer.WrittenSpan);

@@ -61,4 +61,31 @@ public static partial class WorldSaveSerializer
 
         world.NextDepositId = Math.Max(data.NextDepositId, maxId + 1);
     }
+
+    private static void LoadDiscoveries(WorldState world, WorldSaveData data)
+    {
+        foreach (var discovery in data.DiscoveredDeposits ?? Array.Empty<DiscoverySaveData>())
+        {
+            if (string.IsNullOrWhiteSpace(discovery.CivilizationId) ||
+                world.DiscoveredDeposits.ContainsKey(discovery.CivilizationId))
+            {
+                throw Invalid(
+                    "INVALID_DISCOVERY",
+                    "Discovery entry has a missing or duplicate civilization id.");
+            }
+
+            var discovered = new SortedSet<long>();
+            foreach (var depositId in discovery.DepositIds ?? Array.Empty<long>())
+            {
+                if (!world.Deposits.ContainsKey(depositId) || !discovered.Add(depositId))
+                {
+                    throw Invalid(
+                        "INVALID_DISCOVERY",
+                        $"Discovery entry '{discovery.CivilizationId}' has an invalid deposit id.");
+                }
+            }
+
+            world.DiscoveredDeposits.Add(discovery.CivilizationId, discovered);
+        }
+    }
 }

@@ -11,7 +11,8 @@ public sealed partial class SimulationEngine
     {
         foreach (var entity in World.EnumerateEntities())
         {
-            if (entity.IsCritical ||
+            if (!entity.ProductionEnabled ||
+                entity.IsCritical ||
                 !World.Regions.TryGetValue(entity.RegionId, out var region))
             {
                 continue;

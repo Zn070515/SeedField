@@ -120,6 +120,19 @@ public sealed class MiningTests
     }
 
     [Fact]
+    public void SaveRoundTripKeepsDiscoveredDeposits()
+    {
+        var world = World();
+        var engine = new SimulationEngine(world);
+        engine.Step();
+
+        var loaded = WorldSaveSerializer.Load(WorldSaveSerializer.Save(world));
+
+        Assert.True(loaded.IsDepositDiscovered("A", 1));
+        Assert.Equal(WorldStateHasher.Compute(world), WorldStateHasher.Compute(loaded));
+    }
+
+    [Fact]
     public void MiningIsDeterministicAcrossRuns()
     {
         ulong Hash()
@@ -142,6 +155,7 @@ public sealed class MiningTests
     {
         var world = World();
         var engine = new SimulationEngine(world);
+        engine.Step();
 
         var observation = engine.BuildControllerObservation(new EntityId(1));
 
@@ -157,6 +171,7 @@ public sealed class MiningTests
     {
         var world = World(entityPosition: new Vec2(9_000, 9_000));
         var engine = new SimulationEngine(world);
+        engine.Step();
 
         var observation = engine.BuildControllerObservation(new EntityId(1));
 
@@ -164,10 +179,27 @@ public sealed class MiningTests
     }
 
     [Fact]
+    public void DepositsRemainHiddenUntilScouted()
+    {
+        var near = World();
+        var nearEngine = new SimulationEngine(near);
+        nearEngine.Step();
+        Assert.True(near.IsDepositDiscovered("A", 1));
+        Assert.Single(nearEngine.BuildObservation("A").Deposits!);
+
+        var far = World(entityPosition: new Vec2(9_000, 9_000));
+        var farEngine = new SimulationEngine(far);
+        farEngine.Step();
+        Assert.False(far.IsDepositDiscovered("A", 1));
+        Assert.Empty(farEngine.BuildObservation("A").Deposits!);
+    }
+
+    [Fact]
     public void CivilizationObservationIncludesDepositsInOwnedRegions()
     {
         var world = World();
         var engine = new SimulationEngine(world);
+        engine.Step();
 
         var observation = engine.BuildObservation("A");
         var other = engine.BuildObservation("B");

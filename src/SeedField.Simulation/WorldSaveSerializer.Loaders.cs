@@ -149,6 +149,7 @@ public static partial class WorldSaveSerializer
                     NextWeaponReadyTick = entityData.NextWeaponReadyTick,
                     ShieldEnergy = entityData.ShieldEnergy,
                     ShieldRegenReadyTick = entityData.ShieldRegenReadyTick,
+                    ProductionEnabled = entityData.ProductionEnabled,
                 };
                 region.Entities.Add(entity.Id, entity);
             }
