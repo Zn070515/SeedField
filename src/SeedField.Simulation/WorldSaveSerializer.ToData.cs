@@ -57,7 +57,8 @@ public static partial class WorldSaveSerializer
                 world.Statistics.EnergyWastedTotal,
                 world.Statistics.MaterialSalvagedTotal,
                 world.Statistics.ShotsMissed,
-                world.Statistics.MaterialLootedTotal),
+                world.Statistics.MaterialLootedTotal,
+                world.Statistics.MaterialMinedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -241,6 +242,19 @@ public static partial class WorldSaveSerializer
             world.CombatHitChancePercent,
             world.CombatDamageVariancePercent,
             world.CombatLootChancePercent,
-            world.CombatLootMaterial);
+            world.CombatLootMaterial,
+            world.Deposits.Values
+                .OrderBy(deposit => deposit.Id)
+                .Select(deposit => new DepositSaveData(
+                    deposit.Id,
+                    deposit.RegionId,
+                    deposit.Kind,
+                    deposit.Position.X,
+                    deposit.Position.Y,
+                    deposit.RadiusMm,
+                    deposit.Remaining,
+                    deposit.YieldPerTick))
+                .ToArray(),
+            world.NextDepositId);
     }
 }

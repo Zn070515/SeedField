@@ -42,7 +42,13 @@ public static partial class WorldSaveSerializer
             blueprint.ControllerProgramId,
             blueprint.MaterialCost,
             blueprint.BuildTicks,
-            blueprint.IsCoreAnchor);
+            blueprint.IsCoreAnchor,
+            blueprint.Drill is null
+                ? null
+                : new DrillSaveData(
+                    blueprint.Drill.RatePerTick,
+                    blueprint.Drill.RangeMm,
+                    blueprint.Drill.EnergyCostPerTick));
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -84,7 +90,13 @@ public static partial class WorldSaveSerializer
             blueprint.ControllerProgramId,
             blueprint.MaterialCost,
             blueprint.BuildTicks,
-            blueprint.IsCoreAnchor);
+            blueprint.IsCoreAnchor,
+            blueprint.Drill is null
+                ? null
+                : new DrillModule(
+                    blueprint.Drill.RatePerTick,
+                    blueprint.Drill.RangeMm,
+                    blueprint.Drill.EnergyCostPerTick));
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -146,7 +158,13 @@ public static partial class WorldSaveSerializer
                 : new StateSaveData(
                     entity.State.ComputePerTick,
                     entity.State.StorageCapacity),
-            entity.IsCoreAnchor);
+            entity.IsCoreAnchor,
+            entity.Drill is null
+                ? null
+                : new DrillSaveData(
+                    entity.Drill.RatePerTick,
+                    entity.Drill.RangeMm,
+                    entity.Drill.EnergyCostPerTick));
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(

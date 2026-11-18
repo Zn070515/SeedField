@@ -141,6 +141,11 @@ export interface WaitIntent {
   entityId: number;
 }
 
+export interface MineIntent {
+  type: "mine";
+  entityId: number;
+}
+
 export interface TransferMaterialIntent {
   type: "transfer";
   entityId: number;
@@ -166,6 +171,7 @@ export type Intent =
   | AttackIntent
   | SendMessageIntent
   | WaitIntent
+  | MineIntent
   | TransferMaterialIntent
   | SendEnergyIntent
   | DrawEnergyIntent;

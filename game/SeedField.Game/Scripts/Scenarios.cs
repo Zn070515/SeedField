@@ -51,6 +51,13 @@ internal static class Scenarios
                     RecoveryMaintenanceMaterialCost: 20))
             .AddStock("frontier", "A", 500)
             .AddStock("frontier", "B", 500)
+            .AddDeposit(
+                OreKind.Copper,
+                "frontier",
+                new Vec2(2_800, 5_600),
+                radiusMm: 900,
+                remaining: 5_000,
+                yieldPerTick: 20)
             .AddControlPoint(
                 "relay-west",
                 "frontier",
@@ -123,6 +130,13 @@ internal static class Scenarios
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 40));
+        var oreDrill = workshop.Publish(new DeviceBlueprint(
+            "drill", 0, "Ore Drill", 80, 2_000,
+            Drill: new DrillModule(RatePerTick: 5, RangeMm: 900, EnergyCostPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 1, StorageCapacity: 2_000),
+            ControllerProgramId: DevicePrograms.HarvesterId,
+            MaterialCost: 40,
+            BuildTicks: 2));
 
         var strike = workshop.Publish(new DeviceBlueprint(
             "strike", 0, "Strike Frame", 150, 5_000,
@@ -172,6 +186,7 @@ internal static class Scenarios
             MaterialCost: 65));
 
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", AStagingPosition);
+        DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(2_800, 5_600));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

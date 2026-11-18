@@ -9,6 +9,7 @@ public enum IntentKind
     TransferMaterial = 4,
     SendEnergy = 5,
     DrawEnergy = 6,
+    Mine = 7,
 }
 
 /// <summary>
@@ -84,6 +85,15 @@ public sealed record DrawEnergyIntent(
     public override IntentKind Kind => IntentKind.DrawEnergy;
 }
 
+/// <summary>
+/// Mines the nearest non-depleted deposit inside the drill's range. The target is
+/// resolved deterministically by squared distance, then deposit id.
+/// </summary>
+public sealed record MineIntent(EntityId EntityId) : Intent(EntityId)
+{
+    public override IntentKind Kind => IntentKind.Mine;
+}
+
 /// <summary>Stable error codes surfaced both to diagnostics and to the UI.</summary>
 public enum SimulationErrorCode
 {
@@ -120,6 +130,9 @@ public enum SimulationErrorCode
     WreckNotFound,
     WreckUnavailable,
     RuinImportRejected,
+    NoDrill,
+    DepositOutOfRange,
+    DepositDepleted,
 }
 
 public sealed record IntentResult(

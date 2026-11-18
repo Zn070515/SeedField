@@ -224,6 +224,16 @@ public sealed record WreckSalvaged(
     string RegionId,
     long MaterialRecovered) : SimulationEvent(Tick);
 
+/// <summary>A drill extracted material from a finite deposit.</summary>
+public sealed record MaterialMined(
+    long Tick,
+    EntityId EntityId,
+    long DepositId,
+    string RegionId,
+    OreKind Kind,
+    long Amount,
+    long Remaining) : SimulationEvent(Tick);
+
 /// <summary>An offline snapshot slice was converted into wrecks in a shell region.</summary>
 public sealed record RuinImported(
     long Tick,

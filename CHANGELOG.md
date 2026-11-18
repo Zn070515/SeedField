@@ -29,6 +29,7 @@
 - M1 教程准入：五分支最低可用由仿真事实验证，Godot HUD 教程面板与 `--tutorial` 演示（ADR-0040）。
 - 美术方向：世界层改为 Mindustry 式正交俯视废土地块地图，新增 `MindustryStyle` 样片（ADR-0041）。
 - 废土资产包 v1：9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；Blender 程序化材质与暖光；Godot 样片改用真实纹理（ADR-0043）。
+- M2 采集闭环：区域有限矿脉、钻机模块、`MineIntent`、`builtin.harvester.v1`；世界存档 v20（ADR-0044）。
 - 教程进度写入游戏存档 v4（完成步骤 + Tick），旧 v1–v3 存档按空进度读取。
 - M1 完成：内置 idle/scout/sentry/relay 策略模板、AND/OR 构造挑战目录、正常启动从 Tick 0 开始（ADR-0042）。
 

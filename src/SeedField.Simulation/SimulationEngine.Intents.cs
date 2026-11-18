@@ -104,6 +104,9 @@ public sealed partial class SimulationEngine
             case DrawEnergyIntent drawEnergy:
                 ProcessDrawEnergy(entity, region, drawEnergy, tick, events, results);
                 break;
+            case MineIntent mine:
+                ProcessMine(entity, region, mine, tick, events, results);
+                break;
             case WaitIntent:
                 Accept(intent, "Entity waits.", results);
                 break;

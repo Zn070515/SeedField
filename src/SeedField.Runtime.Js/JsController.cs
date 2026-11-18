@@ -325,6 +325,13 @@ public sealed class JsController : IController
                 };
                 return true;
 
+            case "mine":
+                intent = new MineIntent(entityId)
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
+                return true;
+
             case "transfer":
                 if (!TryGetString(element, "targetRegionId", out var transferRegion) ||
                     string.IsNullOrWhiteSpace(transferRegion))
