@@ -212,6 +212,34 @@ public sealed class TutorialProgressTests
         Assert.Equal(first.Completed, second.Completed);
     }
 
+    [Fact]
+    public void RestoreKeepsCompletedTicks()
+    {
+        var progress = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long>
+            {
+                [TutorialStep.Execution] = 2,
+                [TutorialStep.Energy] = 7,
+            });
+
+        Assert.Equal(2, progress.CompletedCount);
+        Assert.Equal(7, progress.CompletionTick(TutorialStep.Energy));
+        Assert.False(progress.PveUnlocked);
+    }
+
+    [Fact]
+    public void RestoreRejectsNegativeTick()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            TutorialProgress.Restore(
+                "A",
+                new Dictionary<TutorialStep, long>
+                {
+                    [TutorialStep.Energy] = -1,
+                }));
+    }
+
     private static WorldState World(params EntityDefinition[] entities)
     {
         var builder = new WorldBuilder().AddRegion("r0", 10_000, 10_000);

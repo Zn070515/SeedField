@@ -76,8 +76,33 @@ SCREENSHOT_SAVED .../screenshots/m0-combat.png (Ok)
 五步全部勾选、Energy t1、Sensing t26、Communication t27、State t1、Execution t1、
 `PVE READY · free world unlocked`；右上摘要为 `TUTORIAL 5/5 · PvE READY`。
 
+## 持久化（GameSave v4）
+
+- 游戏存档 schema 从 v3 升到 v4，新增 `tutorials`：每文明 + 已完成步骤 + 完成 Tick。
+- 读取校验：文明 ID 非空且唯一、步骤名必须是已知枚举名、Tick 0..世界 Tick、步骤不重复。
+- v1–v3 旧档没有 `tutorials` 时按空进度处理；世界存档 schema 不变。
+- 测试：
+
+```powershell
+dotnet test tests/SeedField.Runtime.Js.Tests/SeedField.Runtime.Js.Tests.csproj `
+  --filter "FullyQualifiedName~GameSaveTests"
+```
+
+结果：**10/10 通过**（含往返、v3 迁移、未来 Tick、重复文明、未知步骤）。
+
+- Godot 端到端保存冒烟：
+
+```powershell
+godot --path game/SeedField.Game -- --save-smoke
+```
+
+实际输出：
+
+```text
+SAVE_SMOKE ok=True before=68fbb6f5f3002185 mutated=cbee3f061ba57d5b after=68fbb6f5f3002185 tick=34 A=v1 B=v1 tutorial=5/5
+```
+
 ## 未覆盖
 
-- 教程进度尚未写入 GameSave；重开/读档会重新计算。
 - 尚未实现非程序员默认控制器模板与第一组带目标/前置的构造关卡。
 - 面板未做键盘开关与无障碍检查。

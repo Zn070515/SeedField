@@ -154,6 +154,7 @@ public partial class Main : Node2D
     {
         var before = WorldStateHasher.Compute(_world);
         var tickBefore = _world.Tick;
+        var tutorialBefore = _tutorial.CompletedCount;
 
         SaveGame();
 
@@ -165,11 +166,16 @@ public partial class Main : Node2D
         var mutated = WorldStateHasher.Compute(_world);
         LoadGame();
         var after = WorldStateHasher.Compute(_world);
-        var ok = before == after && mutated != after && _world.Tick == tickBefore;
+        var tutorialAfter = _tutorial.CompletedCount;
+        var ok = before == after &&
+                 mutated != after &&
+                 _world.Tick == tickBefore &&
+                 tutorialAfter == tutorialBefore;
 
         GD.Print(
             $"SAVE_SMOKE ok={ok} before={before:x16} mutated={mutated:x16} after={after:x16} " +
-            $"tick={_world.Tick} A=v{_slotA.Version} B=v{_slotB.Version}");
+            $"tick={_world.Tick} A=v{_slotA.Version} B=v{_slotB.Version} " +
+            $"tutorial={tutorialAfter}/{tutorialBefore}");
 
         GetTree().Quit();
     }
@@ -183,7 +189,8 @@ public partial class Main : Node2D
                 _world,
                 new[] { _slotA, _slotB },
                 _opponent.Manifest.PackageId,
-                _opponent.Manifest.Version);
+                _opponent.Manifest.Version,
+                new[] { _tutorial });
             System.IO.File.WriteAllText(SaveAbsolutePath, json);
             var message = $"saved tick {_world.Tick} · A v{_slotA.Version}";
             _status = message;
@@ -252,7 +259,9 @@ public partial class Main : Node2D
                 _slotA = slotA;
                 _slotB = slotB;
                 _world = loaded.World;
-                _tutorial = new TutorialProgress("A");
+                _tutorial = loaded.Tutorials?.FirstOrDefault(tutorial =>
+                               tutorial.CivilizationId == "A") ??
+                           new TutorialProgress("A");
                 _engine = new SimulationEngine(_world);
                 _deployedSourceA = _slotA.DeployedScript;
                 RebuildDeviceControllers();
