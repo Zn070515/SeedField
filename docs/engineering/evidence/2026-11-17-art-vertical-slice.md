@@ -1,7 +1,7 @@
 # 证据：美术 A/B 相机纵切片（2026-11-17）
 
 关联：`docs/design-bible/v1.9-rev2/05-PRESENTATION/ART_DIRECTION_AND_VFX.md`、
-`docs/art/VISUAL_LANGUAGE_V0_1.md`、`docs/art/VERTICAL_SLICE_EXECUTION.md`。
+`docs/art/archive/2026-11-17/VISUAL_LANGUAGE_V0_1.md`、`docs/art/archive/2026-11-17/VERTICAL_SLICE_EXECUTION.md`（已被 ADR-0041 归档为历史参考）。
 Gate 2 五项收口见 `2026-11-17-art-gate2-complete.md` 与
 `2026-11-17-art-gate2-masks-benchmark.md`。
 

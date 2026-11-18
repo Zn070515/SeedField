@@ -157,7 +157,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`ENGINEERING_STANDARDS.md`](docs/engineering/ENGINEERING_STANDARDS.md) | 权威来源、确定性、schema、依赖与发布标准 |
 | [`TESTING.md`](docs/engineering/TESTING.md) | 分层测试、黄金场景、不变量 fuzz 与结构门禁 |
 | [Art vertical slice](art/README.md) | A/B 相机、8 方向工体、核心四态、模块替换、mask 与性能证据 |
-| [`docs/art/`](docs/art/VISUAL_LANGUAGE_V0_1.md) | ChatGPT Art-DeepPush 视觉语言/管线/验收参考 |
+| [`docs/art/`](docs/art/archive/README.md) | ChatGPT Art-DeepPush 历史参考（已归档）；当前方向见 ADR-0041 |
+| [`superpowers archive`](docs/superpowers/archive/README.md) | 已完成的 spec/plan 归档索引（不再作为执行入口） |
 | [`DECISION_REGISTER.md`](docs/design-bible/v1.9-rev2/00-START-HERE/DECISION_REGISTER.md) | CONFIRMED / BASELINE / OPEN 决策主索引 |
 | [`ADR-0001`](docs/engineering/adr/ADR-0001-dotnet10-runtime-target.md) | .NET 10.0 运行时目标 |
 | [`evidence/`](docs/engineering/evidence/2026-11-16-m0-headless-slice.md) | Headless 测试、哈希与运行证据 |

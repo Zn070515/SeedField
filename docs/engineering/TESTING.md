@@ -31,7 +31,7 @@
 | 美术资产 | 清单 schemaVersion 3；PNG 解码校验 alpha 覆盖率/留边/`alphaBBox`/pivot/方向帧/pass/SHA-256；`python tools/build_art_manifest.py --check` 防清单过期 |
 | ADR | 每个 ADR 被 README 或实现基线链接；ADR-0013+ 必须有 `## 非目标` 与 `## 后果` |
 | 文档链接 | 本地 Markdown 链接必须解析到文件/目录 |
-| 计划 | `docs/superpowers/plans/*.md` 必须有 Verification 与 Rollback，且无 TBD/TODO |
+| 计划 | 活跃 `docs/superpowers/plans/*.md` 必须有 Verification 与 Rollback，且无 TBD/TODO；已完成计划归档到 `docs/superpowers/archive/` |
 | 包边界 | `Runtime.Js/Opponents` 禁止文件/网络/进程/程序集 API；PackageHost 禁止网络/进程 API；`ThirdPartyImportEnabled=false` |
 
 ## 3. 黄金场景
