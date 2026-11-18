@@ -20,22 +20,56 @@ public sealed partial class SimulationEngine
 
             if (entity.Smelter is { OrePerTick: > 0 } smelter)
             {
-                var ore = region.GetOre(entity.CivilizationId);
-                var amount = Math.Min(smelter.OrePerTick, ore);
-                if (amount > 0 &&
-                    entity.Energy >= smelter.EnergyCostPerTick &&
-                    region.TryConsumeOre(entity.CivilizationId, amount))
+                var kind = ChooseOreKind(smelter, region, entity.CivilizationId);
+                if (kind is { } chosen && entity.Energy >= smelter.EnergyCostPerTick)
                 {
-                    entity.Energy -= smelter.EnergyCostPerTick;
-                    World.Statistics.EnergySpentTotal += smelter.EnergyCostPerTick;
-                    region.AddMaterial(entity.CivilizationId, amount);
-                    World.Statistics.OreSmeltedTotal += amount;
-                    events.Add(new OreSmelted(
-                        tick,
-                        entity.Id,
-                        region.Id,
-                        amount,
-                        region.GetOre(entity.CivilizationId)));
+                    var recipe = SmeltingRecipes.For(chosen);
+                    var available = region.GetOre(entity.CivilizationId, chosen);
+                    var batchesByOre = available / recipe.OrePerBatch;
+                    var batchesByRate = Math.Max(1, smelter.OrePerTick / recipe.OrePerBatch);
+                    var batches = Math.Min(batchesByOre, batchesByRate);
+                    var oreUsed = batches * recipe.OrePerBatch;
+                    if (batches > 0 &&
+                        region.TryConsumeOre(entity.CivilizationId, chosen, oreUsed))
+                    {
+                        entity.Energy -= smelter.EnergyCostPerTick;
+                        World.Statistics.EnergySpentTotal += smelter.EnergyCostPerTick;
+                        region.AddMaterial(
+                            entity.CivilizationId,
+                            batches * recipe.MaterialPerBatch);
+                        World.Statistics.OreSmeltedTotal += oreUsed;
+                        SmeltByproduct byproduct = SmeltByproduct.None;
+                        var byproductAmount = 0L;
+                        if (recipe.Byproduct != SmeltByproduct.None &&
+                            recipe.ByproductPerBatch > 0)
+                        {
+                            byproduct = recipe.Byproduct;
+                            byproductAmount = batches * recipe.ByproductPerBatch;
+                            switch (byproduct)
+                            {
+                                case SmeltByproduct.Components:
+                                    region.AddComponents(
+                                        entity.CivilizationId,
+                                        byproductAmount);
+                                    break;
+                                case SmeltByproduct.Energy:
+                                    region.AddEnergy(entity.CivilizationId, byproductAmount);
+                                    break;
+                            }
+
+                            World.Statistics.ByproductProducedTotal += byproductAmount;
+                        }
+
+                        events.Add(new OreSmelted(
+                            tick,
+                            entity.Id,
+                            region.Id,
+                            oreUsed,
+                            region.GetOre(entity.CivilizationId, chosen),
+                            chosen,
+                            byproduct,
+                            byproductAmount));
+                    }
                 }
             }
 
@@ -64,5 +98,32 @@ public sealed partial class SimulationEngine
                 }
             }
         }
+    }
+
+    private static OreKind? ChooseOreKind(
+        SmelterModule smelter,
+        RegionState region,
+        string civilizationId)
+    {
+        if (smelter.PreferredOre is { } preferred &&
+            region.GetOre(civilizationId, preferred) >=
+            SmeltingRecipes.For(preferred).OrePerBatch)
+        {
+            return preferred;
+        }
+
+        OreKind? best = null;
+        var bestStock = -1L;
+        foreach (var recipe in SmeltingRecipes.All)
+        {
+            var stock = region.GetOre(civilizationId, recipe.Kind);
+            if (stock >= recipe.OrePerBatch && stock > bestStock)
+            {
+                best = recipe.Kind;
+                bestStock = stock;
+            }
+        }
+
+        return best;
     }
 }

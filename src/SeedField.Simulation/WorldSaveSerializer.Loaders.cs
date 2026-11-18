@@ -134,7 +134,8 @@ public static partial class WorldSaveSerializer
                         ? null
                         : new SmelterModule(
                             entityData.Smelter.OrePerTick,
-                            entityData.Smelter.EnergyCostPerTick),
+                            entityData.Smelter.EnergyCostPerTick,
+                            entityData.Smelter.PreferredOre),
                     entityData.Fabricator is null
                         ? null
                         : new FabricatorModule(
@@ -157,7 +158,9 @@ public static partial class WorldSaveSerializer
             foreach (var stockData in regionData.Stocks ?? Array.Empty<StockSaveData>())
             {
                 if (stockData.Material < 0 || stockData.Energy < 0 ||
-                    stockData.Ore < 0 || stockData.Components < 0)
+                    stockData.Ore < 0 || stockData.Components < 0 ||
+                    stockData.OreCopper < 0 || stockData.OreLead < 0 ||
+                    stockData.OreTitanium < 0 || stockData.OreCoal < 0)
                 {
                     throw Invalid(
                         "INVALID_STOCK",
@@ -173,7 +176,21 @@ public static partial class WorldSaveSerializer
 
                 region.AddMaterial(stockData.CivilizationId, stockData.Material);
                 region.AddEnergy(stockData.CivilizationId, stockData.Energy);
-                region.AddOre(stockData.CivilizationId, stockData.Ore);
+                if (stockData.OreCopper == 0 && stockData.OreLead == 0 &&
+                    stockData.OreTitanium == 0 && stockData.OreCoal == 0 &&
+                    stockData.Ore > 0)
+                {
+                    // v24 and earlier had a single Ore pool; migrate it to copper.
+                    region.AddOre(stockData.CivilizationId, OreKind.Copper, stockData.Ore);
+                }
+                else
+                {
+                    region.AddOre(stockData.CivilizationId, OreKind.Copper, stockData.OreCopper);
+                    region.AddOre(stockData.CivilizationId, OreKind.Lead, stockData.OreLead);
+                    region.AddOre(stockData.CivilizationId, OreKind.Titanium, stockData.OreTitanium);
+                    region.AddOre(stockData.CivilizationId, OreKind.Coal, stockData.OreCoal);
+                }
+
                 region.AddComponents(stockData.CivilizationId, stockData.Components);
             }
         }

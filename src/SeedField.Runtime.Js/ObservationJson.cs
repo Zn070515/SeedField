@@ -224,6 +224,10 @@ internal static partial class ObservationJson
         writer.WriteNumber("material", observation.Material);
         writer.WriteNumber("ore", observation.Ore);
         writer.WriteNumber("components", observation.Components);
+        writer.WriteNumber("oreCopper", observation.OreCopper);
+        writer.WriteNumber("oreLead", observation.OreLead);
+        writer.WriteNumber("oreTitanium", observation.OreTitanium);
+        writer.WriteNumber("oreCoal", observation.OreCoal);
 
         // Last key so deleting it in JS leaves the original key order intact.
         writer.WriteStartArray("s");

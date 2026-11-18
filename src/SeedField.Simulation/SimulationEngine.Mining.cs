@@ -86,7 +86,7 @@ public sealed partial class SimulationEngine
         entity.Energy -= cost;
         World.Statistics.EnergySpentTotal += cost;
         deposit.Remaining -= amount;
-        region.AddOre(entity.CivilizationId, amount);
+        region.AddOre(entity.CivilizationId, deposit.Kind, amount);
         World.Statistics.OreMinedTotal += amount;
 
         events.Add(new OreMined(

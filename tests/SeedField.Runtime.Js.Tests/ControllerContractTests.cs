@@ -128,7 +128,11 @@ public sealed class ControllerContractTests
             },
             Material: 5,
             Ore: 6,
-            Components: 7);
+            Components: 7,
+            OreCopper: 1,
+            OreLead: 2,
+            OreTitanium: 3,
+            OreCoal: 0);
 
     private static string FindRepoRoot()
     {

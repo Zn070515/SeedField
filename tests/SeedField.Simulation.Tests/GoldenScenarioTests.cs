@@ -9,9 +9,9 @@ namespace SeedField.Simulation.Tests;
 public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
-    // v24 adds per-device production enable/disable state; the scenario's passive
-    // smelter defaults to enabled, so material flow is unchanged.
-    private const ulong ExpectedHash = 0x52c60485ec6d1c52UL;
+    // v25 splits ore into per-kind stocks and applies recipes; the scenario's copper
+    // smelting uses the 1:1 copper recipe.
+    private const ulong ExpectedHash = 0xc834ab16690d8572UL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

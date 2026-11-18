@@ -64,7 +64,8 @@ public static partial class WorldSaveSerializer
                 ? null
                 : new SmelterSaveData(
                     blueprint.Smelter.OrePerTick,
-                    blueprint.Smelter.EnergyCostPerTick),
+                    blueprint.Smelter.EnergyCostPerTick,
+                    blueprint.Smelter.PreferredOre),
             blueprint.Fabricator is null
                 ? null
                 : new FabricatorSaveData(
@@ -136,7 +137,8 @@ public static partial class WorldSaveSerializer
                 ? null
                 : new SmelterModule(
                     blueprint.Smelter.OrePerTick,
-                    blueprint.Smelter.EnergyCostPerTick),
+                    blueprint.Smelter.EnergyCostPerTick,
+                    blueprint.Smelter.PreferredOre),
             blueprint.Fabricator is null
                 ? null
                 : new FabricatorModule(
@@ -158,8 +160,12 @@ public static partial class WorldSaveSerializer
                     stock.Key,
                     stock.Value.Material,
                     stock.Value.Energy,
-                    stock.Value.Ore,
-                    stock.Value.Components))
+                    0,
+                    stock.Value.Components,
+                    stock.Value.OreCopper,
+                    stock.Value.OreLead,
+                    stock.Value.OreTitanium,
+                    stock.Value.OreCoal))
                 .ToArray());
 
     private static EntitySaveData ToEntity(EntityState entity) =>
@@ -232,7 +238,8 @@ public static partial class WorldSaveSerializer
                 ? null
                 : new SmelterSaveData(
                     entity.Smelter.OrePerTick,
-                    entity.Smelter.EnergyCostPerTick),
+                    entity.Smelter.EnergyCostPerTick,
+                    entity.Smelter.PreferredOre),
             entity.Fabricator is null
                 ? null
                 : new FabricatorSaveData(

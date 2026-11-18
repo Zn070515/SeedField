@@ -114,7 +114,11 @@ public static class ObservationBuilder
                 .ToList(),
             Material: world.Regions.Values.Sum(region => region.GetMaterial(civilizationId)),
             Ore: world.Regions.Values.Sum(region => region.GetOre(civilizationId)),
-            Components: world.Regions.Values.Sum(region => region.GetComponents(civilizationId)));
+            Components: world.Regions.Values.Sum(region => region.GetComponents(civilizationId)),
+            OreCopper: world.Regions.Values.Sum(region => region.GetOre(civilizationId, OreKind.Copper)),
+            OreLead: world.Regions.Values.Sum(region => region.GetOre(civilizationId, OreKind.Lead)),
+            OreTitanium: world.Regions.Values.Sum(region => region.GetOre(civilizationId, OreKind.Titanium)),
+            OreCoal: world.Regions.Values.Sum(region => region.GetOre(civilizationId, OreKind.Coal)));
     }
 
     /// <summary>
@@ -218,7 +222,11 @@ public static class ObservationBuilder
             Deposits: deposits,
             Material: region.GetMaterial(viewer.CivilizationId),
             Ore: region.GetOre(viewer.CivilizationId),
-            Components: region.GetComponents(viewer.CivilizationId));
+            Components: region.GetComponents(viewer.CivilizationId),
+            OreCopper: region.GetOre(viewer.CivilizationId, OreKind.Copper),
+            OreLead: region.GetOre(viewer.CivilizationId, OreKind.Lead),
+            OreTitanium: region.GetOre(viewer.CivilizationId, OreKind.Titanium),
+            OreCoal: region.GetOre(viewer.CivilizationId, OreKind.Coal));
     }
 
     /// <summary>

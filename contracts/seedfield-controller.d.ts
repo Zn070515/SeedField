@@ -139,6 +139,10 @@ export interface Observation {
   material: number;
   ore: number;
   components: number;
+  oreCopper: number;
+  oreLead: number;
+  oreTitanium: number;
+  oreCoal: number;
 }
 
 export interface MoveIntent {
