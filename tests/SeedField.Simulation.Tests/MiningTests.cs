@@ -137,6 +137,45 @@ public sealed class MiningTests
         Assert.Equal(Hash(), Hash());
     }
 
+    [Fact]
+    public void DeviceObservationIncludesDepositsInsideDrillRange()
+    {
+        var world = World();
+        var engine = new SimulationEngine(world);
+
+        var observation = engine.BuildControllerObservation(new EntityId(1));
+
+        var deposit = Assert.Single(observation.Deposits!);
+        Assert.Equal(1, deposit.DepositId);
+        Assert.Equal(OreKind.Copper, deposit.Kind);
+        Assert.Equal(50, deposit.Remaining);
+        Assert.True(Assert.Single(observation.Entities).HasDrill);
+    }
+
+    [Fact]
+    public void DeviceObservationExcludesDepositsOutsideSightAndDrillRange()
+    {
+        var world = World(entityPosition: new Vec2(9_000, 9_000));
+        var engine = new SimulationEngine(world);
+
+        var observation = engine.BuildControllerObservation(new EntityId(1));
+
+        Assert.Empty(observation.Deposits!);
+    }
+
+    [Fact]
+    public void CivilizationObservationIncludesDepositsInOwnedRegions()
+    {
+        var world = World();
+        var engine = new SimulationEngine(world);
+
+        var observation = engine.BuildObservation("A");
+        var other = engine.BuildObservation("B");
+
+        Assert.Single(observation.Deposits!);
+        Assert.Empty(other.Deposits!);
+    }
+
     private static WorldState World(
         int depositId = 1,
         Vec2? depositPosition = null,

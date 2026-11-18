@@ -44,7 +44,7 @@
 | M1 教程准入 | 五分支最低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`；HUD 显示进度、AND/OR 构造挑战并随游戏存档 v4 持久化 |
 | M1 默认策略 | `builtin.idle/scout/sentry/relay` 模板；蓝图显式 `ControllerProgramId` 启用，未知 id 回退文明程序；relay 心跳可独立完成通信分支 |
 | M1 首启流程 | 正常启动从 Tick 0 开始（截图/冒烟/基准仍预跑）；`--tutorial-smoke` 验证 `tick=0 tutorial=0/5 pve=False` |
-| M2 采集闭环 | 区域有限矿脉 + `DrillModule` + `MineIntent`；最近矿脉、扣能量、产 M、扣余量；`builtin.harvester.v1`；世界存档 v20（ADR-0044） |
+| M2 采集闭环 | 区域有限矿脉 + `DrillModule` + `MineIntent`；最近矿脉、扣能量、产 M、扣余量；矿脉进入 Observation，harvester 可先移动再开采；HUD 显示余量/耗尽；世界存档 v20（ADR-0044） |
 | 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
 | 废土资产包 v1 | Blender 9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；程序化锈蚀/凹凸与暖光；总览 `wasteland_pack_v1.png`（ADR-0043） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
@@ -62,7 +62,7 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **434 个测试通过**（285 仿真 + 122 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | **438 个测试通过**（288 仿真 + 123 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
 | 持久化 | 世界存档 schema v20（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 

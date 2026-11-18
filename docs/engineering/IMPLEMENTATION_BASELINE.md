@@ -40,11 +40,11 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 434 passed / 0 failed
-  仿真 285 · Runtime.Js 122 · 仓库门禁 19 · Catalog 8
+dotnet test  SeedField.slnx   → 438 passed / 0 failed
+  仿真 288 · Runtime.Js 123 · 仓库门禁 19 · Catalog 8
 ```
 
-- 规模：237 个 `.cs` / 38,893 行；170 个 `.md` / 10,485 行；44 篇 ADR；55 篇证据。
+- 规模：237 个 `.cs` / 39,159 行；170 个 `.md` / 10,509 行；44 篇 ADR；55 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -138,7 +138,7 @@ tests/SeedField.Repository.Tests/
 - M1 完成（ADR-0042）：`DevicePrograms` 内置 idle/scout/sentry/relay 模板（显式 `ControllerProgramId` 才启用，未知 id 回退文明程序）；`ConstructionChallenges` 提供 5 分支 + AND 网络 + OR 前沿挑战，不阻塞 PvE；正常启动从 Tick 0 开始，HUD 列出步骤/挑战/NEXT，`--tutorial-smoke` 验证首启状态。
 - 美术方向：世界层改为 Mindustry 式正交俯视地块 + 末日废土（A-02、ADR-0041）；`MindustryStyle` 样片含四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；旧 35° 斜俯视降为历史对照，Main 迁移顺序见 ADR。
 - 废土资产包 v1（ADR-0043）：Blender 生成 9 建筑 + 3 道具 + 4 矿脉（512 RGBA、程序化锈蚀/凹凸、暖光），程序化生成 4 张无缝地表；`MindustryStyle` 全部改用真实纹理并保留程序化回退；manifest 注册 20 个新资产，ArtAssetTests 通过；FLUX 概念图仅作内部参考。
-- M2 采集闭环（ADR-0044）：`ResourceDepositState` 有限矿脉（区域/位置/半径/余量/产出）与 `DrillModule`；`MineIntent` 取范围内最近未耗尽矿脉，扣能量、产 M、扣余量并发 `MaterialMined`；`MaterialMinedTotal`；世界存档 v20、哈希与 v19 迁移；Jint `mine`、TypeScript 契约、`builtin.harvester.v1` 与初始钻机。
+- M2 采集闭环（ADR-0044）：`ResourceDepositState` 有限矿脉（区域/位置/半径/余量/产出）与 `DrillModule`；`MineIntent` 取范围内最近未耗尽矿脉，扣能量、产 M、扣余量并发 `MaterialMined`；`MaterialMinedTotal`；世界存档 v20、哈希与 v19 迁移；Jint `mine`、TypeScript 契约、`builtin.harvester.v1` 与初始钻机；矿脉进入 Observation（文明按己方区域、设备按传感器/钻机视野），harvester 可先移动再开采；Godot 绘制矿脉余量/耗尽状态。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现

@@ -107,7 +107,32 @@ public static class ObservationBuilder
                 .Where(offer => offer.Involves(civilizationId))
                 .OrderBy(offer => offer.Id)
                 .Select(ToObservedTradeOffer)
+                .ToList(),
+            Deposits: world.Deposits.Values
+                .Where(deposit => OwnsAnyEntityIn(world, civilizationId, deposit.RegionId))
+                .Select(ToObserved)
                 .ToList());
+    }
+
+    private static bool OwnsAnyEntityIn(
+        WorldState world,
+        string civilizationId,
+        string regionId)
+    {
+        if (!world.Regions.TryGetValue(regionId, out var region))
+        {
+            return false;
+        }
+
+        foreach (var entity in region.Entities.Values)
+        {
+            if (string.Equals(entity.CivilizationId, civilizationId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -182,6 +207,17 @@ public static class ObservationBuilder
         var treaties = cache.Treaties(viewer.CivilizationId);
         var proposals = cache.Proposals(viewer.CivilizationId);
         var tradeOffers = cache.TradeOffers(viewer.RegionId, viewer.CivilizationId);
+        var sightRange = Math.Max(
+            viewer.Sensor?.RangeMm ?? 0,
+            viewer.Drill?.RangeMm ?? 0);
+        var deposits = sightRange <= 0
+            ? new List<ObservedDeposit>()
+            : world.Deposits.Values
+                .Where(deposit =>
+                    string.Equals(deposit.RegionId, viewer.RegionId, StringComparison.Ordinal) &&
+                    viewer.Position.IsWithinRange(deposit.Position, sightRange))
+                .Select(ToObserved)
+                .ToList();
 
         return new Observation(
             world.Tick,
@@ -195,7 +231,8 @@ public static class ObservationBuilder
             ToObservedMatch(world.Match),
             Treaties: treaties,
             TreatyProposals: proposals,
-            TradeOffers: tradeOffers);
+            TradeOffers: tradeOffers,
+            Deposits: deposits);
     }
 
     /// <summary>
@@ -319,5 +356,17 @@ public static class ObservationBuilder
             entity.Weapon is not null,
             entity.Weapon?.RangeMm ?? 0,
             entity.Drive is not null,
-            entity.Comm is not null);
+            entity.Comm is not null,
+            entity.Drill is not null,
+            entity.Drill?.RangeMm ?? 0);
+
+    internal static ObservedDeposit ToObserved(ResourceDepositState deposit) =>
+        new(
+            deposit.Id,
+            deposit.RegionId,
+            deposit.Kind,
+            deposit.Position,
+            deposit.RadiusMm,
+            deposit.Remaining,
+            deposit.YieldPerTick);
 }

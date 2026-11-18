@@ -172,6 +172,32 @@ public sealed class DeviceProgramsTests
     }
 
     [Fact]
+    public void HarvesterTemplateMovesTowardAFarDeposit()
+    {
+        var world = new WorldBuilder()
+            .AddRegion("r0", 10_000, 10_000)
+            .AddDeposit(OreKind.Lead, "r0", new Vec2(1_500, 500), 200, 50, 5)
+            .AddEntity(Entity(
+                1,
+                "A",
+                new Vec2(500, 500),
+                sensor: new SensorModule(2_000),
+                drive: new DriveModule(100, 1)) with
+            {
+                Drill = new DrillModule(5, 100, 1),
+            })
+            .Build();
+        var engine = new SimulationEngine(world);
+        using var controller = new JsController("A", DevicePrograms.HarvesterSource);
+
+        var decision = controller.Decide(
+            engine.BuildControllerObservation(new EntityId(1)));
+
+        var move = Assert.IsType<MoveIntent>(Assert.Single(decision.Intents));
+        Assert.Equal(new Vec2(1_500, 500), move.Target);
+    }
+
+    [Fact]
     public void DrillRoleSuggestsHarvester()
     {
         var blueprint = new DeviceBlueprint(

@@ -19,6 +19,21 @@ export interface ObservedEntity {
   weaponRangeMm: number;
   hasDrive: boolean;
   hasComm: boolean;
+  hasDrill: boolean;
+  drillRangeMm: number;
+}
+
+export type OreKind = "Copper" | "Lead" | "Titanium" | "Coal";
+
+export interface ObservedDeposit {
+  depositId: number;
+  regionId: string;
+  kind: OreKind;
+  x: number;
+  y: number;
+  radiusMm: number;
+  remaining: number;
+  yieldPerTick: number;
 }
 
 export interface ObservedMessage {
@@ -113,6 +128,7 @@ export interface Observation {
   treaties: ObservedTreaty[];
   treatyProposals: ObservedTreatyProposal[];
   tradeOffers: ObservedTradeOffer[];
+  deposits: ObservedDeposit[];
 }
 
 export interface MoveIntent {
