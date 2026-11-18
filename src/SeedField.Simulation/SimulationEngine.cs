@@ -259,6 +259,7 @@ public sealed partial class SimulationEngine
         GeneratePower();
         FlowPower(tick, events);
         UpdatePowerBreakers(tick, events);
+        RegenerateShields(tick);
 
         if (intents is { Count: > 0 })
         {

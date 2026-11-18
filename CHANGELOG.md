@@ -31,6 +31,7 @@
 - 废土资产包 v1：9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；Blender 程序化材质与暖光；Godot 样片改用真实纹理（ADR-0043）。
 - M2 采集闭环：区域有限矿脉、钻机模块、`MineIntent`、`builtin.harvester.v1`；世界存档 v20（ADR-0044）。
 - 矿脉观察与 UI：`ObservedDeposit`/`hasDrill`/`drillRangeMm`、harvester 移动开采、HUD 余量/耗尽标签。
+- M4 战斗深度 v1：装甲、护盾、Beam 武器、低血量模块失效；世界存档 v21（ADR-0045）。
 - 教程进度写入游戏存档 v4（完成步骤 + Tick），旧 v1–v3 存档按空进度读取。
 - M1 完成：内置 idle/scout/sentry/relay 策略模板、AND/OR 构造挑战目录、正常启动从 Tick 0 开始（ADR-0042）。
 

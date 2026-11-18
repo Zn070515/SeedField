@@ -23,7 +23,9 @@ public sealed record EntityDefinition(
     PowerModule? Power = null,
     StateModule? State = null,
     bool IsCoreAnchor = false,
-    DrillModule? Drill = null);
+    DrillModule? Drill = null,
+    ArmorModule? Armor = null,
+    ShieldModule? Shield = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -53,6 +55,9 @@ public sealed class EntityState
         State = definition.State;
         IsCoreAnchor = definition.IsCoreAnchor;
         Drill = definition.Drill;
+        Armor = definition.Armor;
+        Shield = definition.Shield;
+        ShieldEnergy = definition.Shield?.Capacity ?? 0;
     }
 
     public EntityId Id { get; }
@@ -98,6 +103,24 @@ public sealed class EntityState
 
     /// <summary>Optional material extraction. Requires a deposit in range.</summary>
     public DrillModule? Drill { get; internal set; }
+
+    /// <summary>Optional flat damage reduction applied before shields and health.</summary>
+    public ArmorModule? Armor { get; internal set; }
+
+    /// <summary>Optional regenerating shield module.</summary>
+    public ShieldModule? Shield { get; internal set; }
+
+    /// <summary>Current shield points. Only the simulation mutates it.</summary>
+    public long ShieldEnergy { get; internal set; }
+
+    /// <summary>First tick on which the shield may regenerate after taking damage.</summary>
+    public long ShieldRegenReadyTick { get; internal set; }
+
+    /// <summary>Half health or less: shield regeneration stops.</summary>
+    public bool IsDamaged => Health * 2 <= MaxHealth;
+
+    /// <summary>Quarter health or less: weapon, sensor and drive are disabled.</summary>
+    public bool IsCritical => Health * 4 <= MaxHealth;
 
     /// <summary>
     /// A damageable shell anchor outside the protected core region. Losing anchors

@@ -32,7 +32,9 @@ public sealed record DeviceBlueprint(
     long MaterialCost = 0,
     int BuildTicks = 0,
     bool IsCoreAnchor = false,
-    DrillModule? Drill = null)
+    DrillModule? Drill = null,
+    ArmorModule? Armor = null,
+    ShieldModule? Shield = null)
 {
     public DeviceBranch Branches
     {
@@ -228,6 +230,23 @@ public sealed class WorkshopService
             throw new BlueprintValidationException(
                 "INVALID_DRILL",
                 "Drill rate and energy must be non-negative and range positive.");
+        }
+
+        if (blueprint.Armor is { FlatReduction: < 0 })
+        {
+            throw new BlueprintValidationException(
+                "INVALID_ARMOR",
+                "Armor reduction must be non-negative.");
+        }
+
+        if (blueprint.Shield is { Capacity: <= 0 } or
+            { RegenPerTick: < 0 } or
+            { RegenDelayTicks: < 0 } or
+            { EnergyCostPerRegen: < 0 })
+        {
+            throw new BlueprintValidationException(
+                "INVALID_SHIELD",
+                "Shield capacity must be positive; regen values must be non-negative.");
         }
     }
 

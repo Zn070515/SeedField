@@ -6,11 +6,35 @@ namespace SeedField.Simulation;
 /// </summary>
 public sealed record SensorModule(int RangeMm);
 
+public enum WeaponKind
+{
+    Direct = 0,
+    Beam = 1,
+}
+
 /// <summary>
-/// Minimal direct-fire weapon. Damage and costs are scenario data; the engine only
-/// enforces range, cooldown, energy and line-of-fire bookkeeping.
+/// Weapon. Direct fire is reduced by armor; beams ignore armor entirely. Damage and
+/// costs are scenario data; the engine only enforces range, cooldown and energy.
 /// </summary>
-public sealed record WeaponModule(int RangeMm, int Damage, long EnergyCost, int CooldownTicks);
+public sealed record WeaponModule(
+    int RangeMm,
+    int Damage,
+    long EnergyCost,
+    int CooldownTicks,
+    WeaponKind Kind = WeaponKind.Direct);
+
+/// <summary>Flat damage reduction applied before shields and health.</summary>
+public sealed record ArmorModule(int FlatReduction);
+
+/// <summary>
+/// Regenerating shield. Regen starts after RegenDelayTicks without damage, costs
+/// local energy per regeneration tick, and stops while the device is damaged.
+/// </summary>
+public sealed record ShieldModule(
+    long Capacity,
+    long RegenPerTick,
+    int RegenDelayTicks,
+    long EnergyCostPerRegen);
 
 /// <summary>Minimal drive. A move action costs a flat amount of local energy.</summary>
 public sealed record DriveModule(int SpeedMmPerTick, long EnergyCostPerMove);

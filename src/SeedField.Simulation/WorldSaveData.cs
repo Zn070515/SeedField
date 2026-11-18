@@ -228,11 +228,28 @@ public sealed record EntitySaveData(
     PowerSaveData? Power = null,
     StateSaveData? State = null,
     bool IsCoreAnchor = false,
-    DrillSaveData? Drill = null);
+    DrillSaveData? Drill = null,
+    ArmorSaveData? Armor = null,
+    ShieldSaveData? Shield = null,
+    long ShieldEnergy = 0,
+    long ShieldRegenReadyTick = 0);
 
 public sealed record SensorSaveData(int RangeMm);
 
-public sealed record WeaponSaveData(int RangeMm, int Damage, long EnergyCost, int CooldownTicks);
+public sealed record WeaponSaveData(
+    int RangeMm,
+    int Damage,
+    long EnergyCost,
+    int CooldownTicks,
+    WeaponKind Kind = WeaponKind.Direct);
+
+public sealed record ArmorSaveData(int FlatReduction);
+
+public sealed record ShieldSaveData(
+    long Capacity,
+    long RegenPerTick,
+    int RegenDelayTicks,
+    long EnergyCostPerRegen);
 
 public sealed record DriveSaveData(int SpeedMmPerTick, long EnergyCostPerMove);
 
@@ -264,7 +281,9 @@ public sealed record BlueprintSaveData(
     long MaterialCost = 0,
     int BuildTicks = 0,
     bool IsCoreAnchor = false,
-    DrillSaveData? Drill = null);
+    DrillSaveData? Drill = null,
+    ArmorSaveData? Armor = null,
+    ShieldSaveData? Shield = null);
 
 public sealed record WreckSaveData(
     long Id,
@@ -367,7 +386,10 @@ public sealed record StatisticsSaveData(
     long MaterialSalvagedTotal = 0,
     long ShotsMissed = 0,
     long MaterialLootedTotal = 0,
-    long MaterialMinedTotal = 0);
+    long MaterialMinedTotal = 0,
+    long ShieldAbsorbedTotal = 0,
+    long ArmorAbsorbedTotal = 0,
+    long ShieldRegeneratedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

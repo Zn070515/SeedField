@@ -150,7 +150,29 @@ internal static class Scenarios
                 Priority: 10),
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
             ControllerProgramId: "program.strike",
+            Armor: new ArmorModule(FlatReduction: 3),
+            Shield: new ShieldModule(
+                Capacity: 25,
+                RegenPerTick: 2,
+                RegenDelayTicks: 4,
+                EnergyCostPerRegen: 1),
             MaterialCost: 80));
+
+        var beam = workshop.Publish(new DeviceBlueprint(
+            "beam", 0, "Beam Frame", 130, 5_000,
+            Sensor: new SensorModule(4_500),
+            Weapon: new WeaponModule(
+                3_200,
+                Damage: 6,
+                EnergyCost: 3,
+                CooldownTicks: 2,
+                Kind: WeaponKind.Beam),
+            Drive: new DriveModule(90, EnergyCostPerMove: 1),
+            Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 5_000, Priority: 10),
+            State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: "program.strike",
+            MaterialCost: 85));
 
         var scoutV1 = workshop.Publish(new DeviceBlueprint(
             "scout", 0, "Scout Mk1", 120, 5_000,
@@ -190,7 +212,7 @@ internal static class Scenarios
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {
-            DeploymentService.Deploy(world, strike, "B", "frontier", BStagingPosition);
+            DeploymentService.Deploy(world, beam, "B", "frontier", BStagingPosition);
         }
 
         return world;

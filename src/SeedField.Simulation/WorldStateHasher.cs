@@ -69,6 +69,9 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.ShotsMissed);
         Append(ref hash, world.Statistics.MaterialLootedTotal);
         Append(ref hash, world.Statistics.MaterialMinedTotal);
+        Append(ref hash, world.Statistics.ShieldAbsorbedTotal);
+        Append(ref hash, world.Statistics.ArmorAbsorbedTotal);
+        Append(ref hash, world.Statistics.ShieldRegeneratedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -151,6 +154,23 @@ public static class WorldStateHasher
                 }
 
                 AppendModule(ref hash, entity.Drill);
+                Append(ref hash, entity.Armor is not null);
+                if (entity.Armor is not null)
+                {
+                    Append(ref hash, entity.Armor.FlatReduction);
+                }
+
+                Append(ref hash, entity.Shield is not null);
+                if (entity.Shield is not null)
+                {
+                    Append(ref hash, entity.Shield.Capacity);
+                    Append(ref hash, entity.Shield.RegenPerTick);
+                    Append(ref hash, entity.Shield.RegenDelayTicks);
+                    Append(ref hash, entity.Shield.EnergyCostPerRegen);
+                }
+
+                Append(ref hash, entity.ShieldEnergy);
+                Append(ref hash, entity.ShieldRegenReadyTick);
             }
         }
 
@@ -500,6 +520,7 @@ public static class WorldStateHasher
             Append(ref hash, module.Damage);
             Append(ref hash, module.EnergyCost);
             Append(ref hash, module.CooldownTicks);
+            Append(ref hash, (int)module.Kind);
         }
     }
 

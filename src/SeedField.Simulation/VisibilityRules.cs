@@ -8,6 +8,11 @@ public static class VisibilityRules
 {
     public static bool IsSensedBy(EntityState observer, EntityState target)
     {
+        if (observer.IsCritical)
+        {
+            return false;
+        }
+
         var range = observer.Sensor?.RangeMm ?? 0;
         return range > 0 &&
                string.Equals(observer.RegionId, target.RegionId, StringComparison.Ordinal) &&

@@ -41,7 +41,9 @@ public sealed record EntityDamaged(
     long Tick,
     EntityId EntityId,
     int Damage,
-    int HealthRemaining) : SimulationEvent(Tick);
+    int HealthRemaining,
+    long ShieldAbsorbed = 0,
+    int ArmorAbsorbed = 0) : SimulationEvent(Tick);
 
 public sealed record EntityDestroyed(long Tick, EntityId EntityId) : SimulationEvent(Tick);
 

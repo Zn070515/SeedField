@@ -65,6 +65,12 @@ public sealed class SimulationStatistics
 
     public long MaterialMinedTotal { get; internal set; }
 
+    public long ShieldAbsorbedTotal { get; internal set; }
+
+    public long ArmorAbsorbedTotal { get; internal set; }
+
+    public long ShieldRegeneratedTotal { get; internal set; }
+
     public long ShotsMissed { get; internal set; }
 
     public long MaterialLootedTotal { get; internal set; }

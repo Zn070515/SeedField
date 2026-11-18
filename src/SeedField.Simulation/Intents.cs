@@ -133,6 +133,7 @@ public enum SimulationErrorCode
     NoDrill,
     DepositOutOfRange,
     DepositDepleted,
+    ModuleDisabled,
 }
 
 public sealed record IntentResult(
