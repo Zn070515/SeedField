@@ -44,7 +44,7 @@ dotnet test  SeedField.slnx   → 423 passed / 0 failed
   仿真 276 · Runtime.Js 120 · 仓库门禁 19 · Catalog 8
 ```
 
-- 规模：232 个 `.cs` / 38,069 行；166 个 `.md` / 10,227 行；42 篇 ADR；53 篇证据。
+- 规模：233 个 `.cs` / 38,174 行；168 个 `.md` / 10,367 行；43 篇 ADR；54 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -137,6 +137,7 @@ tests/SeedField.Repository.Tests/
 - 教程进度持久化：游戏存档 v4 新增 `tutorials`（文明 + 步骤 + 完成 Tick），读档校验 Tick 不晚于世界 Tick、步骤/文明不重复；v1–v3 旧档按空进度处理；`--save-smoke` 输出 `tutorial=5/5`。
 - M1 完成（ADR-0042）：`DevicePrograms` 内置 idle/scout/sentry/relay 模板（显式 `ControllerProgramId` 才启用，未知 id 回退文明程序）；`ConstructionChallenges` 提供 5 分支 + AND 网络 + OR 前沿挑战，不阻塞 PvE；正常启动从 Tick 0 开始，HUD 列出步骤/挑战/NEXT，`--tutorial-smoke` 验证首启状态。
 - 美术方向：世界层改为 Mindustry 式正交俯视地块 + 末日废土（A-02、ADR-0041）；`MindustryStyle` 样片含四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；旧 35° 斜俯视降为历史对照，Main 迁移顺序见 ADR。
+- 废土资产包 v1（ADR-0043）：Blender 生成 9 建筑 + 3 道具 + 4 矿脉（512 RGBA、程序化锈蚀/凹凸、暖光），程序化生成 4 张无缝地表；`MindustryStyle` 全部改用真实纹理并保留程序化回退；manifest 注册 20 个新资产，ArtAssetTests 通过；FLUX 概念图仅作内部参考。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
@@ -454,6 +455,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0040](adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
 | [ADR-0041](adr/ADR-0041-wasteland-topdown-map-art-direction.md) | 世界层美术改为废土正交俯视地块地图 |
 | [ADR-0042](adr/ADR-0042-m1-templates-challenges-first-run.md) | M1 完成：内置策略模板、构造挑战与首启教程 |
+| [ADR-0043](adr/ADR-0043-wasteland-asset-pack-v1.md) | 废土正交俯视资产包 v1 与 Blender/ComfyUI 管线 |
 
 ## 8. 下一步（按依赖顺序）
 

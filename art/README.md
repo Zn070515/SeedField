@@ -7,6 +7,32 @@
 > 不改 SimulationCore / 存档 / Jint / 离线包安全契约。
 > 工作分支：`art/gate3-world`；决策见 ADR-0024、ADR-0025、ADR-0026。
 
+## 0. 当前方向：废土正交俯视资产包 v1
+
+2026-11-18 新增（ADR-0043）：
+
+| 类别 | 内容 |
+|---|---|
+| 建筑 9 | core / generator / relay / turret / drill / foundry / hostile / scout / sentry |
+| 道具 3 | barrels / sandbags / scrap |
+| 矿脉 4 | copper / lead / titanium / coal |
+| 地表 4 | dirt / sand / ash / rust（无缝 512） |
+| 样片 | `game/SeedField.Game/Scripts/MindustryStyle.cs` + `Scenes/MindustryStyle.tscn` |
+| 总览 | `art/renders/wasteland_pack_v1.png` |
+| 截图 | `game/SeedField.Game/screenshots/art-mindustry-style.png` |
+
+```powershell
+blender --background --factory-startup --python art/blender/render_wasteland_assets.py -- `
+  --output game/SeedField.Game/Art/style_topdown --size 512
+python tools/generate_terrain_tiles.py --output game/SeedField.Game/Art/style_topdown
+python art/blender/make_wasteland_sheet.py
+python tools/build_art_manifest.py
+```
+
+- ComfyUI/FLUX.1-dev 概念图只放 `art/reference/concepts/`，**非商用许可，不进运行时**。
+- 所有资产仍是 `style-test-not-final`；正式质量需要高模、PBR 贴图集、手工 decal 与
+  光照/AO 预算。
+
 ## 1. 本轮交付
 
 | 样片 | 内容 |
