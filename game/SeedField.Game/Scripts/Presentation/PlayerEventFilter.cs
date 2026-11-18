@@ -70,6 +70,8 @@ public static class PlayerEventFilter
             OreSmelted smelted => visibleEntityIds.Contains(smelted.EntityId.Value),
             ComponentsFabricated fabricated =>
                 visibleEntityIds.Contains(fabricated.EntityId.Value),
+            MaterialArrived arrived => true,
+            EnergyArrived arrived => true,
             MaterialShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             EnergyShipped shipped => visibleEntityIds.Contains(shipped.FromEntityId.Value),
             WreckCreated wreck => wreck.OwnerCivilizationId == "A",

@@ -40,11 +40,11 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 466 passed / 0 failed
-  仿真 315 · Runtime.Js 124 · 仓库门禁 19 · Catalog 8
+dotnet test  SeedField.slnx   → 500 passed / 0 failed
+  仿真 346 · Runtime.Js 124 · 仓库门禁 22 · Catalog 8
 ```
 
-- 规模：246 个 `.cs` / 40,900 行；178 个 `.md` / 10,915 行；48 篇 ADR；59 篇证据。
+- 规模：252 个 `.cs` / 41,575 行；181 个 `.md` / 11,049 行；49 篇 ADR；60 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -143,6 +143,7 @@ tests/SeedField.Repository.Tests/
 - M2 生产链（ADR-0046）：区域库存新增 Ore/Components；钻机产 Ore，`SmelterModule` 转 M，`FabricatorModule` 产构件（有区域上限）；`ComponentCost` 进入建造队列，M/构件同时扣费与退款；`BuildTicks` 保留；世界存档 v22、哈希与 v21 迁移；事件日志覆盖采矿/冶炼/构件。
 - 侦察/观察/生产控制（ADR-0047）：矿脉需传感器/钻机侦察发现，`DiscoveredDeposits` 进存档/哈希（v23）；观察新增装甲/护盾/武器类型/生产模块/生产开关与区域库存；`SetProductionIntent` 可暂停/恢复被动冶炼与构件生产（v24）；三套序列化与 TypeScript 契约同步。
 - 多矿种配方（ADR-0048）：Ore 按 Copper/Lead/Titanium/Coal 分库存；钻机按矿脉矿种入库；`SmeltingRecipes` 铜 1→1M、铅 2→1M+1 构件、钛 2→3M、煤 2→1M+4 能源；`PreferredOre` 或库存最多者选择；观察新增四种矿库存；世界存档 v25 与 v24 单 Ore 迁移。
+- 测试体系加强（ADR-0049）：经济 golden fixture + 20 种子经济不变量 fuzz + 损坏存档矩阵；展示覆盖门禁（每个事件必须有 filter/日志决策，白名单只减不增）；意图契约门禁（IntentKind ↔ Jint ↔ TypeScript）；ADR-0040+ 必须有验证/回滚段。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
@@ -466,6 +467,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0046](adr/ADR-0046-production-chain-ore-smelting-components.md) | M2 生产链：矿石、冶炼、构件与建造消耗 |
 | [ADR-0047](adr/ADR-0047-deposit-discovery-observation-and-production-control.md) | 矿脉侦察发现、观察扩展与生产开关 |
 | [ADR-0048](adr/ADR-0048-multi-ore-recipes-and-byproducts.md) | 多矿种配方与副产物 |
+| [ADR-0049](adr/ADR-0049-test-system-hardening-artflow-inspired.md) | 测试体系加强：经济 golden/fuzz、事件与意图门禁 |
 
 ## 8. 下一步（按依赖顺序）
 

@@ -105,6 +105,38 @@ public sealed partial class DocumentationTests
     }
 
     [Fact]
+    public void RecentAdrsCarryValidationAndRollbackSections()
+    {
+        var root = FindRepoRoot();
+        var adrDirectory = Path.Combine(root, "docs", "engineering", "adr");
+        var problems = new List<string>();
+
+        foreach (var path in Directory.EnumerateFiles(adrDirectory, "ADR-*.md"))
+        {
+            var name = Path.GetFileName(path);
+            var number = int.Parse(name[4..8]);
+            if (number < 40)
+            {
+                continue;
+            }
+
+            var text = File.ReadAllText(path);
+            foreach (var heading in new[] { "## 验证", "## 回滚" })
+            {
+                if (!text.Contains(heading, StringComparison.Ordinal))
+                {
+                    problems.Add($"{name}: missing '{heading}'");
+                }
+            }
+        }
+
+        Assert.True(
+            problems.Count == 0,
+            "Recent ADR validation/rollback problems:" +
+            Environment.NewLine + string.Join(Environment.NewLine, problems));
+    }
+
+    [Fact]
     public void PlansHaveVerificationRollbackAndNoPlaceholders()
     {
         var root = FindRepoRoot();
