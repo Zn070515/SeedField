@@ -1178,6 +1178,646 @@
           }
         }
       ]
+    },
+    {
+      "assetId": "waste_core.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 420,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_core_topdown_000.png",
+          "sha256": "11af030094c7fbfd04b6d10cbe74fbad0258c83dfb50e078b019ad13dc2a59b3",
+          "alphaBBox": [
+            41,
+            41,
+            470,
+            470
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_generator.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 340,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_generator_topdown_000.png",
+          "sha256": "9576bc5c501ed1b464428eb1aba4c875dd7ded51215b832c4a6d7063b22040a5",
+          "alphaBBox": [
+            62,
+            123,
+            449,
+            469
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_relay.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 320,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_relay_topdown_000.png",
+          "sha256": "8b85f8d377ec8f7211294096b5dd689233bca487384dcdec457232a0facb582d",
+          "alphaBBox": [
+            81,
+            82,
+            429,
+            429
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_turret.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 320,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_turret_topdown_000.png",
+          "sha256": "19cdefb8a44a7a13e523b628a26f06322e294773a6a75fb1968de202b362c2cc",
+          "alphaBBox": [
+            78,
+            61,
+            473,
+            451
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_drill.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 360,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_drill_topdown_000.png",
+          "sha256": "1aa541cd66ddcaf76aade7f66091b3aaa1562971a776053c88ab6b2e6ad3c08e",
+          "alphaBBox": [
+            111,
+            93,
+            477,
+            411
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_foundry.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 380,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_foundry_topdown_000.png",
+          "sha256": "0f330ff8db98b47d2483be12b72006d337e4bfb39393a445b68ef3296df072a0",
+          "alphaBBox": [
+            71,
+            86,
+            437,
+            394
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_hostile.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 360,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_hostile_topdown_000.png",
+          "sha256": "45e9711fdc319b49def5aa0ca42dbdd92442304ac024e4e8829e31520b3b4224",
+          "alphaBBox": [
+            72,
+            72,
+            440,
+            420
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_scout.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_scout_topdown_000.png",
+          "sha256": "98afcf7b7753214927d45208a7c1846017ffd79104f3ec1fdd5a159f614c73ec",
+          "alphaBBox": [
+            89,
+            117,
+            386,
+            392
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_sentry.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_sentry_topdown_000.png",
+          "sha256": "d18edfb35a0d0cb1d034c8ba51e59e0339071887821364b9f73ca4d9ef8a28c4",
+          "alphaBBox": [
+            140,
+            105,
+            464,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "prop_barrels.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 220,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/prop_barrels_topdown_000.png",
+          "sha256": "234ee4e7ec459868a6e3bce7ab19d233ef760487c27352a36dc9a016328a526a",
+          "alphaBBox": [
+            64,
+            67,
+            459,
+            404
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "prop_sandbags.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 260,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/prop_sandbags_topdown_000.png",
+          "sha256": "7092784cb2ee3b1dca83c77de75385ac9667a77bfaa6f02d866491ba61d6db6a",
+          "alphaBBox": [
+            47,
+            153,
+            453,
+            424
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "prop_scrap.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 240,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/prop_scrap_topdown_000.png",
+          "sha256": "788fb141a44fa28c00229be4f2426571a53bd4d76f892e09288c800d1fe32d99",
+          "alphaBBox": [
+            106,
+            173,
+            413,
+            413
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "ore_copper.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 300,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/ore_copper_topdown_000.png",
+          "sha256": "7c986bdd88e29ad86ee339bb31a29be5628fa82895e1214445878b7d463d40b1",
+          "alphaBBox": [
+            27,
+            80,
+            443,
+            420
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "ore_lead.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 300,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/ore_lead_topdown_000.png",
+          "sha256": "4c8663a287de9981e2b630ebd926a1ce28013b93cdb7b06ad979d386eb244008",
+          "alphaBBox": [
+            51,
+            44,
+            465,
+            462
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "ore_titanium.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 300,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/ore_titanium_topdown_000.png",
+          "sha256": "26a81d3a40c6507a1010202d458603f6f7ffcb4d204c16c7e027e1b0ed027ab9",
+          "alphaBBox": [
+            40,
+            83,
+            464,
+            465
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "ore_coal.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 300,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_wasteland_assets.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/ore_coal_topdown_000.png",
+          "sha256": "d799f149d1de1d31af924419d0bd19a9dfbcf01565bbd768c0d3d7f3ff7bab68",
+          "alphaBBox": [
+            76,
+            59,
+            447,
+            433
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "terrain_dirt.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_dirt_topdown_000.png",
+          "sha256": "7de8e6bf457c585b9e0ba150a935dee9a7103ba413007dccd007d38373cfff33",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_dirt_topdown_000_normal.png",
+            "sha256": "064ec8c4502f2255afdc7adea0d14a465f2f5e9ba7134604a59aca1ffa811cd9",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "assetId": "terrain_sand.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_sand_topdown_000.png",
+          "sha256": "95c1ff33de5d9c31f356c0512bc7cfeb5c9387c49b768e8fed10bf85de057246",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_sand_topdown_000_normal.png",
+            "sha256": "ebe6c8ba4cb74fdd3a953b122c9eafda068e3ae653a5edac2acd407cda9a86b9",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "assetId": "terrain_ash.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_ash_topdown_000.png",
+          "sha256": "2585475f51147973bc4f097c81bed8c28da649f5208d0fa2ade8ff3a04393454",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_ash_topdown_000_normal.png",
+            "sha256": "0d725c7f71d2276c526d40f87a624e87af66df511aaceedb7a98efa0a2386698",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "assetId": "terrain_rust.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 160,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "tools/generate_terrain_tiles.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/terrain_rust_topdown_000.png",
+          "sha256": "016fa1196609f7b475eae4aec43026420f6b82003e31c88e7026f748c39f7951",
+          "alphaBBox": [
+            0,
+            0,
+            511,
+            511
+          ],
+          "normal": {
+            "path": "style_topdown/terrain_rust_topdown_000_normal.png",
+            "sha256": "f5f681dd78e341f21c6700e741bb2cdf43f48a228fb06b3f3277195605df720e",
+            "alphaBBox": [
+              0,
+              0,
+              511,
+              511
+            ]
+          }
+        }
+      ]
     }
   ]
 }

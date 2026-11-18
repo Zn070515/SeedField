@@ -131,6 +131,55 @@ def road(size: int, seed: int) -> Image.Image:
     return image
 
 
+def wasteland_tile(
+    size: int,
+    seed: int,
+    base: tuple[int, int, int],
+    spread: float,
+    speck: tuple[int, int, int],
+    embers: bool = False,
+) -> Image.Image:
+    height = height_field(size, seed)
+    image = Image.new("RGBA", (size, size))
+    pixels = image.load()
+    for y in range(size):
+        for x in range(size):
+            h = height[y * size + x]
+            tone = spread * h
+            pixels[x, y] = (
+                int(base[0] + tone),
+                int(base[1] + tone * 0.82),
+                int(base[2] + tone * 0.62),
+                255,
+            )
+
+    draw = ImageDraw.Draw(image)
+    rng = random.Random(seed + 11)
+    for _ in range(90):
+        x = rng.randrange(4, size - 4)
+        y = rng.randrange(4, size - 4)
+        radius = rng.choice((1, 1, 2, 3))
+        alpha = rng.randrange(90, 180)
+        draw.ellipse(
+            (x - radius, y - radius, x + radius, y + radius),
+            fill=(*speck, alpha),
+        )
+    for _ in range(7):
+        x = rng.randrange(32, size - 32)
+        y = rng.randrange(32, size - 32)
+        for _ in range(rng.randrange(16, 34)):
+            nx = min(size - 4, max(4, x + rng.choice((-2, -1, 0, 1, 2))))
+            ny = min(size - 4, max(4, y + rng.choice((-2, -1, 0, 1, 2))))
+            draw.line((x, y, nx, ny), fill=(base[0] // 2, base[1] // 2, base[2] // 2, 190), width=1)
+            x, y = nx, ny
+    if embers:
+        for _ in range(26):
+            x = rng.randrange(8, size - 8)
+            y = rng.randrange(8, size - 8)
+            draw.point((x, y), fill=(196, 96, 38, 220))
+    return image
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
@@ -141,10 +190,36 @@ def main() -> None:
     tiles = (
         ("terrain_concrete", concrete(options.size, 71)),
         ("terrain_road", road(options.size, 83)),
+        (
+            "terrain_dirt",
+            wasteland_tile(options.size, 101, (44, 34, 24), 26.0, (78, 56, 34)),
+        ),
+        (
+            "terrain_sand",
+            wasteland_tile(options.size, 103, (62, 50, 32), 30.0, (104, 82, 46)),
+        ),
+        (
+            "terrain_ash",
+            wasteland_tile(options.size, 107, (38, 38, 40), 20.0, (66, 64, 66)),
+        ),
+        (
+            "terrain_rust",
+            wasteland_tile(
+                options.size, 109, (58, 30, 20), 28.0, (108, 54, 32), embers=True
+            ),
+        ),
     )
+    seeds = {
+        "terrain_concrete": 71,
+        "terrain_road": 83,
+        "terrain_dirt": 101,
+        "terrain_sand": 103,
+        "terrain_ash": 107,
+        "terrain_rust": 109,
+    }
     for name, image in tiles:
         image.save(options.output / f"{name}_topdown_000.png")
-        normal_map(height_field(options.size, 71 if name == "terrain_concrete" else 83), options.size).save(
+        normal_map(height_field(options.size, seeds[name]), options.size).save(
             options.output / f"{name}_topdown_000_normal.png"
         )
         print(f"TERRAIN_TILE {name}")

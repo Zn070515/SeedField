@@ -54,27 +54,46 @@ public partial class MindustryStyle : Node2D
         int W,
         int H,
         string Label,
+        string Asset,
         Color Fill,
         Color Accent);
 
     private static readonly Structure[] Structures =
     {
-        new(1, 4, 2, 2, "SEED CORE", new Color("1b2927"), new Color("7fe0cf")),
-        new(5, 3, 1, 1, "POWER", new Color("33291f"), new Color("c9a24a")),
-        new(5, 5, 1, 1, "TURRET", new Color("352a22"), new Color("b5543f")),
-        new(8, 2, 1, 1, "DRILL", new Color("33291f"), new Color("c47a45")),
-        new(9, 6, 1, 1, "RELAY", new Color("2b2a24"), new Color("7fa9a0")),
-        new(13, 4, 2, 2, "HOSTILE", new Color("301f1a"), new Color("b5543f")),
-        new(17, 5, 1, 1, "FOUNDRY", new Color("2e2a22"), new Color("a89a85")),
+        new(1, 4, 2, 2, "SEED CORE", "waste_core", new Color("1b2927"), new Color("7fe0cf")),
+        new(5, 3, 1, 1, "POWER", "waste_generator", new Color("33291f"), new Color("c9a24a")),
+        new(5, 5, 1, 1, "TURRET", "waste_turret", new Color("352a22"), new Color("b5543f")),
+        new(8, 2, 1, 1, "DRILL", "waste_drill", new Color("33291f"), new Color("c47a45")),
+        new(9, 6, 1, 1, "RELAY", "waste_relay", new Color("2b2a24"), new Color("7fa9a0")),
+        new(13, 4, 2, 2, "HOSTILE", "waste_hostile", new Color("301f1a"), new Color("b5543f")),
+        new(17, 5, 1, 1, "FOUNDRY", "waste_foundry", new Color("2e2a22"), new Color("a89a85")),
     };
 
-    private readonly record struct Unit(float X, float Y, float AngleDeg, Color Color, string Label);
+    private readonly record struct Unit(
+        float X,
+        float Y,
+        float AngleDeg,
+        Color Color,
+        string Label,
+        string Asset);
 
     private static readonly Unit[] Units =
     {
-        new(6.4f, 6.8f, -28f, new Color("7fe0cf"), "A1"),
-        new(7.4f, 7.3f, -12f, new Color("7fe0cf"), "A2"),
-        new(12.2f, 3.1f, 154f, new Color("b5543f"), "B1"),
+        new(6.4f, 6.8f, -28f, new Color("7fe0cf"), "A1", "waste_scout"),
+        new(7.4f, 7.3f, -12f, new Color("7fe0cf"), "A2", "waste_scout"),
+        new(11.8f, 3.1f, 180f, new Color("b5543f"), "B1", "waste_sentry"),
+    };
+
+    private static readonly (string Asset, float X, float Y)[] Props =
+    {
+        ("prop_barrels", 3.2f, 8.2f),
+        ("prop_sandbags", 6.6f, 5.2f),
+        ("prop_scrap", 15.0f, 8.4f),
+        ("prop_barrels", 18.4f, 2.2f),
+        ("prop_sandbags", 3.8f, 2.0f),
+        ("prop_scrap", 8.0f, 8.8f),
+        ("prop_barrels", 12.4f, 8.6f),
+        ("prop_scrap", 16.4f, 6.6f),
     };
 
     public override void _Ready()
@@ -114,6 +133,7 @@ public partial class MindustryStyle : Node2D
         DrawDebris();
         DrawGridOverlay();
         DrawPatches();
+        DrawProps();
         DrawStructures();
         DrawUnits();
         DrawHud();
@@ -125,6 +145,23 @@ public partial class MindustryStyle : Node2D
         {
             for (var x = 0; x < Cols; x++)
             {
+                var tile = new Rect2(
+                    OriginX + (x * Tile),
+                    OriginY + (y * Tile),
+                    Tile,
+                    Tile);
+                var terrain = Tex(ZoneAsset(ZoneAt(x, y)));
+                if (terrain is not null)
+                {
+                    DrawTextureRect(terrain, tile, false);
+                    if ((Hash(x, y) % 5) == 0)
+                    {
+                        DrawRect(tile, new Color(0f, 0f, 0f, 0.06f));
+                    }
+
+                    continue;
+                }
+
                 var shade = Hash(x, y) % 4;
                 var ground = ZoneAt(x, y) switch
                 {
@@ -288,34 +325,44 @@ public partial class MindustryStyle : Node2D
 
     private void DrawPatches()
     {
-        for (var y = 0; y < Rows; y++)
+        foreach (var patch in Patches)
         {
-            for (var x = 0; x < Cols; x++)
+            var texture = Tex(OreAsset(patch.Ore));
+            var center = new Vector2(
+                OriginX + ((patch.X + 0.5f) * Tile),
+                OriginY + ((patch.Y + 0.5f) * Tile));
+            var size = (patch.Radius * 1.4f + 1.2f) * Tile;
+            if (texture is null)
             {
-                var ore = OreAt(x, y);
-                if (ore == Ore.None)
-                {
-                    continue;
-                }
-
-                var center = new Vector2(
-                    OriginX + (x * Tile) + (Tile * 0.5f),
-                    OriginY + (y * Tile) + (Tile * 0.5f));
-                var color = OreColor(ore);
-                DrawRect(
-                    new Rect2(OriginX + (x * Tile) + 2, OriginY + (y * Tile) + 2, Tile - 4, Tile - 4),
-                    new Color(color, 0.10f));
-
-                var count = 3 + (Hash(x, y) % 3);
-                for (var i = 0; i < count; i++)
-                {
-                    var h = Hash(x * 31 + i, y * 17 + i);
-                    var px = (h % 44) + 10;
-                    var py = ((h / 44) % 44) + 10;
-                    var size = 2.5f + (i % 3);
-                    DrawCircle(center + new Vector2(px - 32, py - 32), size, color);
-                }
+                DrawCircle(center, size * 0.35f, OreColor(patch.Ore));
+                continue;
             }
+
+            DrawTextureRect(
+                texture,
+                new Rect2(center - new Vector2(size, size) * 0.5f, new Vector2(size, size)),
+                false);
+        }
+    }
+
+    private void DrawProps()
+    {
+        foreach (var (asset, x, y) in Props)
+        {
+            var texture = Tex(asset);
+            if (texture is null)
+            {
+                continue;
+            }
+
+            var center = new Vector2(
+                OriginX + ((x + 0.5f) * Tile),
+                OriginY + ((y + 0.5f) * Tile));
+            const float size = 62f;
+            DrawTextureRect(
+                texture,
+                new Rect2(center - new Vector2(size, size) * 0.5f, new Vector2(size, size)),
+                false);
         }
     }
 
@@ -328,16 +375,31 @@ public partial class MindustryStyle : Node2D
                 OriginY + (structure.Y * Tile) + 5,
                 (structure.W * Tile) - 10,
                 (structure.H * Tile) - 10);
-            DrawRect(rect.Grow(2), new Color("0b0f12"));
-            DrawRect(rect, structure.Fill);
-            DrawRect(rect, new Color("06090b"), filled: false, width: 3f);
-            DrawRect(
-                rect.Grow(-5),
-                new Color(structure.Accent, 0.16f),
-                filled: false,
-                width: 2f);
+            var texture = Tex(structure.Asset);
+            if (texture is not null)
+            {
+                var size = rect.Size * 1.45f;
+                var origin = rect.Position + ((rect.Size - size) * 0.5f);
+                DrawTextureRect(
+                    texture,
+                    new Rect2(origin + new Vector2(4f, 6f), size),
+                    false,
+                    new Color(0f, 0f, 0f, 0.35f));
+                DrawTextureRect(texture, new Rect2(origin, size), false);
+            }
+            else
+            {
+                DrawRect(rect.Grow(2), new Color("0b0f12"));
+                DrawRect(rect, structure.Fill);
+                DrawRect(rect, new Color("06090b"), filled: false, width: 3f);
+                DrawRect(
+                    rect.Grow(-5),
+                    new Color(structure.Accent, 0.16f),
+                    filled: false,
+                    width: 2f);
+                DrawBlockDetail(rect, structure.Accent);
+            }
 
-            DrawBlockDetail(rect, structure.Accent);
             DrawString(
                 ThemeDB.FallbackFont,
                 new Vector2(rect.Position.X, rect.End.Y + 15),
@@ -378,19 +440,34 @@ public partial class MindustryStyle : Node2D
             var position = new Vector2(
                 OriginX + (unit.X * Tile),
                 OriginY + (unit.Y * Tile));
-            var angle = Mathf.DegToRad(unit.AngleDeg);
-            var forward = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            var right = new Vector2(-forward.Y, forward.X);
-            var nose = position + (forward * 17f);
-            var left = position - (forward * 9f) - (right * 9f);
-            var back = position - (forward * 12f);
-            var rightPoint = position - (forward * 9f) + (right * 9f);
+            var texture = Tex(unit.Asset);
+            if (texture is not null)
+            {
+                const float size = 64f;
+                DrawSetTransform(position, Mathf.DegToRad(unit.AngleDeg), Vector2.One);
+                DrawTextureRect(
+                    texture,
+                    new Rect2(-size * 0.5f, -size * 0.5f, size, size),
+                    false);
+                DrawSetTransform(Vector2.Zero, 0f, Vector2.One);
+            }
+            else
+            {
+                var angle = Mathf.DegToRad(unit.AngleDeg);
+                var forward = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                var right = new Vector2(-forward.Y, forward.X);
+                var nose = position + (forward * 17f);
+                var left = position - (forward * 9f) - (right * 9f);
+                var back = position - (forward * 12f);
+                var rightPoint = position - (forward * 9f) + (right * 9f);
 
-            DrawPolygon(
-                new[] { nose, rightPoint, back, left },
-                new[] { unit.Color, unit.Color, new Color(unit.Color, 0.75f), unit.Color });
-            DrawLine(back, nose, new Color(unit.Color.Lightened(0.35f)), 1.5f);
-            DrawCircle(nose, 2.5f, Colors.White);
+                DrawPolygon(
+                    new[] { nose, rightPoint, back, left },
+                    new[] { unit.Color, unit.Color, new Color(unit.Color, 0.75f), unit.Color });
+                DrawLine(back, nose, new Color(unit.Color.Lightened(0.35f)), 1.5f);
+                DrawCircle(nose, 2.5f, Colors.White);
+            }
+
             DrawString(
                 ThemeDB.FallbackFont,
                 position + new Vector2(-9, 26),

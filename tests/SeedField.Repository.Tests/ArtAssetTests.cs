@@ -103,7 +103,8 @@ public sealed class ArtAssetTests
             }
 
             var name = assetId.Split('.')[0];
-            var isTerrain = name is "terrain_concrete" or "terrain_road";
+            var isTerrain = name is "terrain_concrete" or "terrain_road"
+                or "terrain_dirt" or "terrain_sand" or "terrain_ash" or "terrain_rust";
             if (ExpectedStates.TryGetValue(name, out var expectedState))
             {
                 var actualState = asset.TryGetProperty("state", out var stateElement)

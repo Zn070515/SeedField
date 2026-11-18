@@ -45,6 +45,7 @@
 | M1 默认策略 | `builtin.idle/scout/sentry/relay` 模板；蓝图显式 `ControllerProgramId` 启用，未知 id 回退文明程序；relay 心跳可独立完成通信分支 |
 | M1 首启流程 | 正常启动从 Tick 0 开始（截图/冒烟/基准仍预跑）；`--tutorial-smoke` 验证 `tick=0 tutorial=0/5 pve=False` |
 | 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
+| 废土资产包 v1 | Blender 9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；程序化锈蚀/凹凸与暖光；总览 `wasteland_pack_v1.png`（ADR-0043） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
 | 跨区物流 | 多跳链路运输 M，途中不可用，按路径总延迟到达；链路物资容量可限制 |
 | 跨区能源 | 区域电网库存；实体可存入/抽取；跨区运输带延迟与链路能源容量 |
@@ -207,6 +208,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`wasteland map sample`](docs/engineering/evidence/2026-11-18-wasteland-map-style.md) | 正交俯视地块、矿脉、锈蚀建筑样片与截图 |
 | [`M1 completion`](docs/engineering/evidence/2026-11-18-m1-completion.md) | 默认策略模板、构造挑战、首启流程与 423 测试证据 |
 | [`ADR-0042`](docs/engineering/adr/ADR-0042-m1-templates-challenges-first-run.md) | M1 完成：内置策略模板、构造挑战与首启教程 |
+| [`ADR-0043`](docs/engineering/adr/ADR-0043-wasteland-asset-pack-v1.md) | 废土正交俯视资产包 v1 与 Blender/ComfyUI 管线 |
+| [`wasteland asset pack`](docs/engineering/evidence/2026-11-18-wasteland-asset-pack-v1.md) | 20 个 Blender 资产、4 张地表、Godot 样片与门禁证据 |
 
 ## 工程原则
 
