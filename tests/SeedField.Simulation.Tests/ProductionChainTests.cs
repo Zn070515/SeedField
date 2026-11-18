@@ -115,6 +115,37 @@ public sealed class ProductionChainTests
     }
 
     [Fact]
+    public void ProductionCanBePausedAndResumed()
+    {
+        var world = World(
+            new EntityDefinition(
+                new EntityId(1),
+                "A",
+                "r0",
+                new Vec2(100, 100),
+                MaxHealth: 100,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Smelter: new SmelterModule(5, 1)),
+            ore: 20);
+        var engine = new SimulationEngine(world);
+        engine.Step();
+        Assert.Equal(5, world.Regions["r0"].GetMaterial("A"));
+
+        engine.Step(new Intent[] { new SetProductionIntent(new EntityId(1), false) });
+        Assert.Equal(10, world.Regions["r0"].GetMaterial("A"));
+        Assert.False(world.FindEntity(new EntityId(1))!.ProductionEnabled);
+
+        engine.Step();
+        Assert.Equal(10, world.Regions["r0"].GetMaterial("A"));
+
+        engine.Step(new Intent[] { new SetProductionIntent(new EntityId(1), true) });
+        engine.Step();
+        Assert.Equal(15, world.Regions["r0"].GetMaterial("A"));
+    }
+
+    [Fact]
     public void SaveRoundTripKeepsOreComponentsAndProductionModules()
     {
         var world = World(

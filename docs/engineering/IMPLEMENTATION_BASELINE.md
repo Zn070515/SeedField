@@ -40,11 +40,11 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 448 passed / 0 failed
-  仿真 298 · Runtime.Js 123 · 仓库门禁 19 · Catalog 8
+dotnet test  SeedField.slnx   → 453 passed / 0 failed
+  仿真 302 · Runtime.Js 124 · 仓库门禁 19 · Catalog 8
 ```
 
-- 规模：244 个 `.cs` / 40,178 行；174 个 `.md` / 10,718 行；46 篇 ADR；57 篇证据。
+- 规模：244 个 `.cs` / 40,454 行；176 个 `.md` / 10,814 行；47 篇 ADR；58 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -141,6 +141,7 @@ tests/SeedField.Repository.Tests/
 - M2 采集闭环（ADR-0044）：`ResourceDepositState` 有限矿脉（区域/位置/半径/余量/产出）与 `DrillModule`；`MineIntent` 取范围内最近未耗尽矿脉，扣能量、产 M、扣余量并发 `OreMined`；`OreMinedTotal`；世界存档 v20、哈希与 v19 迁移；Jint `mine`、TypeScript 契约、`builtin.harvester.v1` 与初始钻机；矿脉进入 Observation（文明按己方区域、设备按传感器/钻机视野），harvester 可先移动再开采；Godot 绘制矿脉余量/耗尽状态。
 - M4 战斗深度 v1（ADR-0045）：`ArmorModule` 固定减伤、`WeaponKind.Direct/Beam`（Beam 忽略装甲）、`ShieldModule` 先吸收/延迟再生/只花本地能量；≤50% 生命停再生、≤25% 禁用武器/传感器/驱动（`ModuleDisabled`）；`EntityDamaged` 携带护盾/装甲吸收与三项统计；世界存档 v21、哈希与 v20 迁移；HUD 护盾条与受伤日志。
 - M2 生产链（ADR-0046）：区域库存新增 Ore/Components；钻机产 Ore，`SmelterModule` 转 M，`FabricatorModule` 产构件（有区域上限）；`ComponentCost` 进入建造队列，M/构件同时扣费与退款；`BuildTicks` 保留；世界存档 v22、哈希与 v21 迁移；事件日志覆盖采矿/冶炼/构件。
+- 侦察/观察/生产控制（ADR-0047）：矿脉需传感器/钻机侦察发现，`DiscoveredDeposits` 进存档/哈希（v23）；观察新增装甲/护盾/武器类型/生产模块/生产开关与区域库存；`SetProductionIntent` 可暂停/恢复被动冶炼与构件生产（v24）；三套序列化与 TypeScript 契约同步。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
@@ -462,6 +463,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0044](adr/ADR-0044-regional-deposits-and-drills.md) | 区域矿脉、钻机采集与 M 本地闭环 |
 | [ADR-0045](adr/ADR-0045-combat-depth-armor-shields-weapon-kinds.md) | M4 战斗深度 v1：装甲、护盾、武器种类与模块损伤 |
 | [ADR-0046](adr/ADR-0046-production-chain-ore-smelting-components.md) | M2 生产链：矿石、冶炼、构件与建造消耗 |
+| [ADR-0047](adr/ADR-0047-deposit-discovery-observation-and-production-control.md) | 矿脉侦察发现、观察扩展与生产开关 |
 
 ## 8. 下一步（按依赖顺序）
 

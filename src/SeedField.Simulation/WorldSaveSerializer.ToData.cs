@@ -262,6 +262,12 @@ public static partial class WorldSaveSerializer
                     deposit.Remaining,
                     deposit.YieldPerTick))
                 .ToArray(),
-            world.NextDepositId);
+            world.NextDepositId,
+            world.DiscoveredDeposits
+                .OrderBy(entry => entry.Key, StringComparer.Ordinal)
+                .Select(entry => new DiscoverySaveData(
+                    entry.Key,
+                    entry.Value.ToArray()))
+                .ToArray());
     }
 }

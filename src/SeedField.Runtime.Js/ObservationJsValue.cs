@@ -16,6 +16,8 @@ internal static class ObservationJsValue
         "entityId", "civilizationId", "regionId", "x", "y", "health", "maxHealth",
         "isSelf", "hasSensor", "sensorRangeMm", "hasWeapon", "weaponRangeMm",
         "hasDrive", "hasComm", "hasDrill", "drillRangeMm",
+        "armor", "shield", "maxShield", "weaponKind", "hasSmelter", "hasFabricator",
+        "productionEnabled",
     });
 
     private static readonly JsObjectLayout MessageLayout = new(new[]
@@ -69,7 +71,7 @@ internal static class ObservationJsValue
     {
         "tick", "civilizationId", "entities", "messages", "shipments",
         "energyShipments", "viewerEntityId", "controlPoints", "match", "treaties",
-        "treatyProposals", "tradeOffers", "deposits",
+        "treatyProposals", "tradeOffers", "deposits", "material", "ore", "components",
     });
 
     // JsObject.Create copies the span into a property slot table. Reusing one
@@ -91,7 +93,7 @@ internal static class ObservationJsValue
         for (var index = 0; index < entities.Length; index++)
         {
             var entity = observation.Entities[index];
-            var values = _entityScratch ??= new JsValue[16];
+            var values = _entityScratch ??= new JsValue[23];
             values[0] = entity.EntityId;
             values[1] = entity.CivilizationId;
             values[2] = entity.RegionId;
@@ -108,6 +110,13 @@ internal static class ObservationJsValue
             values[13] = entity.HasComm;
             values[14] = entity.HasDrill;
             values[15] = entity.DrillRangeMm;
+            values[16] = entity.Armor;
+            values[17] = entity.Shield;
+            values[18] = entity.MaxShield;
+            values[19] = entity.WeaponKind;
+            values[20] = entity.HasSmelter;
+            values[21] = entity.HasFabricator;
+            values[22] = entity.ProductionEnabled;
             entities[index] = JsObject.Create(engine, EntityLayout, values);
         }
 
@@ -273,6 +282,9 @@ internal static class ObservationJsValue
                 new JsArray(engine, proposalValues),
                 new JsArray(engine, offerValues),
                 new JsArray(engine, depositValues),
+                observation.Material,
+                observation.Ore,
+                observation.Components,
             });
     }
 

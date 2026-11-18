@@ -35,7 +35,14 @@ internal static class ObservationExpander
                     hasDrive: row[12] === 1,
                     hasComm: row[13] === 1,
                     hasDrill: row[14] === 1,
-                    drillRangeMm: row[15]
+                    drillRangeMm: row[15],
+                    armor: row[16],
+                    shield: row[17],
+                    maxShield: row[18],
+                    weaponKind: s[row[19]],
+                    hasSmelter: row[20] === 1,
+                    hasFabricator: row[21] === 1,
+                    productionEnabled: row[22] === 1
                 };
             }
             o.entities = out;

@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static partial class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 22;
+    public const int CurrentSchemaVersion = 24;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -78,6 +78,7 @@ public static partial class WorldSaveSerializer
 
         LoadRegions(world, data);
         LoadDeposits(world, data);
+        LoadDiscoveries(world, data);
         LoadWrecks(world, data);
         LoadCombatRules(world, data);
         LoadLinks(world, data);

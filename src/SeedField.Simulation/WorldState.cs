@@ -115,6 +115,25 @@ public sealed class WorldState
     /// <summary>Finite material deposits by stable id.</summary>
     public SortedDictionary<long, ResourceDepositState> Deposits { get; } = new();
 
+    /// <summary>Deposit ids each civilization has scouted, by stable civilization id.</summary>
+    public SortedDictionary<string, SortedSet<long>> DiscoveredDeposits { get; } =
+        new(StringComparer.Ordinal);
+
+    public bool IsDepositDiscovered(string civilizationId, long depositId) =>
+        DiscoveredDeposits.TryGetValue(civilizationId, out var discovered) &&
+        discovered.Contains(depositId);
+
+    internal void DiscoverDeposit(string civilizationId, long depositId)
+    {
+        if (!DiscoveredDeposits.TryGetValue(civilizationId, out var discovered))
+        {
+            discovered = new SortedSet<long>();
+            DiscoveredDeposits.Add(civilizationId, discovered);
+        }
+
+        discovered.Add(depositId);
+    }
+
     /// <summary>Scenario rule: percent of blueprint material left as a wreck.</summary>
     public int WreckRecoveryPercent { get; internal set; }
 

@@ -31,6 +31,16 @@ public static partial class WorldStateHasher
         Append(ref hash, world.Random.State);
         Append(ref hash, world.NextWreckId);
         Append(ref hash, world.NextDepositId);
+        Append(ref hash, world.DiscoveredDeposits.Count);
+        foreach (var entry in world.DiscoveredDeposits)
+        {
+            Append(ref hash, entry.Key);
+            Append(ref hash, entry.Value.Count);
+            foreach (var depositId in entry.Value)
+            {
+                Append(ref hash, depositId);
+            }
+        }
         Append(ref hash, world.WreckRecoveryPercent);
         Append(ref hash, world.CombatHitChancePercent);
         Append(ref hash, world.CombatDamageVariancePercent);
@@ -192,6 +202,8 @@ public static partial class WorldStateHasher
                     Append(ref hash, entity.Fabricator.EnergyCostPerTick);
                     Append(ref hash, entity.Fabricator.MaxComponents);
                 }
+
+                Append(ref hash, entity.ProductionEnabled);
             }
         }
 

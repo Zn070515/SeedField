@@ -39,7 +39,7 @@ public sealed class ControllerContractTests
         foreach (var kind in new[]
                  {
                      "move", "attack", "send", "wait", "transfer",
-                     "sendEnergy", "drawEnergy", "mine",
+                     "sendEnergy", "drawEnergy", "mine", "production",
                  })
         {
             Assert.Contains($"\"{kind}\"", contract, StringComparison.Ordinal);
@@ -87,7 +87,9 @@ public sealed class ControllerContractTests
             {
                 new ObservedEntity(
                     1, "A", "r0", new Vec2(10, 20), 30, 40, true, true, 50,
-                    true, 60, true, true, true, 70),
+                    true, 60, true, true, true, 70,
+                    Armor: 3, Shield: 10, MaxShield: 20, WeaponKind: "Beam",
+                    HasSmelter: true, HasFabricator: true),
             },
             new[]
             {
@@ -123,7 +125,10 @@ public sealed class ControllerContractTests
             {
                 new ObservedDeposit(
                     20, "r0", OreKind.Copper, new Vec2(5, 6), 100, 50, 5),
-            });
+            },
+            Material: 5,
+            Ore: 6,
+            Components: 7);
 
     private static string FindRepoRoot()
     {

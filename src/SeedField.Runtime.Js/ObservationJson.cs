@@ -54,6 +54,13 @@ internal static partial class ObservationJson
             writer.WriteNumberValue(entity.HasComm ? 1 : 0);
             writer.WriteNumberValue(entity.HasDrill ? 1 : 0);
             writer.WriteNumberValue(entity.DrillRangeMm);
+            writer.WriteNumberValue(entity.Armor);
+            writer.WriteNumberValue(entity.Shield);
+            writer.WriteNumberValue(entity.MaxShield);
+            writer.WriteNumberValue(strings.Index(entity.WeaponKind));
+            writer.WriteNumberValue(entity.HasSmelter ? 1 : 0);
+            writer.WriteNumberValue(entity.HasFabricator ? 1 : 0);
+            writer.WriteNumberValue(entity.ProductionEnabled ? 1 : 0);
             writer.WriteEndArray();
         }
 
@@ -213,6 +220,10 @@ internal static partial class ObservationJson
         }
 
         writer.WriteEndArray();
+
+        writer.WriteNumber("material", observation.Material);
+        writer.WriteNumber("ore", observation.Ore);
+        writer.WriteNumber("components", observation.Components);
 
         // Last key so deleting it in JS leaves the original key order intact.
         writer.WriteStartArray("s");

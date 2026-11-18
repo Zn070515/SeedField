@@ -332,6 +332,20 @@ public sealed class JsController : IController
                 };
                 return true;
 
+            case "production":
+                if (!element.TryGetProperty("enabled", out var enabled) ||
+                    enabled.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                {
+                    error = "Production intent needs boolean 'enabled'.";
+                    return false;
+                }
+
+                intent = new SetProductionIntent(entityId, enabled.GetBoolean())
+                {
+                    IssuerCivilizationId = civilizationId,
+                };
+                return true;
+
             case "transfer":
                 if (!TryGetString(element, "targetRegionId", out var transferRegion) ||
                     string.IsNullOrWhiteSpace(transferRegion))

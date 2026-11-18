@@ -21,6 +21,13 @@ export interface ObservedEntity {
   hasComm: boolean;
   hasDrill: boolean;
   drillRangeMm: number;
+  armor: number;
+  shield: number;
+  maxShield: number;
+  weaponKind: "Direct" | "Beam";
+  hasSmelter: boolean;
+  hasFabricator: boolean;
+  productionEnabled: boolean;
 }
 
 export type OreKind = "Copper" | "Lead" | "Titanium" | "Coal";
@@ -129,6 +136,9 @@ export interface Observation {
   treatyProposals: ObservedTreatyProposal[];
   tradeOffers: ObservedTradeOffer[];
   deposits: ObservedDeposit[];
+  material: number;
+  ore: number;
+  components: number;
 }
 
 export interface MoveIntent {
@@ -162,6 +172,12 @@ export interface MineIntent {
   entityId: number;
 }
 
+export interface SetProductionIntent {
+  type: "production";
+  entityId: number;
+  enabled: boolean;
+}
+
 export interface TransferMaterialIntent {
   type: "transfer";
   entityId: number;
@@ -188,6 +204,7 @@ export type Intent =
   | SendMessageIntent
   | WaitIntent
   | MineIntent
+  | SetProductionIntent
   | TransferMaterialIntent
   | SendEnergyIntent
   | DrawEnergyIntent;

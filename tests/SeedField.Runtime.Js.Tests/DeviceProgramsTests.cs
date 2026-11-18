@@ -163,6 +163,7 @@ public sealed class DeviceProgramsTests
             })
             .Build();
         var engine = new SimulationEngine(world);
+        engine.Step();
         using var controller = new JsController("A", DevicePrograms.HarvesterSource);
 
         var decision = controller.Decide(
@@ -188,6 +189,7 @@ public sealed class DeviceProgramsTests
             })
             .Build();
         var engine = new SimulationEngine(world);
+        engine.Step();
         using var controller = new JsController("A", DevicePrograms.HarvesterSource);
 
         var decision = controller.Decide(
@@ -209,6 +211,26 @@ public sealed class DeviceProgramsTests
             Drill: new DrillModule(5, 600, 1));
 
         Assert.Equal(DevicePrograms.HarvesterId, DevicePrograms.SuggestId(blueprint));
+    }
+
+    [Fact]
+    public void ScriptsCanPausePassiveProduction()
+    {
+        var world = World(Entity(1, "A", new Vec2(100, 100)));
+        var engine = new SimulationEngine(world);
+        using var controller = new JsController(
+            "A",
+            """
+            function decide(obs) {
+                return [{ type: "production", entityId: 1, enabled: false }];
+            }
+            """);
+
+        var decision = controller.Decide(
+            engine.BuildControllerObservation(new EntityId(1)));
+
+        var intent = Assert.IsType<SetProductionIntent>(Assert.Single(decision.Intents));
+        Assert.False(intent.Enabled);
     }
 
     [Fact]
