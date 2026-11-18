@@ -59,7 +59,20 @@ public static partial class WorldSaveSerializer
                     blueprint.Shield.Capacity,
                     blueprint.Shield.RegenPerTick,
                     blueprint.Shield.RegenDelayTicks,
-                    blueprint.Shield.EnergyCostPerRegen));
+                    blueprint.Shield.EnergyCostPerRegen),
+            blueprint.Smelter is null
+                ? null
+                : new SmelterSaveData(
+                    blueprint.Smelter.OrePerTick,
+                    blueprint.Smelter.EnergyCostPerTick),
+            blueprint.Fabricator is null
+                ? null
+                : new FabricatorSaveData(
+                    blueprint.Fabricator.ComponentsPerTick,
+                    blueprint.Fabricator.MaterialPerComponent,
+                    blueprint.Fabricator.EnergyCostPerTick,
+                    blueprint.Fabricator.MaxComponents),
+            blueprint.ComponentCost);
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -118,7 +131,20 @@ public static partial class WorldSaveSerializer
                     blueprint.Shield.Capacity,
                     blueprint.Shield.RegenPerTick,
                     blueprint.Shield.RegenDelayTicks,
-                    blueprint.Shield.EnergyCostPerRegen));
+                    blueprint.Shield.EnergyCostPerRegen),
+            blueprint.Smelter is null
+                ? null
+                : new SmelterModule(
+                    blueprint.Smelter.OrePerTick,
+                    blueprint.Smelter.EnergyCostPerTick),
+            blueprint.Fabricator is null
+                ? null
+                : new FabricatorModule(
+                    blueprint.Fabricator.ComponentsPerTick,
+                    blueprint.Fabricator.MaterialPerComponent,
+                    blueprint.Fabricator.EnergyCostPerTick,
+                    blueprint.Fabricator.MaxComponents),
+            blueprint.ComponentCost);
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -131,7 +157,9 @@ public static partial class WorldSaveSerializer
                 .Select(stock => new StockSaveData(
                     stock.Key,
                     stock.Value.Material,
-                    stock.Value.Energy))
+                    stock.Value.Energy,
+                    stock.Value.Ore,
+                    stock.Value.Components))
                 .ToArray());
 
     private static EntitySaveData ToEntity(EntityState entity) =>
@@ -199,7 +227,19 @@ public static partial class WorldSaveSerializer
                     entity.Shield.RegenDelayTicks,
                     entity.Shield.EnergyCostPerRegen),
             entity.ShieldEnergy,
-            entity.ShieldRegenReadyTick);
+            entity.ShieldRegenReadyTick,
+            entity.Smelter is null
+                ? null
+                : new SmelterSaveData(
+                    entity.Smelter.OrePerTick,
+                    entity.Smelter.EnergyCostPerTick),
+            entity.Fabricator is null
+                ? null
+                : new FabricatorSaveData(
+                    entity.Fabricator.ComponentsPerTick,
+                    entity.Fabricator.MaterialPerComponent,
+                    entity.Fabricator.EnergyCostPerTick,
+                    entity.Fabricator.MaxComponents));
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(

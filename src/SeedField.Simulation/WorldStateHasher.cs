@@ -6,7 +6,7 @@ namespace SeedField.Simulation;
 /// Stable FNV-1a 64-bit digest of every field that can affect future simulation
 /// results. Used by tests and headless runs to prove reproducibility across runs.
 /// </summary>
-public static class WorldStateHasher
+public static partial class WorldStateHasher
 {
     private const ulong OffsetBasis = 14695981039346656037UL;
     private const ulong Prime = 1099511628211UL;
@@ -68,10 +68,13 @@ public static class WorldStateHasher
         Append(ref hash, world.Statistics.MaterialSalvagedTotal);
         Append(ref hash, world.Statistics.ShotsMissed);
         Append(ref hash, world.Statistics.MaterialLootedTotal);
-        Append(ref hash, world.Statistics.MaterialMinedTotal);
+        Append(ref hash, world.Statistics.OreMinedTotal);
         Append(ref hash, world.Statistics.ShieldAbsorbedTotal);
         Append(ref hash, world.Statistics.ArmorAbsorbedTotal);
         Append(ref hash, world.Statistics.ShieldRegeneratedTotal);
+        Append(ref hash, world.Statistics.OreSmeltedTotal);
+        Append(ref hash, world.Statistics.ComponentsFabricatedTotal);
+        Append(ref hash, world.Statistics.ComponentsRefundedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -86,6 +89,8 @@ public static class WorldStateHasher
                 Append(ref hash, stock.Key);
                 Append(ref hash, stock.Value.Material);
                 Append(ref hash, stock.Value.Energy);
+                Append(ref hash, stock.Value.Ore);
+                Append(ref hash, stock.Value.Components);
             }
 
             Append(ref hash, region.GridCapacities.Count);
@@ -171,6 +176,22 @@ public static class WorldStateHasher
 
                 Append(ref hash, entity.ShieldEnergy);
                 Append(ref hash, entity.ShieldRegenReadyTick);
+
+                Append(ref hash, entity.Smelter is not null);
+                if (entity.Smelter is not null)
+                {
+                    Append(ref hash, entity.Smelter.OrePerTick);
+                    Append(ref hash, entity.Smelter.EnergyCostPerTick);
+                }
+
+                Append(ref hash, entity.Fabricator is not null);
+                if (entity.Fabricator is not null)
+                {
+                    Append(ref hash, entity.Fabricator.ComponentsPerTick);
+                    Append(ref hash, entity.Fabricator.MaterialPerComponent);
+                    Append(ref hash, entity.Fabricator.EnergyCostPerTick);
+                    Append(ref hash, entity.Fabricator.MaxComponents);
+                }
             }
         }
 
@@ -242,6 +263,7 @@ public static class WorldStateHasher
             Append(ref hash, order.StartTick);
             Append(ref hash, order.CompleteTick);
             Append(ref hash, order.MaterialPaid);
+            Append(ref hash, order.ComponentsPaid);
         }
 
         Append(ref hash, world.TreatyProposals.Count);
@@ -501,60 +523,6 @@ public static class WorldStateHasher
     }
 
     public static string ComputeHex(WorldState world) => Compute(world).ToString("x16");
-
-    private static void AppendModule(ref ulong hash, SensorModule? module)
-    {
-        Append(ref hash, module is not null);
-        if (module is not null)
-        {
-            Append(ref hash, module.RangeMm);
-        }
-    }
-
-    private static void AppendModule(ref ulong hash, WeaponModule? module)
-    {
-        Append(ref hash, module is not null);
-        if (module is not null)
-        {
-            Append(ref hash, module.RangeMm);
-            Append(ref hash, module.Damage);
-            Append(ref hash, module.EnergyCost);
-            Append(ref hash, module.CooldownTicks);
-            Append(ref hash, (int)module.Kind);
-        }
-    }
-
-    private static void AppendModule(ref ulong hash, DriveModule? module)
-    {
-        Append(ref hash, module is not null);
-        if (module is not null)
-        {
-            Append(ref hash, module.SpeedMmPerTick);
-            Append(ref hash, module.EnergyCostPerMove);
-        }
-    }
-
-    private static void AppendModule(ref ulong hash, DrillModule? module)
-    {
-        Append(ref hash, module is not null);
-        if (module is not null)
-        {
-            Append(ref hash, module.RatePerTick);
-            Append(ref hash, module.RangeMm);
-            Append(ref hash, module.EnergyCostPerTick);
-        }
-    }
-
-    private static void AppendModule(ref ulong hash, CommModule? module)
-    {
-        Append(ref hash, module is not null);
-        if (module is not null)
-        {
-            Append(ref hash, module.LatencyTicks);
-            Append(ref hash, module.EnergyCostPerMessage);
-            Append(ref hash, module.BandwidthPerTick);
-        }
-    }
 
     private static void Append(ref ulong hash, long value)
     {

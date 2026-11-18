@@ -67,6 +67,64 @@ public sealed class RegionState
     public long GetEnergy(string civilizationId) =>
         Stocks.TryGetValue(civilizationId, out var stock) ? stock.Energy : 0;
 
+    public long GetOre(string civilizationId) =>
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.Ore : 0;
+
+    public long GetComponents(string civilizationId) =>
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.Components : 0;
+
+    public void AddOre(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        GetOrCreateStock(civilizationId).Ore += amount;
+    }
+
+    public void AddComponents(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        GetOrCreateStock(civilizationId).Components += amount;
+    }
+
+    public bool TryConsumeOre(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (!Stocks.TryGetValue(civilizationId, out var stock) || stock.Ore < amount)
+        {
+            return false;
+        }
+
+        stock.Ore -= amount;
+        return true;
+    }
+
+    public bool TryConsumeComponents(string civilizationId, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (!Stocks.TryGetValue(civilizationId, out var stock) || stock.Components < amount)
+        {
+            return false;
+        }
+
+        stock.Components -= amount;
+        return true;
+    }
+
     public void AddMaterial(string civilizationId, long amount)
     {
         if (amount < 0)
@@ -136,4 +194,10 @@ public sealed class RegionStock
     public long Material { get; internal set; }
 
     public long Energy { get; internal set; }
+
+    /// <summary>Raw ore extracted from deposits; smelters convert it to material.</summary>
+    public long Ore { get; internal set; }
+
+    /// <summary>Manufactured components; advanced designs consume them.</summary>
+    public long Components { get; internal set; }
 }

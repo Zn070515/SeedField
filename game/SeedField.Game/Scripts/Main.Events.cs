@@ -14,9 +14,15 @@ public partial class Main
             CombatLootGranted loot =>
                 $"t{loot.Tick,4}  {loot.CivilizationId} looted {loot.Material}M " +
                 $"from {loot.SourceEntityId} in {loot.RegionId}",
-            MaterialMined mined =>
-                $"t{mined.Tick,4}  {mined.EntityId} mined {mined.Amount}M " +
-                $"{mined.Kind} from deposit {mined.DepositId} ({mined.Remaining} left)",
+            OreMined mined =>
+                $"t{mined.Tick,4}  {mined.EntityId} mined {mined.Amount} ore " +
+                $"({mined.Kind}, {mined.Remaining} left)",
+            OreSmelted smelted =>
+                $"t{smelted.Tick,4}  {smelted.EntityId} smelted {smelted.Amount} ore " +
+                $"({smelted.OreRemaining} left)",
+            ComponentsFabricated fabricated =>
+                $"t{fabricated.Tick,4}  {fabricated.EntityId} fabricated " +
+                $"{fabricated.Amount} components (-{fabricated.MaterialSpent}M)",
             EntityDamaged damaged =>
                 $"t{damaged.Tick,4}  {damaged.EntityId} -{damaged.Damage} HP" +
                 (damaged.ShieldAbsorbed > 0 ? $" (shield -{damaged.ShieldAbsorbed})" : string.Empty) +

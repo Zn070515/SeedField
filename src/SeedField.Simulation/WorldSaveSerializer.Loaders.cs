@@ -129,7 +129,19 @@ public static partial class WorldSaveSerializer
                             entityData.Shield.Capacity,
                             entityData.Shield.RegenPerTick,
                             entityData.Shield.RegenDelayTicks,
-                            entityData.Shield.EnergyCostPerRegen));
+                            entityData.Shield.EnergyCostPerRegen),
+                    entityData.Smelter is null
+                        ? null
+                        : new SmelterModule(
+                            entityData.Smelter.OrePerTick,
+                            entityData.Smelter.EnergyCostPerTick),
+                    entityData.Fabricator is null
+                        ? null
+                        : new FabricatorModule(
+                            entityData.Fabricator.ComponentsPerTick,
+                            entityData.Fabricator.MaterialPerComponent,
+                            entityData.Fabricator.EnergyCostPerTick,
+                            entityData.Fabricator.MaxComponents));
 
                 var entity = new EntityState(definition)
                 {
@@ -143,7 +155,8 @@ public static partial class WorldSaveSerializer
 
             foreach (var stockData in regionData.Stocks ?? Array.Empty<StockSaveData>())
             {
-                if (stockData.Material < 0 || stockData.Energy < 0)
+                if (stockData.Material < 0 || stockData.Energy < 0 ||
+                    stockData.Ore < 0 || stockData.Components < 0)
                 {
                     throw Invalid(
                         "INVALID_STOCK",
@@ -159,6 +172,8 @@ public static partial class WorldSaveSerializer
 
                 region.AddMaterial(stockData.CivilizationId, stockData.Material);
                 region.AddEnergy(stockData.CivilizationId, stockData.Energy);
+                region.AddOre(stockData.CivilizationId, stockData.Ore);
+                region.AddComponents(stockData.CivilizationId, stockData.Components);
             }
         }
 
@@ -518,6 +533,7 @@ public static partial class WorldSaveSerializer
         {
             if (orderData.Id <= 0 ||
                 orderData.MaterialPaid < 0 ||
+                orderData.ComponentsPaid < 0 ||
                 orderData.CompleteTick <= orderData.StartTick ||
                 !world.Regions.TryGetValue(orderData.RegionId, out var orderRegion) ||
                 !orderRegion.Contains(new Vec2(orderData.X, orderData.Y)) ||
@@ -537,7 +553,8 @@ public static partial class WorldSaveSerializer
                 new Vec2(orderData.X, orderData.Y),
                 orderData.StartTick,
                 orderData.CompleteTick,
-                orderData.MaterialPaid));
+                orderData.MaterialPaid,
+                orderData.ComponentsPaid));
             maxConstructionOrderId = Math.Max(maxConstructionOrderId, orderData.Id);
         }
 

@@ -27,16 +27,19 @@ public sealed partial class SimulationEngine
         if (World.Regions.TryGetValue(order.RegionId, out var region))
         {
             region.AddMaterial(order.CivilizationId, order.MaterialPaid);
+            region.AddComponents(order.CivilizationId, order.ComponentsPaid);
         }
 
         World.Statistics.MaterialRefundedTotal += order.MaterialPaid;
+        World.Statistics.ComponentsRefundedTotal += order.ComponentsPaid;
 
         var cancelled = new ConstructionCancelled(
             tick,
             order.Id,
             order.CivilizationId,
             order.BlueprintId,
-            order.MaterialPaid);
+            order.MaterialPaid,
+            order.ComponentsPaid);
 
         return new DeploymentCommandResult(
             true,
@@ -92,6 +95,7 @@ public sealed partial class SimulationEngine
         {
             "CORE_PROTECTED" => SimulationErrorCode.CoreProtected,
             "INSUFFICIENT_MATERIAL" => SimulationErrorCode.InsufficientMaterial,
+            "INSUFFICIENT_COMPONENTS" => SimulationErrorCode.InsufficientComponents,
             "OUT_OF_BOUNDS" => SimulationErrorCode.OutOfBounds,
             _ => SimulationErrorCode.DeploymentRejected,
         };
@@ -124,7 +128,8 @@ public sealed partial class SimulationEngine
                     order.CivilizationId,
                     order.BlueprintId,
                     "Blueprint version is missing.",
-                    refunded));
+                    refunded.Material,
+                    refunded.Components));
                 continue;
             }
 
@@ -161,21 +166,24 @@ public sealed partial class SimulationEngine
                     order.CivilizationId,
                     order.BlueprintId,
                     exception.Message,
-                    refunded));
+                    refunded.Material,
+                    refunded.Components));
             }
         }
     }
 
-    private long RefundConstruction(ConstructionOrder order)
+    private (long Material, long Components) RefundConstruction(ConstructionOrder order)
     {
         if (!World.Regions.TryGetValue(order.RegionId, out var region))
         {
-            return 0;
+            return (0, 0);
         }
 
         region.AddMaterial(order.CivilizationId, order.MaterialPaid);
+        region.AddComponents(order.CivilizationId, order.ComponentsPaid);
         World.Statistics.MaterialRefundedTotal += order.MaterialPaid;
-        return order.MaterialPaid;
+        World.Statistics.ComponentsRefundedTotal += order.ComponentsPaid;
+        return (order.MaterialPaid, order.ComponentsPaid);
     }
 
 }

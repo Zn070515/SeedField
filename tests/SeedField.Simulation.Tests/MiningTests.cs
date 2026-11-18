@@ -19,13 +19,13 @@ public sealed class MiningTests
 
         var result = engine.Step(new Intent[] { new MineIntent(new EntityId(1)) });
 
-        var mined = Assert.IsType<MaterialMined>(Assert.Single(result.Events));
+        var mined = Assert.IsType<OreMined>(Assert.Single(result.Events));
         Assert.Equal(new EntityId(1), mined.EntityId);
         Assert.Equal(10, mined.DepositId);
         Assert.Equal(OreKind.Copper, mined.Kind);
         Assert.Equal(5, mined.Amount);
         Assert.Equal(45, mined.Remaining);
-        Assert.Equal(5, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(5, world.Regions["r0"].GetOre("A"));
         Assert.True(result.IntentResults[0].Accepted);
     }
 
@@ -38,11 +38,11 @@ public sealed class MiningTests
         var first = engine.Step(new Intent[] { new MineIntent(new EntityId(1)) });
         var second = engine.Step(new Intent[] { new MineIntent(new EntityId(1)) });
 
-        var firstMined = Assert.IsType<MaterialMined>(Assert.Single(first.Events));
+        var firstMined = Assert.IsType<OreMined>(Assert.Single(first.Events));
         Assert.Equal(5, firstMined.Amount);
         Assert.True(second.IntentResults[0].Accepted is false);
         Assert.Equal(SimulationErrorCode.DepositDepleted, second.IntentResults[0].ErrorCode);
-        Assert.Equal(5, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(5, world.Regions["r0"].GetOre("A"));
         Assert.Equal(0, world.Deposits.Values.Single().Remaining);
     }
 
@@ -56,7 +56,7 @@ public sealed class MiningTests
 
         Assert.False(result.IntentResults[0].Accepted);
         Assert.Equal(SimulationErrorCode.DepositOutOfRange, result.IntentResults[0].ErrorCode);
-        Assert.Equal(0, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(0, world.Regions["r0"].GetOre("A"));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public sealed class MiningTests
 
         Assert.False(result.IntentResults[0].Accepted);
         Assert.Equal(SimulationErrorCode.NoEnergy, result.IntentResults[0].ErrorCode);
-        Assert.Equal(0, world.Regions["r0"].GetMaterial("A"));
+        Assert.Equal(0, world.Regions["r0"].GetOre("A"));
         Assert.Equal(50, world.Deposits.Values.Single().Remaining);
     }
 
@@ -98,7 +98,7 @@ public sealed class MiningTests
 
         var result = engine.Step(new Intent[] { new MineIntent(new EntityId(1)) });
 
-        var mined = Assert.IsType<MaterialMined>(Assert.Single(result.Events));
+        var mined = Assert.IsType<OreMined>(Assert.Single(result.Events));
         Assert.Equal(1, mined.DepositId);
     }
 

@@ -58,10 +58,13 @@ public static partial class WorldSaveSerializer
                 world.Statistics.MaterialSalvagedTotal,
                 world.Statistics.ShotsMissed,
                 world.Statistics.MaterialLootedTotal,
-                world.Statistics.MaterialMinedTotal,
+                world.Statistics.OreMinedTotal,
                 world.Statistics.ShieldAbsorbedTotal,
                 world.Statistics.ArmorAbsorbedTotal,
-                world.Statistics.ShieldRegeneratedTotal),
+                world.Statistics.ShieldRegeneratedTotal,
+                world.Statistics.OreSmeltedTotal,
+                world.Statistics.ComponentsFabricatedTotal,
+                world.Statistics.ComponentsRefundedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(
@@ -125,7 +128,8 @@ public static partial class WorldSaveSerializer
                     order.Position.Y,
                     order.StartTick,
                     order.CompleteTick,
-                    order.MaterialPaid))
+                    order.MaterialPaid,
+                    order.ComponentsPaid))
                 .ToArray(),
             world.NextConstructionOrderId,
             world.MessagePolicies.Values

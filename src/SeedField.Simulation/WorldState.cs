@@ -63,7 +63,13 @@ public sealed class SimulationStatistics
 
     public long MaterialSalvagedTotal { get; internal set; }
 
-    public long MaterialMinedTotal { get; internal set; }
+    public long OreMinedTotal { get; internal set; }
+
+    public long OreSmeltedTotal { get; internal set; }
+
+    public long ComponentsFabricatedTotal { get; internal set; }
+
+    public long ComponentsRefundedTotal { get; internal set; }
 
     public long ShieldAbsorbedTotal { get; internal set; }
 

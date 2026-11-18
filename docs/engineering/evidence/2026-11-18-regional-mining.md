@@ -4,8 +4,8 @@
 
 - `ResourceDepositState` + `WorldState.Deposits`/`NextDepositId`（schema v20）。
 - `DrillModule` 进入蓝图/实例/存档/哈希/部署/升级。
-- `MineIntent`：范围内最近未耗尽矿脉，扣能量、产 M、扣余量、发 `MaterialMined`。
-- `MaterialMinedTotal` 统计；日志/事件过滤/颜色接线。
+- `MineIntent`：范围内最近未耗尽矿脉，扣能量、产 Ore、扣余量、发 `OreMined`。
+- `OreMinedTotal` 统计；日志/事件过滤/颜色接线。
 - Jint `{type:"mine"}`、TypeScript 契约、`builtin.harvester.v1`。
 - 观察：`ObservedDeposit` + `hasDrill`/`drillRangeMm`；文明级按己方区域、
   设备级按 `max(传感器, 钻机)` 范围过滤；三套序列化与 TS 契约同步。
@@ -46,7 +46,7 @@ dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --minin
 实际输出：
 
 ```text
-MINING mined=12 stock=12 remaining=0 depleted=True ok=True
+MINING ore=12 smelted=8 oreStock=4 material=8 remaining=0 depleted=True ok=True
 ```
 
 ## Godot 保存冒烟
@@ -74,6 +74,6 @@ godot --path game/SeedField.Game -- --capture
 ## 边界
 
 - 矿脉没有隐藏/侦察发现；己方区域与设备视野内即可见。
-- 四类矿统一产 M，无多资源/冶炼。
+- 四类矿统一产 Ore；冶炼/构件见 ADR-0046。
 - 演示数值 5M/tick、5000 余量不是平衡数据。
 - 矿脉耗尽后仍保留在世界上，但暂无专门的视觉耗尽状态。

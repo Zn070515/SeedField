@@ -137,6 +137,24 @@ internal static class Scenarios
             ControllerProgramId: DevicePrograms.HarvesterId,
             MaterialCost: 40,
             BuildTicks: 2));
+        var smelter = workshop.Publish(new DeviceBlueprint(
+            "smelter", 0, "Ore Smelter", 90, 1_000,
+            Smelter: new SmelterModule(OrePerTick: 4, EnergyCostPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 1, StorageCapacity: 1_000),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 45,
+            BuildTicks: 3));
+        workshop.Publish(new DeviceBlueprint(
+            "fabricator", 0, "Component Fabricator", 90, 1_000,
+            Fabricator: new FabricatorModule(
+                ComponentsPerTick: 1,
+                MaterialPerComponent: 2,
+                EnergyCostPerTick: 1,
+                MaxComponents: 20),
+            Power: new PowerModule(EnergyPerTick: 1, StorageCapacity: 1_000),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 50,
+            BuildTicks: 3));
 
         var strike = workshop.Publish(new DeviceBlueprint(
             "strike", 0, "Strike Frame", 150, 5_000,
@@ -209,6 +227,7 @@ internal static class Scenarios
 
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", AStagingPosition);
         DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
+        DeploymentService.Deploy(world, smelter, "A", "frontier", new Vec2(4_200, 6_000));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {
