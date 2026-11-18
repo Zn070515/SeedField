@@ -260,6 +260,7 @@ public sealed partial class SimulationEngine
         FlowPower(tick, events);
         UpdatePowerBreakers(tick, events);
         RegenerateShields(tick);
+        ProduceMaterials(tick, events);
 
         if (intents is { Count: > 0 })
         {
@@ -343,7 +344,7 @@ public sealed partial class SimulationEngine
 
                     if (deploy.Blueprint.BuildTicks > 0)
                     {
-                        var materialPaid = DeploymentService.ConsumeMaterial(
+                        var costs = DeploymentService.ConsumeCosts(
                             World,
                             deploy.Blueprint,
                             deploy.CivilizationId,
@@ -360,7 +361,8 @@ public sealed partial class SimulationEngine
                             deploy.Position,
                             tick,
                             completeTick,
-                            materialPaid));
+                            costs.Material,
+                            costs.Components));
                         World.Statistics.ConstructionsStartedTotal += 1;
 
                         var queued = new ConstructionQueued(

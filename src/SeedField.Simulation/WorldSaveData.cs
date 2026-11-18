@@ -122,7 +122,8 @@ public sealed record ConstructionOrderSaveData(
     int Y,
     long StartTick,
     long CompleteTick,
-    long MaterialPaid = 0);
+    long MaterialPaid = 0,
+    long ComponentsPaid = 0);
 
 public sealed record MatchSaveData(
     int CapturedPointsToWin,
@@ -202,7 +203,20 @@ public sealed record DepositSaveData(
     long Remaining,
     long YieldPerTick);
 
-public sealed record StockSaveData(string CivilizationId, long Material, long Energy = 0);
+public sealed record StockSaveData(
+    string CivilizationId,
+    long Material,
+    long Energy = 0,
+    long Ore = 0,
+    long Components = 0);
+
+public sealed record SmelterSaveData(long OrePerTick, long EnergyCostPerTick);
+
+public sealed record FabricatorSaveData(
+    long ComponentsPerTick,
+    long MaterialPerComponent,
+    long EnergyCostPerTick,
+    long MaxComponents);
 
 public sealed record DrillSaveData(long RatePerTick, int RangeMm, long EnergyCostPerTick);
 
@@ -232,7 +246,9 @@ public sealed record EntitySaveData(
     ArmorSaveData? Armor = null,
     ShieldSaveData? Shield = null,
     long ShieldEnergy = 0,
-    long ShieldRegenReadyTick = 0);
+    long ShieldRegenReadyTick = 0,
+    SmelterSaveData? Smelter = null,
+    FabricatorSaveData? Fabricator = null);
 
 public sealed record SensorSaveData(int RangeMm);
 
@@ -283,7 +299,10 @@ public sealed record BlueprintSaveData(
     bool IsCoreAnchor = false,
     DrillSaveData? Drill = null,
     ArmorSaveData? Armor = null,
-    ShieldSaveData? Shield = null);
+    ShieldSaveData? Shield = null,
+    SmelterSaveData? Smelter = null,
+    FabricatorSaveData? Fabricator = null,
+    long ComponentCost = 0);
 
 public sealed record WreckSaveData(
     long Id,
@@ -386,10 +405,13 @@ public sealed record StatisticsSaveData(
     long MaterialSalvagedTotal = 0,
     long ShotsMissed = 0,
     long MaterialLootedTotal = 0,
-    long MaterialMinedTotal = 0,
+    long OreMinedTotal = 0,
     long ShieldAbsorbedTotal = 0,
     long ArmorAbsorbedTotal = 0,
-    long ShieldRegeneratedTotal = 0);
+    long ShieldRegeneratedTotal = 0,
+    long OreSmeltedTotal = 0,
+    long ComponentsFabricatedTotal = 0,
+    long ComponentsRefundedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

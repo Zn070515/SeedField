@@ -34,7 +34,10 @@ public sealed record DeviceBlueprint(
     bool IsCoreAnchor = false,
     DrillModule? Drill = null,
     ArmorModule? Armor = null,
-    ShieldModule? Shield = null)
+    ShieldModule? Shield = null,
+    SmelterModule? Smelter = null,
+    FabricatorModule? Fabricator = null,
+    long ComponentCost = 0)
 {
     public DeviceBranch Branches
     {
@@ -247,6 +250,30 @@ public sealed class WorkshopService
             throw new BlueprintValidationException(
                 "INVALID_SHIELD",
                 "Shield capacity must be positive; regen values must be non-negative.");
+        }
+
+        if (blueprint.Smelter is { OrePerTick: < 0 } or { EnergyCostPerTick: < 0 })
+        {
+            throw new BlueprintValidationException(
+                "INVALID_SMELTER",
+                "Smelter values must be non-negative.");
+        }
+
+        if (blueprint.Fabricator is { ComponentsPerTick: < 0 } or
+            { MaterialPerComponent: < 1 } or
+            { EnergyCostPerTick: < 0 } or
+            { MaxComponents: < 0 })
+        {
+            throw new BlueprintValidationException(
+                "INVALID_FABRICATOR",
+                "Fabricator rate/energy must be non-negative and material cost positive.");
+        }
+
+        if (blueprint.ComponentCost < 0)
+        {
+            throw new BlueprintValidationException(
+                "INVALID_COMPONENT_COST",
+                "Component cost must be non-negative.");
         }
     }
 

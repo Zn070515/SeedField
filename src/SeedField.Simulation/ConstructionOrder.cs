@@ -13,4 +13,5 @@ public sealed record ConstructionOrder(
     Vec2 Position,
     long StartTick,
     long CompleteTick,
-    long MaterialPaid);
+    long MaterialPaid,
+    long ComponentsPaid = 0);

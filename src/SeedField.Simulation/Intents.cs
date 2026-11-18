@@ -134,6 +134,7 @@ public enum SimulationErrorCode
     DepositOutOfRange,
     DepositDepleted,
     ModuleDisabled,
+    InsufficientComponents,
 }
 
 public sealed record IntentResult(

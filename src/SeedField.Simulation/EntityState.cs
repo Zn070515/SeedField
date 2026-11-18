@@ -25,7 +25,9 @@ public sealed record EntityDefinition(
     bool IsCoreAnchor = false,
     DrillModule? Drill = null,
     ArmorModule? Armor = null,
-    ShieldModule? Shield = null);
+    ShieldModule? Shield = null,
+    SmelterModule? Smelter = null,
+    FabricatorModule? Fabricator = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -58,6 +60,8 @@ public sealed class EntityState
         Armor = definition.Armor;
         Shield = definition.Shield;
         ShieldEnergy = definition.Shield?.Capacity ?? 0;
+        Smelter = definition.Smelter;
+        Fabricator = definition.Fabricator;
     }
 
     public EntityId Id { get; }
@@ -115,6 +119,12 @@ public sealed class EntityState
 
     /// <summary>First tick on which the shield may regenerate after taking damage.</summary>
     public long ShieldRegenReadyTick { get; internal set; }
+
+    /// <summary>Optional ore→material conversion.</summary>
+    public SmelterModule? Smelter { get; internal set; }
+
+    /// <summary>Optional material→components conversion.</summary>
+    public FabricatorModule? Fabricator { get; internal set; }
 
     /// <summary>Half health or less: shield regeneration stops.</summary>
     public bool IsDamaged => Health * 2 <= MaxHealth;

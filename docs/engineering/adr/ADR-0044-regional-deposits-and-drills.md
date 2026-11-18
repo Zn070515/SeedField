@@ -19,7 +19,7 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
   `RadiusMm`、`Remaining`、`YieldPerTick`。
 - 矿脉属于某一个区域，位置/半径/余量都进入世界状态；耗尽后保留在世界上
   （供表现/诊断），但不再产出。
-- `OreKind`（Copper/Lead/Titanium/Coal）目前**只做视觉与产出差异**，统一产出 M；
+- `OreKind`（Copper/Lead/Titanium/Coal）目前**只做视觉与产出差异**，统一产出 Ore，再由冶炼厂转 M（ADR-0046）；
   不引入第二套材料经济。多资源分化需另立 ADR。
 - `WorldBuilder.AddDeposit(...)` 以稳定 id 递增创建；世界存档 schema v20 保存。
 
@@ -30,19 +30,19 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
 - `MineIntent(EntityId)` 不带目标 id：引擎在设备所在区域内选择**范围内最近**
   未耗尽矿脉；距离相同按稳定矿脉 id 决胜。
 - 校验顺序：有钻机 → 范围内有矿脉 → 未耗尽 → 能量足够；只有成功后扣能量、
-  扣余量、写入区域库存、产生 `MaterialMined`。
+  扣余量、写入区域库存、产生 `OreMined`。
 - 能量沿用既有的本地储能 + 电网自动取电/恢复储备规则；不足时 `NoEnergy` 并
   产生 `PowerShortfall`。
 - 失败码：`NoDrill`、`DepositOutOfRange`、`DepositDepleted`；若范围内只有
   已耗尽矿脉，返回 `DepositDepleted` 而不是“没有矿”。
-- 统计新增 `MaterialMinedTotal`；事件进入日志/事件过滤。
+- 统计新增 `OreMinedTotal`；事件进入日志/事件过滤。
 
 ### 3. 持久化与确定性
 
 - 世界存档 v20：顶层 `deposits` 数组 + `nextDepositId`；实体/蓝图新增 `drill`
   字段。v19 及更早存档没有这些字段时按空矿脉/无钻机迁移。
 - 哈希加入 NextDepositId、每区域矿脉（id/kind/位置/半径/余量/产出）、实体
-  钻机模块与 `MaterialMinedTotal`。
+  钻机模块与 `OreMinedTotal`。
 - 黄金场景哈希因“空矿脉计数 + NextDepositId + 新统计字段”变化，已按测试说明
   更新；该场景行为不变。
 
@@ -73,7 +73,7 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
 
 ## 后果
 
-- M2 的“采集→本地库存→建造消耗”闭环成立；玩家可在矿脉上部署钻机持续产 M。
+- M2 的“采集→本地库存→建造消耗”闭环成立；玩家可在矿脉上部署钻机持续产 Ore，需冶炼后成为 M。
 - 矿脉是有限资源，长期工业仍需扩张/跨区运输，避免无限本地供给。
 - 脚本可以选择矿点：最近未耗尽矿脉在观察中，harvester 可先移动再开采。
 - 世界存档与哈希变更，旧档迁移为无矿脉；黄金哈希已更新。
@@ -86,7 +86,7 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
 - `DeviceProgramsTests.HarvesterTemplateEmitsMineIntent` /
   `HarvesterTemplateMovesTowardAFarDeposit`。
 - `ControllerContractTests`：`hasDrill`/`drillRangeMm`/`deposits` 与 `mine` 契约。
-- `--mining`：`MINING mined=12 stock=12 remaining=0 depleted=True ok=True`。
+- `--mining`：`MINING ore=12 smelted=8 oreStock=4 material=8 remaining=0 depleted=True ok=True`。
 - Godot `--save-smoke`：矿区世界保存/读取哈希一致；`--capture` 显示矿脉余量/耗尽标签。
 - 全量测试与仓库门禁通过。
 

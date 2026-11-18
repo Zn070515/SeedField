@@ -349,7 +349,12 @@ public sealed class WorldBuilder
         return this;
     }
 
-    public WorldBuilder AddStock(string regionId, string civilizationId, long material)
+    public WorldBuilder AddStock(
+        string regionId,
+        string civilizationId,
+        long material,
+        long ore = 0,
+        long components = 0)
     {
         if (!_world.Regions.TryGetValue(regionId, out var region))
         {
@@ -357,6 +362,8 @@ public sealed class WorldBuilder
         }
 
         region.AddMaterial(civilizationId, material);
+        region.AddOre(civilizationId, ore);
+        region.AddComponents(civilizationId, components);
         return this;
     }
 

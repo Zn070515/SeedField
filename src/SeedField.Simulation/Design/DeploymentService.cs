@@ -56,7 +56,9 @@ public static class DeploymentService
         }
     }
 
-    public static long ConsumeMaterial(
+    public readonly record struct DeploymentCost(long Material, long Components);
+
+    public static DeploymentCost ConsumeCosts(
         WorldState world,
         DeviceBlueprint blueprint,
         string civilizationId,
@@ -71,7 +73,7 @@ public static class DeploymentService
         }
 
         if (blueprint.MaterialCost > 0 &&
-            !region.TryConsumeMaterial(civilizationId, blueprint.MaterialCost))
+            region.GetMaterial(civilizationId) < blueprint.MaterialCost)
         {
             throw new BlueprintValidationException(
                 "INSUFFICIENT_MATERIAL",
@@ -79,9 +81,35 @@ public static class DeploymentService
                 $"{blueprint.BlueprintId} v{blueprint.Version} needs {blueprint.MaterialCost}.");
         }
 
+        if (blueprint.ComponentCost > 0 &&
+            region.GetComponents(civilizationId) < blueprint.ComponentCost)
+        {
+            throw new BlueprintValidationException(
+                "INSUFFICIENT_COMPONENTS",
+                $"Region '{regionId}' has {region.GetComponents(civilizationId)} components; " +
+                $"{blueprint.BlueprintId} v{blueprint.Version} needs {blueprint.ComponentCost}.");
+        }
+
+        if (blueprint.MaterialCost > 0)
+        {
+            region.TryConsumeMaterial(civilizationId, blueprint.MaterialCost);
+        }
+
+        if (blueprint.ComponentCost > 0)
+        {
+            region.TryConsumeComponents(civilizationId, blueprint.ComponentCost);
+        }
+
         world.Statistics.MaterialSpentTotal += blueprint.MaterialCost;
-        return blueprint.MaterialCost;
+        return new DeploymentCost(blueprint.MaterialCost, blueprint.ComponentCost);
     }
+
+    public static long ConsumeMaterial(
+        WorldState world,
+        DeviceBlueprint blueprint,
+        string civilizationId,
+        string regionId) =>
+        ConsumeCosts(world, blueprint, civilizationId, regionId).Material;
 
     public static EntityState CreateInstance(
         WorldState world,
@@ -119,7 +147,9 @@ public static class DeploymentService
             blueprint.IsCoreAnchor,
             blueprint.Drill,
             blueprint.Armor,
-            blueprint.Shield);
+            blueprint.Shield,
+            blueprint.Smelter,
+            blueprint.Fabricator);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
@@ -165,6 +195,8 @@ public static class DeploymentService
         entity.Power = blueprint.Power;
         entity.State = blueprint.State;
         entity.Drill = blueprint.Drill;
+        entity.Smelter = blueprint.Smelter;
+        entity.Fabricator = blueprint.Fabricator;
         var hadShield = entity.Shield is not null;
         entity.Armor = blueprint.Armor;
         entity.Shield = blueprint.Shield;

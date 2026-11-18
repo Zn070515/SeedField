@@ -36,6 +36,19 @@ public sealed record ShieldModule(
     int RegenDelayTicks,
     long EnergyCostPerRegen);
 
+/// <summary>Converts regional ore into material, 1:1, spending local energy.</summary>
+public sealed record SmelterModule(long OrePerTick, long EnergyCostPerTick);
+
+/// <summary>
+/// Converts material into components, spending local energy. One component costs
+/// <paramref name="MaterialPerComponent"/> material.
+/// </summary>
+public sealed record FabricatorModule(
+    long ComponentsPerTick,
+    long MaterialPerComponent,
+    long EnergyCostPerTick,
+    long MaxComponents = 100);
+
 /// <summary>Minimal drive. A move action costs a flat amount of local energy.</summary>
 public sealed record DriveModule(int SpeedMmPerTick, long EnergyCostPerMove);
 

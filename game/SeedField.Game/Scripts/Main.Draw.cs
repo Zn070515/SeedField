@@ -487,7 +487,9 @@ public partial class Main : Node2D
         simulationEvent is ShotFired
             or ShotMissed
             or CombatLootGranted
-            or MaterialMined
+            or OreMined
+            or OreSmelted
+            or ComponentsFabricated
             or EntityDamaged
             or EntityDestroyed
             or MessageDelivered
@@ -529,7 +531,9 @@ public partial class Main : Node2D
             ShotMissed => new Color(0.72f, 0.62f, 0.48f),
             EntityDamaged => new Color(0.95f, 0.55f, 0.45f),
             CombatLootGranted => new Color(0.85f, 0.78f, 0.40f),
-            MaterialMined => new Color(0.70f, 0.78f, 0.45f),
+            OreMined => new Color(0.70f, 0.78f, 0.45f),
+            OreSmelted => new Color(0.85f, 0.70f, 0.40f),
+            ComponentsFabricated => new Color(0.55f, 0.78f, 0.85f),
             EntityDestroyed => Red,
             MessageDelivered => Amber,
             MessageQueued => new Color(0.75f, 0.66f, 0.40f),

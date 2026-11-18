@@ -9,9 +9,10 @@ namespace SeedField.Simulation.Tests;
 public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
-    // v21 adds armor, shields, weapon kind and shield statistics. The golden scenario
-    // now gives A armor/shield and B a beam weapon, so damage resolution changes too.
-    private const ulong ExpectedHash = 0x97a028939518b3c5UL;
+    // v22 adds ore/components stocks, smelter/fabricator modules and construction
+    // component costs. The scenario now smelts ore near the drill, so material flow
+    // changes as well.
+    private const ulong ExpectedHash = 0xae9700e72d33d1e5UL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

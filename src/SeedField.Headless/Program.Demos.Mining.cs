@@ -25,21 +25,35 @@ internal static partial class Program
                 EnergyCapacity: 100,
                 Material: 0,
                 Drill: new DrillModule(RatePerTick: 5, RangeMm: 600, EnergyCostPerTick: 1)))
+            .AddEntity(new EntityDefinition(
+                new EntityId(2),
+                "A",
+                "r0",
+                new Vec2(450, 550),
+                MaxHealth: 100,
+                Energy: 100,
+                EnergyCapacity: 100,
+                Material: 0,
+                Smelter: new SmelterModule(OrePerTick: 4, EnergyCostPerTick: 1)))
             .Build();
         var engine = new SimulationEngine(world);
         var mined = 0L;
+        var smelted = 0L;
         for (var tick = 0; tick < 3; tick++)
         {
             var result = engine.Step(new Intent[] { new MineIntent(new EntityId(1)) });
-            mined += result.Events.OfType<MaterialMined>().Sum(mine => mine.Amount);
+            mined += result.Events.OfType<OreMined>().Sum(mine => mine.Amount);
+            smelted += result.Events.OfType<OreSmelted>().Sum(smelt => smelt.Amount);
         }
 
         var deposit = world.Deposits.Values.Single();
-        var stock = world.Regions["r0"].GetMaterial("A");
-        var ok = mined == 12 && stock == 12 && deposit.Remaining == 0;
+        var ore = world.Regions["r0"].GetOre("A");
+        var material = world.Regions["r0"].GetMaterial("A");
+        var ok = mined == 12 && smelted == 8 && ore == 4 && material == 8 &&
+                 deposit.Remaining == 0;
         Console.WriteLine(
-            $"MINING mined={mined} stock={stock} remaining={deposit.Remaining} " +
-            $"depleted={deposit.IsDepleted} ok={ok}");
+            $"MINING ore={mined} smelted={smelted} oreStock={ore} material={material} " +
+            $"remaining={deposit.Remaining} depleted={deposit.IsDepleted} ok={ok}");
         return ok ? 0 : 1;
     }
 }

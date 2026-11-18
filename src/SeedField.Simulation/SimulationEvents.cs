@@ -170,7 +170,8 @@ public sealed record ConstructionCancelled(
     long OrderId,
     string CivilizationId,
     string BlueprintId,
-    long MaterialRefunded) : SimulationEvent(Tick);
+    long MaterialRefunded,
+    long ComponentsRefunded = 0) : SimulationEvent(Tick);
 
 public sealed record ConstructionFailed(
     long Tick,
@@ -178,7 +179,8 @@ public sealed record ConstructionFailed(
     string CivilizationId,
     string BlueprintId,
     string Reason,
-    long MaterialRefunded) : SimulationEvent(Tick);
+    long MaterialRefunded,
+    long ComponentsRefunded = 0) : SimulationEvent(Tick);
 
 public sealed record EntityUpgraded(
     long Tick,
@@ -226,8 +228,25 @@ public sealed record WreckSalvaged(
     string RegionId,
     long MaterialRecovered) : SimulationEvent(Tick);
 
-/// <summary>A drill extracted material from a finite deposit.</summary>
-public sealed record MaterialMined(
+/// <summary>A smelter converted regional ore into material.</summary>
+public sealed record OreSmelted(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount,
+    long OreRemaining) : SimulationEvent(Tick);
+
+/// <summary>A fabricator converted material into components.</summary>
+public sealed record ComponentsFabricated(
+    long Tick,
+    EntityId EntityId,
+    string RegionId,
+    long Amount,
+    long MaterialSpent,
+    long ComponentsTotal) : SimulationEvent(Tick);
+
+/// <summary>A drill extracted ore from a finite deposit.</summary>
+public sealed record OreMined(
     long Tick,
     EntityId EntityId,
     long DepositId,
