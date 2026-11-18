@@ -213,6 +213,33 @@ public sealed class TutorialProgressTests
     }
 
     [Fact]
+    public void NextStepFollowsCanonicalOrder()
+    {
+        var empty = new TutorialProgress("A");
+        var partial = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long>
+            {
+                [TutorialStep.Energy] = 0,
+                [TutorialStep.Sensing] = 0,
+            });
+        var complete = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long>
+            {
+                [TutorialStep.Energy] = 0,
+                [TutorialStep.Sensing] = 0,
+                [TutorialStep.Communication] = 0,
+                [TutorialStep.State] = 0,
+                [TutorialStep.Execution] = 0,
+            });
+
+        Assert.Equal(TutorialStep.Energy, empty.NextStep);
+        Assert.Equal(TutorialStep.Communication, partial.NextStep);
+        Assert.Null(complete.NextStep);
+    }
+
+    [Fact]
     public void RestoreKeepsCompletedTicks()
     {
         var progress = TutorialProgress.Restore(

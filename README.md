@@ -37,11 +37,13 @@
 
 | 项目 | 说明 |
 |---|---|
-| 当前里程碑 | **M0 完成**；M1 工坊/五分支主体已实现，教程与构造挑战进行中；M2–M3 主体已实现 |
+| 当前里程碑 | **M0/M1 完成**；M2–M3 主体已实现；下一步 M4 战斗深度与 M2 生产/算力闭环 |
 | 仿真核心 | 固定 Tick、意图归属/可见性校验、观察过滤、E/M、通信、直接交火、核心区保护与保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
 | 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
-| M1 教程准入 | 五分支最低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`；HUD 显示进度并随游戏存档 v4 持久化 |
+| M1 教程准入 | 五分支最低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`；HUD 显示进度、AND/OR 构造挑战并随游戏存档 v4 持久化 |
+| M1 默认策略 | `builtin.idle/scout/sentry/relay` 模板；蓝图显式 `ControllerProgramId` 启用，未知 id 回退文明程序；relay 心跳可独立完成通信分支 |
+| M1 首启流程 | 正常启动从 Tick 0 开始（截图/冒烟/基准仍预跑）；`--tutorial-smoke` 验证 `tick=0 tutorial=0/5 pve=False` |
 | 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
 | 跨区物流 | 多跳链路运输 M，途中不可用，按路径总延迟到达；链路物资容量可限制 |
@@ -58,7 +60,7 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **403 个测试通过**（269 仿真 + 107 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | **423 个测试通过**（276 仿真 + 120 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
 | 持久化 | 世界存档 schema v19（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
@@ -82,6 +84,7 @@ dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --tutorial
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --challenges
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --multi-region
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --logistics
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energy
@@ -130,6 +133,7 @@ godot --path game/SeedField.Game -- --capture-diplomacy-ai # B 方外交响应�
 godot --path game/SeedField.Game -- --capture-power    # 电网诊断截图
 godot --path game/SeedField.Game -- --capture-recovery # 核心恢复面板截图
 godot --path game/SeedField.Game -- --capture-victory  # 控制点占领截图
+godot --path game/SeedField.Game -- --tutorial-smoke  # 首启教程状态冒烟（tick 0, 0/5）
 godot --path game/SeedField.Game -- --diplomacy-smoke  # 外交面板按钮接线冒烟
 godot --path game/SeedField.Game -- --diplomacy-ai-smoke # B 方自动响应冒烟
 godot --path game/SeedField.Game -- --diplomacy-counter-smoke # 面板反提议接线冒烟
@@ -201,6 +205,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`ADR-0040`](docs/engineering/adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
 | [`ADR-0041`](docs/engineering/adr/ADR-0041-wasteland-topdown-map-art-direction.md) | 世界层改为废土正交俯视地块地图 |
 | [`wasteland map sample`](docs/engineering/evidence/2026-11-18-wasteland-map-style.md) | 正交俯视地块、矿脉、锈蚀建筑样片与截图 |
+| [`M1 completion`](docs/engineering/evidence/2026-11-18-m1-completion.md) | 默认策略模板、构造挑战、首启流程与 423 测试证据 |
+| [`ADR-0042`](docs/engineering/adr/ADR-0042-m1-templates-challenges-first-run.md) | M1 完成：内置策略模板、构造挑战与首启教程 |
 
 ## 工程原则
 

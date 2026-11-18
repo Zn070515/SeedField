@@ -180,6 +180,17 @@ public partial class Main : Node2D
         GetTree().Quit();
     }
 
+    private void RunTutorialSmoke()
+    {
+        var ok = _world.Tick == 0 &&
+                 _tutorial.CompletedCount == 0 &&
+                 !_tutorial.PveUnlocked;
+        GD.Print(
+            $"TUTORIAL_SMOKE ok={ok} tick={_world.Tick} " +
+            $"tutorial={_tutorial.CompletedCount}/5 pve={_tutorial.PveUnlocked}");
+        GetTree().Quit(ok ? 0 : 1);
+    }
+
     private void SaveGame()
     {
         try
@@ -262,6 +273,7 @@ public partial class Main : Node2D
                 _tutorial = loaded.Tutorials?.FirstOrDefault(tutorial =>
                                tutorial.CivilizationId == "A") ??
                            new TutorialProgress("A");
+                RefreshChallenges();
                 _engine = new SimulationEngine(_world);
                 _deployedSourceA = _slotA.DeployedScript;
                 RebuildDeviceControllers();
@@ -308,6 +320,7 @@ public partial class Main : Node2D
             _opponent.Manifest.PackageId);
         _world = Scenarios.BuildWorld(peaceful);
         _tutorial = new TutorialProgress("A");
+        RefreshChallenges();
         _engine = new SimulationEngine(_world);
         _slotA = new ControllerSlot("A", _deployedSourceA);
         _slotB = new ControllerSlot("B", _opponent.ProgramSource);
@@ -408,7 +421,10 @@ public partial class Main : Node2D
         stepWatch?.Stop();
         var allocAfterStep = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var presentationWatch = mixedSample ? Stopwatch.StartNew() : null;
-        _tutorial.Observe(_world, result.Events);
+        if (_tutorial.Observe(_world, result.Events).Count > 0)
+        {
+            RefreshChallenges();
+        }
         foreach (var simulationEvent in result.Events)
         {
             _history.Add(new TimedEvent(result.Tick, simulationEvent));

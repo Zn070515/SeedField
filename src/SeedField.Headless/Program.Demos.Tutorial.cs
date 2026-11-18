@@ -4,12 +4,71 @@ namespace SeedField.Headless;
 
 internal static partial class Program
 {
+    private static bool TryRunTutorialDemos(string[] args, out int exitCode)
+    {
+        if (args.Contains("--tutorial"))
+        {
+            exitCode = RunTutorialDemo();
+            return true;
+        }
+
+        if (args.Contains("--challenges"))
+        {
+            exitCode = RunChallengesDemo();
+            return true;
+        }
+
+        exitCode = 0;
+        return false;
+    }
+
     /// <summary>
     /// M1 admission demo: the five minimum-usable branches are verified through real
     /// simulation facts (generation, sensor contact, delivery, state-backed action,
     /// movement), not by blueprint metadata.
     /// </summary>
     private static int RunTutorialDemo()
+    {
+        var (_, progress) = RunTutorialScenario();
+
+        var energy = progress.CompletionTick(TutorialStep.Energy);
+        var sensing = progress.CompletionTick(TutorialStep.Sensing);
+        var communication = progress.CompletionTick(TutorialStep.Communication);
+        var state = progress.CompletionTick(TutorialStep.State);
+        var execution = progress.CompletionTick(TutorialStep.Execution);
+
+        Console.WriteLine(
+            $"TUTORIAL completed={progress.CompletedCount}/5 " +
+            $"energy={energy} sensing={sensing} communication={communication} " +
+            $"state={state} execution={execution} " +
+            $"next={progress.NextStep?.ToString() ?? "none"} " +
+            $"pveReady={progress.PveUnlocked}");
+
+        return progress.PveUnlocked ? 0 : 1;
+    }
+
+    /// <summary>M1 challenge catalog: five branch challenges plus AND/OR capstones.</summary>
+    private static int RunChallengesDemo()
+    {
+        var (_, progress) = RunTutorialScenario();
+        var statuses = ConstructionChallenges.Evaluate(progress);
+
+        foreach (var status in statuses)
+        {
+            Console.WriteLine(
+                $"CHALLENGE id={status.Challenge.Id} completed={status.Completed} " +
+                $"detail=\"{status.Detail}\"");
+        }
+
+        var completed = statuses.Count(status => status.Completed);
+        Console.WriteLine(
+            $"CHALLENGES completed={completed}/{statuses.Count} " +
+            $"pveReady={progress.PveUnlocked}");
+
+        return progress.PveUnlocked && completed == statuses.Count ? 0 : 1;
+    }
+
+    private static (WorldState World, TutorialProgress Progress) RunTutorialScenario()
     {
         var world = new WorldBuilder()
             .AddRegion("r0", 10_000, 10_000)
@@ -65,18 +124,6 @@ internal static partial class Program
             progress.Observe(world, engine.Step().Events);
         }
 
-        var energy = progress.CompletionTick(TutorialStep.Energy);
-        var sensing = progress.CompletionTick(TutorialStep.Sensing);
-        var communication = progress.CompletionTick(TutorialStep.Communication);
-        var state = progress.CompletionTick(TutorialStep.State);
-        var execution = progress.CompletionTick(TutorialStep.Execution);
-
-        Console.WriteLine(
-            $"TUTORIAL completed={progress.CompletedCount}/5 " +
-            $"energy={energy} sensing={sensing} communication={communication} " +
-            $"state={state} execution={execution} " +
-            $"pveReady={progress.PveUnlocked}");
-
-        return progress.PveUnlocked ? 0 : 1;
+        return (world, progress);
     }
 }

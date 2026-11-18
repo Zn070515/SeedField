@@ -123,6 +123,23 @@ public sealed class TutorialProgress
     /// <summary>PvE is admitted as soon as all five minimum branches are verified.</summary>
     public bool PveUnlocked => IsComplete;
 
+    /// <summary>First incomplete branch in canonical order; null when complete.</summary>
+    public TutorialStep? NextStep
+    {
+        get
+        {
+            foreach (var definition in TutorialSteps.All)
+            {
+                if (!_completed.ContainsKey(definition.Step))
+                {
+                    return definition.Step;
+                }
+            }
+
+            return null;
+        }
+    }
+
     public DeviceBranch CoveredBranches
     {
         get

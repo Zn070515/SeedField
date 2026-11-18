@@ -1,3 +1,4 @@
+using SeedField.Runtime.Js;
 using SeedField.Simulation;
 
 namespace SeedField.Game;
@@ -104,19 +105,23 @@ internal static class Scenarios
         workshop.Publish(new DeviceBlueprint(
             "power", 0, "Power Cell", 60, 5_000,
             Power: new PowerModule(EnergyPerTick: 4, StorageCapacity: 5_000),
+            ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 20,
             BuildTicks: 2));
         workshop.Publish(new DeviceBlueprint(
             "sensing", 0, "Sensor Suite", 60, 0,
             Sensor: new SensorModule(5_000),
+            ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 30));
         workshop.Publish(new DeviceBlueprint(
             "comm", 0, "Comm Relay", 60, 0,
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
+            ControllerProgramId: DevicePrograms.RelayId,
             MaterialCost: 30));
         workshop.Publish(new DeviceBlueprint(
             "state", 0, "State Core", 60, 0,
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
+            ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 40));
 
         var strike = workshop.Publish(new DeviceBlueprint(
