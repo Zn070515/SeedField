@@ -67,6 +67,8 @@ public sealed class SimulationStatistics
 
     public long OreSmeltedTotal { get; internal set; }
 
+    public long ByproductProducedTotal { get; internal set; }
+
     public long ComponentsFabricatedTotal { get; internal set; }
 
     public long ComponentsRefundedTotal { get; internal set; }

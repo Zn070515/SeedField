@@ -211,9 +211,16 @@ public sealed record StockSaveData(
     long Material,
     long Energy = 0,
     long Ore = 0,
-    long Components = 0);
+    long Components = 0,
+    long OreCopper = 0,
+    long OreLead = 0,
+    long OreTitanium = 0,
+    long OreCoal = 0);
 
-public sealed record SmelterSaveData(long OrePerTick, long EnergyCostPerTick);
+public sealed record SmelterSaveData(
+    long OrePerTick,
+    long EnergyCostPerTick,
+    OreKind? PreferredOre = null);
 
 public sealed record FabricatorSaveData(
     long ComponentsPerTick,
@@ -415,7 +422,8 @@ public sealed record StatisticsSaveData(
     long ShieldRegeneratedTotal = 0,
     long OreSmeltedTotal = 0,
     long ComponentsFabricatedTotal = 0,
-    long ComponentsRefundedTotal = 0);
+    long ComponentsRefundedTotal = 0,
+    long ByproductProducedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

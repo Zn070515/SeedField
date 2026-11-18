@@ -72,6 +72,7 @@ internal static class ObservationJsValue
         "tick", "civilizationId", "entities", "messages", "shipments",
         "energyShipments", "viewerEntityId", "controlPoints", "match", "treaties",
         "treatyProposals", "tradeOffers", "deposits", "material", "ore", "components",
+        "oreCopper", "oreLead", "oreTitanium", "oreCoal",
     });
 
     // JsObject.Create copies the span into a property slot table. Reusing one
@@ -285,6 +286,10 @@ internal static class ObservationJsValue
                 observation.Material,
                 observation.Ore,
                 observation.Components,
+                observation.OreCopper,
+                observation.OreLead,
+                observation.OreTitanium,
+                observation.OreCoal,
             });
     }
 

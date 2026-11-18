@@ -123,4 +123,8 @@ public sealed record Observation(
     IReadOnlyList<ObservedDeposit>? Deposits = null,
     long Material = 0,
     long Ore = 0,
-    long Components = 0);
+    long Components = 0,
+    long OreCopper = 0,
+    long OreLead = 0,
+    long OreTitanium = 0,
+    long OreCoal = 0);

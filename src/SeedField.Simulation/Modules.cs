@@ -36,8 +36,14 @@ public sealed record ShieldModule(
     int RegenDelayTicks,
     long EnergyCostPerRegen);
 
-/// <summary>Converts regional ore into material, 1:1, spending local energy.</summary>
-public sealed record SmelterModule(long OrePerTick, long EnergyCostPerTick);
+/// <summary>
+/// Converts regional ore into material using <see cref="SmeltingRecipes"/>.
+/// PreferredOre pins one kind; otherwise the most abundant eligible kind is used.
+/// </summary>
+public sealed record SmelterModule(
+    long OrePerTick,
+    long EnergyCostPerTick,
+    OreKind? PreferredOre = null);
 
 /// <summary>
 /// Converts material into components, spending local energy. One component costs

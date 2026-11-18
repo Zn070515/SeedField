@@ -85,6 +85,7 @@ public static partial class WorldStateHasher
         Append(ref hash, world.Statistics.OreSmeltedTotal);
         Append(ref hash, world.Statistics.ComponentsFabricatedTotal);
         Append(ref hash, world.Statistics.ComponentsRefundedTotal);
+        Append(ref hash, world.Statistics.ByproductProducedTotal);
 
         Append(ref hash, world.Regions.Count);
         foreach (var region in world.Regions.Values)
@@ -99,7 +100,10 @@ public static partial class WorldStateHasher
                 Append(ref hash, stock.Key);
                 Append(ref hash, stock.Value.Material);
                 Append(ref hash, stock.Value.Energy);
-                Append(ref hash, stock.Value.Ore);
+                Append(ref hash, stock.Value.OreCopper);
+                Append(ref hash, stock.Value.OreLead);
+                Append(ref hash, stock.Value.OreTitanium);
+                Append(ref hash, stock.Value.OreCoal);
                 Append(ref hash, stock.Value.Components);
             }
 

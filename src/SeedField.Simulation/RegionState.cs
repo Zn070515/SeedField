@@ -68,19 +68,25 @@ public sealed class RegionState
         Stocks.TryGetValue(civilizationId, out var stock) ? stock.Energy : 0;
 
     public long GetOre(string civilizationId) =>
-        Stocks.TryGetValue(civilizationId, out var stock) ? stock.Ore : 0;
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.TotalOre : 0;
+
+    public long GetOre(string civilizationId, OreKind kind) =>
+        Stocks.TryGetValue(civilizationId, out var stock) ? stock.GetOre(kind) : 0;
 
     public long GetComponents(string civilizationId) =>
         Stocks.TryGetValue(civilizationId, out var stock) ? stock.Components : 0;
 
-    public void AddOre(string civilizationId, long amount)
+    public void AddOre(string civilizationId, long amount) =>
+        AddOre(civilizationId, OreKind.Copper, amount);
+
+    public void AddOre(string civilizationId, OreKind kind, long amount)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount));
         }
 
-        GetOrCreateStock(civilizationId).Ore += amount;
+        GetOrCreateStock(civilizationId).AddOre(kind, amount);
     }
 
     public void AddComponents(string civilizationId, long amount)
@@ -93,20 +99,22 @@ public sealed class RegionState
         GetOrCreateStock(civilizationId).Components += amount;
     }
 
-    public bool TryConsumeOre(string civilizationId, long amount)
+    public bool TryConsumeOre(string civilizationId, long amount) =>
+        TryConsumeOre(civilizationId, OreKind.Copper, amount);
+
+    public bool TryConsumeOre(string civilizationId, OreKind kind, long amount)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount));
         }
 
-        if (!Stocks.TryGetValue(civilizationId, out var stock) || stock.Ore < amount)
+        if (!Stocks.TryGetValue(civilizationId, out var stock))
         {
             return false;
         }
 
-        stock.Ore -= amount;
-        return true;
+        return stock.TryConsumeOre(kind, amount);
     }
 
     public bool TryConsumeComponents(string civilizationId, long amount)
@@ -195,9 +203,64 @@ public sealed class RegionStock
 
     public long Energy { get; internal set; }
 
-    /// <summary>Raw ore extracted from deposits; smelters convert it to material.</summary>
-    public long Ore { get; internal set; }
+    /// <summary>Raw ore by kind; smelters convert it to material.</summary>
+    public long OreCopper { get; internal set; }
+
+    public long OreLead { get; internal set; }
+
+    public long OreTitanium { get; internal set; }
+
+    public long OreCoal { get; internal set; }
 
     /// <summary>Manufactured components; advanced designs consume them.</summary>
     public long Components { get; internal set; }
+
+    public long TotalOre => OreCopper + OreLead + OreTitanium + OreCoal;
+
+    public long GetOre(OreKind kind) =>
+        kind switch
+        {
+            OreKind.Copper => OreCopper,
+            OreKind.Lead => OreLead,
+            OreKind.Titanium => OreTitanium,
+            OreKind.Coal => OreCoal,
+            _ => 0,
+        };
+
+    public void AddOre(OreKind kind, long amount)
+    {
+        switch (kind)
+        {
+            case OreKind.Copper:
+                OreCopper += amount;
+                break;
+            case OreKind.Lead:
+                OreLead += amount;
+                break;
+            case OreKind.Titanium:
+                OreTitanium += amount;
+                break;
+            case OreKind.Coal:
+                OreCoal += amount;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(kind));
+        }
+    }
+
+    public bool TryConsumeOre(OreKind kind, long amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (GetOre(kind) < amount)
+        {
+            return false;
+        }
+
+        AddOre(kind, -amount);
+        return true;
+    }
 }

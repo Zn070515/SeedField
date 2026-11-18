@@ -46,7 +46,7 @@
 | M1 首启流程 | 正常启动从 Tick 0 开始（截图/冒烟/基准仍预跑）；`--tutorial-smoke` 验证 `tick=0 tutorial=0/5 pve=False` |
 | M2 采集闭环 | 区域有限矿脉 + `DrillModule` + `MineIntent`；矿脉需传感器/钻机侦察发现后才进入 Observation；harvester 可先移动再开采；HUD 显示余量/耗尽；世界存档 v23（ADR-0044/0047） |
 | M4 战斗深度 v1 | 装甲固定减伤、Beam 忽略装甲、护盾先吸收/延迟再生；≤25% 生命禁用武器/传感器/驱动；装甲/护盾/武器类型进入 Observation；HUD 护盾条（ADR-0045/0047） |
-| M2 生产链 | 钻机产 Ore → 冶炼厂转 M → 构件厂产 Components；`ComponentCost` 扣费/退款；生产模块与开关进入 Observation；`SetProductionIntent` 可暂停/恢复（ADR-0046/0047） |
+| M2 生产链 | 钻机按矿种产 Ore → 铜/铅/钛/煤配方冶炼 → 构件厂产 Components；铅副产构件、煤副产能源；`ComponentCost` 扣费/退款；`SetProductionIntent` 可暂停/恢复（ADR-0046/0047/0048） |
 | 美术方向 | 世界层改为 **Mindustry 式正交俯视地块 + 末日废土**：90° 俯视、地表矿脉、块状锈蚀建筑；样片 `art-mindustry-style.png`，Main 迁移待做（ADR-0041） |
 | 废土资产包 v1 | Blender 9 建筑 + 3 道具 + 4 矿脉 + 4 无缝地表；程序化锈蚀/凹凸与暖光；总览 `wasteland_pack_v1.png`（ADR-0043） |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
@@ -64,8 +64,8 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **453 个测试通过**（302 仿真 + 124 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
-| 持久化 | 世界存档 schema v24（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
+| 验证 | **466 个测试通过**（315 仿真 + 124 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 持久化 | 世界存档 schema v25（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -222,6 +222,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`production chain`](docs/engineering/evidence/2026-11-18-production-chain.md) | Ore→M→Components、构件成本/退款与 448 测试证据 |
 | [`ADR-0047`](docs/engineering/adr/ADR-0047-deposit-discovery-observation-and-production-control.md) | 矿脉侦察发现、观察扩展与生产开关 |
 | [`discovery & control`](docs/engineering/evidence/2026-11-18-discovery-observation-production-control.md) | 侦察发现/观察字段/生产开关与 453 测试证据 |
+| [`ADR-0048`](docs/engineering/adr/ADR-0048-multi-ore-recipes-and-byproducts.md) | 多矿种配方与副产物 |
+| [`multi-ore recipes`](docs/engineering/evidence/2026-11-18-multi-ore-recipes.md) | 按矿种库存/配方/副产物与 466 测试证据 |
 
 ## 工程原则
 

@@ -234,7 +234,10 @@ public sealed record OreSmelted(
     EntityId EntityId,
     string RegionId,
     long Amount,
-    long OreRemaining) : SimulationEvent(Tick);
+    long OreRemaining,
+    OreKind Kind = OreKind.Copper,
+    SmeltByproduct Byproduct = SmeltByproduct.None,
+    long ByproductAmount = 0) : SimulationEvent(Tick);
 
 /// <summary>A fabricator converted material into components.</summary>
 public sealed record ComponentsFabricated(

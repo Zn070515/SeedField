@@ -58,6 +58,13 @@ internal static class Scenarios
                 radiusMm: 900,
                 remaining: 5_000,
                 yieldPerTick: 20)
+            .AddDeposit(
+                OreKind.Lead,
+                "frontier",
+                new Vec2(5_200, 6_000),
+                radiusMm: 900,
+                remaining: 4_000,
+                yieldPerTick: 20)
             .AddControlPoint(
                 "relay-west",
                 "frontier",
@@ -140,6 +147,16 @@ internal static class Scenarios
         var smelter = workshop.Publish(new DeviceBlueprint(
             "smelter", 0, "Ore Smelter", 90, 1_000,
             Smelter: new SmelterModule(OrePerTick: 4, EnergyCostPerTick: 1),
+            Power: new PowerModule(EnergyPerTick: 1, StorageCapacity: 1_000),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 45,
+            BuildTicks: 3));
+        var leadSmelter = workshop.Publish(new DeviceBlueprint(
+            "smelter-lead", 0, "Lead Smelter", 90, 1_000,
+            Smelter: new SmelterModule(
+                OrePerTick: 4,
+                EnergyCostPerTick: 1,
+                PreferredOre: OreKind.Lead),
             Power: new PowerModule(EnergyPerTick: 1, StorageCapacity: 1_000),
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 45,
@@ -228,6 +245,7 @@ internal static class Scenarios
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", AStagingPosition);
         DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
         DeploymentService.Deploy(world, smelter, "A", "frontier", new Vec2(4_200, 6_000));
+        DeploymentService.Deploy(world, leadSmelter, "A", "frontier", new Vec2(5_000, 6_000));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {
