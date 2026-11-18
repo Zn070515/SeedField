@@ -40,8 +40,8 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 396 passed / 0 failed
-  仿真 267 · Runtime.Js 102 · 仓库门禁 19 · Catalog 8
+dotnet test  SeedField.slnx   → 403 passed / 0 failed
+  仿真 269 · Runtime.Js 107 · 仓库门禁 19 · Catalog 8
 ```
 
 - 规模：228 个 `.cs` / 37,053 行；162 个 `.md` / 10,037 行；41 篇 ADR；52 篇证据。
@@ -134,12 +134,13 @@ tests/SeedField.Repository.Tests/
 - 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；默认 DOF = 逻辑核数；Headless Server GC；`Engine.PrepareScript` 跨引擎复用；进程内 `Decide` 用 `JsObject.Create` + 共享布局直接构造观测对象，worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试；100 台 33.96→1.18 ms/tick、1000 台 180.36→7.9 ms/tick（3000 Tick 稳态），1000 台启动 205→127 ms；`--benchmark-jint-parallel`、`--benchmark-jint-preserialized`、`--benchmark-startup`、`--ticks`、`--chunk-size` 与 `--budget-ms` 门禁（ADR-0028）。
 
 - M1 教程准入：`TutorialProgress` 从世界与事件派生五分支最低可用事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），效率不参与判定；五步完成即 `PveUnlocked`；Godot HUD 教程面板与 `--tutorial` 演示；不新增世界状态/hash（ADR-0040）。
+- 教程进度持久化：游戏存档 v4 新增 `tutorials`（文明 + 步骤 + 完成 Tick），读档校验 Tick 不晚于世界 Tick、步骤/文明不重复；v1–v3 旧档按空进度处理；`--save-smoke` 输出 `tutorial=5/5`。
 - 美术方向：世界层改为 Mindustry 式正交俯视地块 + 末日废土（A-02、ADR-0041）；`MindustryStyle` 样片含四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；旧 35° 斜俯视降为历史对照，Main 迁移顺序见 ADR。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
 
-- **M1 剩余**：教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略（scout/sentry/relay 模板）、教程进度持久化到 GameSave。
+- **M1 剩余**：教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略（scout/sentry/relay 模板）。
 - 客户端产品外壳：主菜单、新游戏/读档流程、设置、暂停菜单、音频与本地化。
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、维护时长、多电压/潮流方程。
 - 跨发行版本的存档迁移验收与存档浏览器；完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
@@ -454,7 +455,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 
 ## 8. 下一步（按依赖顺序）
 
-0. **完成 M1**：教程准入事实与 HUD 面板已实现（ADR-0040）；剩余教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略、进度持久化；只读 `Observation`、命令走宿主入口。
+0. **完成 M1**：教程准入事实、HUD 面板与 GameSave v4 进度持久化已实现（ADR-0040）；剩余教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略；只读 `Observation`、命令走宿主入口。
 1. 离线包隔离剩余门禁：OS 磁盘配额（若开放文件 API）、完整 fuzz/红队、发布签名密钥、独立安全审查、正式安装 profile/ACL（仍不开放导入）；独立废墟美术/老化掠夺；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。

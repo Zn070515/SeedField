@@ -75,6 +75,44 @@ public sealed class TutorialProgress
 
     public string CivilizationId { get; }
 
+    /// <summary>
+    /// Rebuilds progress from saved completed ticks. Ticks must be non-negative;
+    /// callers are responsible for rejecting ticks later than the world clock.
+    /// </summary>
+    public static TutorialProgress Restore(
+        string civilizationId,
+        IReadOnlyDictionary<TutorialStep, long> completed)
+    {
+        ArgumentNullException.ThrowIfNull(completed);
+
+        var progress = new TutorialProgress(civilizationId);
+        foreach (var pair in completed)
+        {
+            if (!Enum.IsDefined(pair.Key))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(completed),
+                    $"Unknown tutorial step '{pair.Key}'.");
+            }
+
+            if (pair.Value < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(completed),
+                    $"Tutorial step '{pair.Key}' has a negative completion tick.");
+            }
+
+            if (!progress._completed.TryAdd(pair.Key, pair.Value))
+            {
+                throw new ArgumentException(
+                    $"Duplicate tutorial step '{pair.Key}'.",
+                    nameof(completed));
+            }
+        }
+
+        return progress;
+    }
+
     /// <summary>Tutorial step to the first tick on which it was verified.</summary>
     public IReadOnlyDictionary<TutorialStep, long> Completed => _completed;
 

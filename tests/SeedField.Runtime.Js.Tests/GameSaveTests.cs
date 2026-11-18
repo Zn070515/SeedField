@@ -29,7 +29,9 @@ public sealed class GameSaveTests
         var world = BuildWorld();
         using var slot = new ControllerSlot("A", WaitScript);
         var json = GameSaveSerializer.Save(world, new[] { slot });
-        var v1 = json.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1");
+        var v1 = json.Replace(
+            $"\"schemaVersion\": {GameSaveSerializer.CurrentSchemaVersion}",
+            "\"schemaVersion\": 1");
 
         var loaded = GameSaveSerializer.Load(v1);
 
@@ -61,7 +63,9 @@ public sealed class GameSaveTests
         var world = BuildWorld();
         using var slot = new ControllerSlot("A", WaitScript);
         var json = GameSaveSerializer.Save(world, new[] { slot });
-        var unsupported = json.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99");
+        var unsupported = json.Replace(
+            $"\"schemaVersion\": {GameSaveSerializer.CurrentSchemaVersion}",
+            "\"schemaVersion\": 99");
 
         var exception = Assert.Throws<SaveFormatException>(() =>
             GameSaveSerializer.Load(unsupported));
@@ -81,6 +85,121 @@ public sealed class GameSaveTests
             GameSaveSerializer.Load(broken));
 
         Assert.Equal("INVALID_CONTROLLER_SCRIPT", exception.Code);
+    }
+
+    [Fact]
+    public void GameSaveRoundTripsTutorialProgress()
+    {
+        var world = BuildWorld();
+        Advance(world, 5);
+        using var slot = new ControllerSlot("A", WaitScript);
+        var progress = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long>
+            {
+                [TutorialStep.Energy] = 1,
+                [TutorialStep.Sensing] = 4,
+            });
+
+        var json = GameSaveSerializer.Save(
+            world,
+            new[] { slot },
+            tutorials: new[] { progress });
+        var loaded = GameSaveSerializer.Load(json);
+        var restored = Assert.Single(loaded.Tutorials!);
+
+        Assert.Equal("A", restored.CivilizationId);
+        Assert.Equal(2, restored.CompletedCount);
+        Assert.Equal(1, restored.CompletionTick(TutorialStep.Energy));
+        Assert.Equal(4, restored.CompletionTick(TutorialStep.Sensing));
+        Assert.False(restored.HasCompleted(TutorialStep.Execution));
+    }
+
+    [Fact]
+    public void GameSaveWithoutTutorialsLoadsEmptyProgress()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var json = GameSaveSerializer.Save(world, new[] { slot });
+        var v3 = json.Replace(
+            $"\"schemaVersion\": {GameSaveSerializer.CurrentSchemaVersion}",
+            "\"schemaVersion\": 3");
+
+        var loaded = GameSaveSerializer.Load(v3);
+
+        Assert.Empty(loaded.Tutorials!);
+    }
+
+    [Fact]
+    public void GameSaveRejectsTutorialCompletionAfterWorldTick()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var progress = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long> { [TutorialStep.Sensing] = 50 });
+
+        var json = GameSaveSerializer.Save(
+            world,
+            new[] { slot },
+            tutorials: new[] { progress });
+
+        var exception = Assert.Throws<SaveFormatException>(() =>
+            GameSaveSerializer.Load(json));
+
+        Assert.Equal("INVALID_TUTORIAL", exception.Code);
+    }
+
+    [Fact]
+    public void GameSaveRejectsDuplicateTutorialCivilization()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var first = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long> { [TutorialStep.Energy] = 0 });
+        var second = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long> { [TutorialStep.Sensing] = 0 });
+
+        var json = GameSaveSerializer.Save(
+            world,
+            new[] { slot },
+            tutorials: new[] { first, second });
+
+        var exception = Assert.Throws<SaveFormatException>(() =>
+            GameSaveSerializer.Load(json));
+
+        Assert.Equal("INVALID_TUTORIAL", exception.Code);
+    }
+
+    [Fact]
+    public void GameSaveRejectsUnknownTutorialStep()
+    {
+        var world = BuildWorld();
+        using var slot = new ControllerSlot("A", WaitScript);
+        var progress = TutorialProgress.Restore(
+            "A",
+            new Dictionary<TutorialStep, long> { [TutorialStep.Energy] = 0 });
+        var json = GameSaveSerializer.Save(
+                world,
+                new[] { slot },
+                tutorials: new[] { progress })
+            .Replace("\"step\": \"Energy\"", "\"step\": \"Bogus\"");
+
+        var exception = Assert.Throws<SaveFormatException>(() =>
+            GameSaveSerializer.Load(json));
+
+        Assert.Equal("INVALID_TUTORIAL", exception.Code);
+    }
+
+    private static void Advance(WorldState world, int ticks)
+    {
+        var engine = new SimulationEngine(world);
+        for (var i = 0; i < ticks; i++)
+        {
+            engine.Step();
+        }
     }
 
     private static WorldState BuildWorld() =>

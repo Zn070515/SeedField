@@ -62,11 +62,11 @@ godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-sec
 - 左下 `TUTORIAL` 面板列出 Energy / Sensing / Communication / State / Execution 五步。
 - 完成条件来自仿真事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），不是蓝图字段或面板勾选。
 - 五步全部完成后显示 `PVE READY · free world unlocked`；右上摘要同步为 `TUTORIAL 5/5`。
-- 进度目前是会话级，重开/读档后重新计算（ADR-0040）。
+- 进度随游戏存档 v4 持久化（完成步骤 + 完成 Tick）；旧档无教程字段时按空进度处理（ADR-0040）。
 
 ## 存档
 
-- `F5` 保存到 `user://seedfield-save.json`，包含世界、蓝图注册表、在途消息、核心区最新产品与 A/B 控制器版本。
+- `F5` 保存到 `user://seedfield-save.json`，包含世界、蓝图注册表、在途消息、核心区最新产品、A/B 控制器版本与教程进度（游戏存档 v4）。
 - `F9` 读取；失败保留当前世界并显示错误。
 - `--save-smoke` 自动执行保存→变更→读取并打印哈希一致性。
 

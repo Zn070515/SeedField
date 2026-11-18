@@ -57,13 +57,13 @@ M1 要求玩家完成五类**最低可用**结构后立即开放 PvE，且低效
 ## 后果
 
 - 教程完成需要真实仿真事实，杜绝“只填蓝图”通过。
-- 无 schema/哈希变更；新增测试可使用现成世界与事件。
+- 无世界 schema/哈希变更；新增测试可使用现成世界与事件。
 - 传感器判定在完成前为 O(设备 × 设备) 的简单扫描；教程世界规模很小，完成即停止。
-- 进度目前在客户端重开/读档后丢失，需在 GameSave 层补充持久化。
+- 进度已持久化到 GameSave v4（完成 Tick 排序、读档校验不超过世界 Tick）；
+  旧 v1–v3 游戏存档没有 tutorials 字段时按空进度的新教程处理。
 
 ## 开放问题
 
-- 是否把完成 Tick 持久化到 GameSave v4，以及读档时如何与旧档合并。
 - 第一组构造挑战是否扩成带目标/评分/AND-OR 前置的关卡目录。
 - 非程序员默认策略（scout/sentry/relay 模板）如何在无脚本时自动绑定。
 
@@ -71,8 +71,11 @@ M1 要求玩家完成五类**最低可用**结构后立即开放 PvE，且低效
 
 - `TutorialProgressTests`：能量必须真的充电、传感器必须看到外国目标、通信必须
   送达、State 必须由带 State 模块的设备行动、执行必须有移动/射击；其他文明事件
-  不计入；重复观察幂等；五步完成解锁 PvE。
+  不计入；重复观察幂等；五步完成解锁 PvE；`Restore` 保留完成 Tick 并拒绝负 Tick。
+- `GameSaveTests`：GameSave v4 往返保留教程进度；v3 旧档无 tutorials 时为空；
+  拒绝未来 Tick、重复文明、未知步骤。
 - `--tutorial`：真实引擎两步内完成 5/5 并输出 `pveReady=True`。
+- Godot `--save-smoke`：`SAVE_SMOKE ok=True ... tutorial=5/5`。
 - Godot `--capture`：HUD 显示五步与 `PVE READY`（截图 `m0-combat.png`）。
 
 ## 回滚
