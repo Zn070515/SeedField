@@ -40,11 +40,11 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 403 passed / 0 failed
-  仿真 269 · Runtime.Js 107 · 仓库门禁 19 · Catalog 8
+dotnet test  SeedField.slnx   → 423 passed / 0 failed
+  仿真 276 · Runtime.Js 120 · 仓库门禁 19 · Catalog 8
 ```
 
-- 规模：228 个 `.cs` / 37,053 行；162 个 `.md` / 10,037 行；41 篇 ADR；52 篇证据。
+- 规模：232 个 `.cs` / 38,069 行；166 个 `.md` / 10,227 行；42 篇 ADR；53 篇证据。
 - M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
 - 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
 - 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
@@ -135,12 +135,13 @@ tests/SeedField.Repository.Tests/
 
 - M1 教程准入：`TutorialProgress` 从世界与事件派生五分支最低可用事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），效率不参与判定；五步完成即 `PveUnlocked`；Godot HUD 教程面板与 `--tutorial` 演示；不新增世界状态/hash（ADR-0040）。
 - 教程进度持久化：游戏存档 v4 新增 `tutorials`（文明 + 步骤 + 完成 Tick），读档校验 Tick 不晚于世界 Tick、步骤/文明不重复；v1–v3 旧档按空进度处理；`--save-smoke` 输出 `tutorial=5/5`。
+- M1 完成（ADR-0042）：`DevicePrograms` 内置 idle/scout/sentry/relay 模板（显式 `ControllerProgramId` 才启用，未知 id 回退文明程序）；`ConstructionChallenges` 提供 5 分支 + AND 网络 + OR 前沿挑战，不阻塞 PvE；正常启动从 Tick 0 开始，HUD 列出步骤/挑战/NEXT，`--tutorial-smoke` 验证首启状态。
 - 美术方向：世界层改为 Mindustry 式正交俯视地块 + 末日废土（A-02、ADR-0041）；`MindustryStyle` 样片含四类地貌、四种矿脉、块状锈蚀建筑与旋转单位；旧 35° 斜俯视降为历史对照，Main 迁移顺序见 ADR。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
 
-- **M1 剩余**：教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略（scout/sentry/relay 模板）。
+- **M1 已完成（2026-11-18）**：五分支最低可用、教程事实准入、GameSave v4 进度、内置策略模板、第一组构造挑战与首启流程均有代码与测试；后续仅做文案/本地化与试玩节奏调优，不再阻塞里程碑。
 - 客户端产品外壳：主菜单、新游戏/读档流程、设置、暂停菜单、音频与本地化。
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、维护时长、多电压/潮流方程。
 - 跨发行版本的存档迁移验收与存档浏览器；完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
@@ -452,10 +453,11 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0039](adr/ADR-0039-mixed-load-allocation-and-multimesh.md) | 混合客户端分配/GC 优化与 MultiMesh 批处理 |
 | [ADR-0040](adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
 | [ADR-0041](adr/ADR-0041-wasteland-topdown-map-art-direction.md) | 世界层美术改为废土正交俯视地块地图 |
+| [ADR-0042](adr/ADR-0042-m1-templates-challenges-first-run.md) | M1 完成：内置策略模板、构造挑战与首启教程 |
 
 ## 8. 下一步（按依赖顺序）
 
-0. **完成 M1**：教程准入事实、HUD 面板与 GameSave v4 进度持久化已实现（ADR-0040）；剩余教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略；只读 `Observation`、命令走宿主入口。
+0. **M1 已完成（ADR-0040/0042）**：教程准入、GameSave v4 进度、内置策略模板、构造挑战与首启流程齐备；剩余仅为文案/本地化/试玩节奏调优。下一优先级：M4 战斗深度与 M2 算力/生产闭环。
 1. 离线包隔离剩余门禁：OS 磁盘配额（若开放文件 API）、完整 fuzz/红队、发布签名密钥、独立安全审查、正式安装 profile/ACL（仍不开放导入）；独立废墟美术/老化掠夺；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。

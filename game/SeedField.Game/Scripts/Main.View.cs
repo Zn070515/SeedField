@@ -325,6 +325,30 @@ public partial class Main
         GetTree().Quit();
     }
 
+    private Vector2 Map(Vec2 position) =>
+        MapOrigin + new Vector2(position.X * MapScale, position.Y * MapScale);
+
+    private static string SaveAbsolutePath => ProjectSettings.GlobalizePath(SavePath);
+
+    private static Font HudFont => ThemeDB.FallbackFont;
+
+    /// <summary>
+    /// Screenshots, smoke runs and benchmarks need the pre-run combat state. A normal
+    /// launch starts at tick 0 so the M1 tutorial is actually playable.
+    /// </summary>
+    private static bool RequiresPreRun(string[] arguments) =>
+        arguments.Any(argument =>
+            argument is "--capture" or
+                "--save-smoke" or
+                "--core-state-smoke" or
+                "--diplomacy-smoke" or
+                "--diplomacy-ai-smoke" or
+                "--diplomacy-counter-smoke" or
+                "--power-breaker-smoke" or
+                "--recovery-smoke" ||
+            argument.StartsWith("--capture-", StringComparison.Ordinal) ||
+            argument.StartsWith("--benchmark", StringComparison.Ordinal));
+
     private void CenterView()
     {
         var size = new Vector2(

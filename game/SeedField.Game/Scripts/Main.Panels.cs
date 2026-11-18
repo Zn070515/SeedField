@@ -40,9 +40,10 @@ public partial class Main : Node2D
 
     private void RegisterDeviceController(EntityState entity)
     {
-        var source = entity.CivilizationId == "A"
+        var fallback = entity.CivilizationId == "A"
             ? _slotA.DeployedScript
             : _slotB.DeployedScript;
+        var source = DevicePrograms.ResolveSource(entity, fallback);
         _deviceControllers.Add(new DeviceControllerSlot(
             entity.Id,
             entity.CivilizationId,

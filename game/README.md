@@ -59,10 +59,14 @@ godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-sec
 
 ## 教程准入（M1）
 
-- 左下 `TUTORIAL` 面板列出 Energy / Sensing / Communication / State / Execution 五步。
+- 左下 `TUTORIAL` 面板列出 Energy / Sensing / Communication / State / Execution 五步，
+  以及 `AND · Minimum Network` / `OR · Field Awareness` 两个构造挑战。
 - 完成条件来自仿真事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），不是蓝图字段或面板勾选。
 - 五步全部完成后显示 `PVE READY · free world unlocked`；右上摘要同步为 `TUTORIAL 5/5`。
-- 进度随游戏存档 v4 持久化（完成步骤 + 完成 Tick）；旧档无教程字段时按空进度处理（ADR-0040）。
+- 内置策略模板 `builtin.idle/scout/sentry/relay` 让非程序玩家直接部署可用设备；
+  蓝图 `ControllerProgramId` 显式选择，未知 id 回退文明程序。
+- 正常启动从 Tick 0 开始；截图/冒烟/基准仍预跑到战斗。`--tutorial-smoke` 打印首启状态。
+- 进度随游戏存档 v4 持久化（完成步骤 + 完成 Tick）；旧档无教程字段时按空进度处理（ADR-0040/0042）。
 
 ## 存档
 

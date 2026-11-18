@@ -126,7 +126,7 @@ public partial class Main : Node2D
             DisplayServer.WindowSetVsyncMode(DisplayServer.VSyncMode.Disabled);
         }
 
-        ResetScenario(_peacefulScenario);
+        ResetScenario(_peacefulScenario, preRun: RequiresPreRun(arguments));
         BuildProgramEditor();
         BuildWorkshopPanel();
         BuildDiplomacyPanel();
@@ -189,6 +189,8 @@ public partial class Main : Node2D
             RunSaveSmoke();
             return;
         }
+
+        if (arguments.Contains("--tutorial-smoke")) { RunTutorialSmoke(); return; }
 
         if (arguments.Contains("--diplomacy-smoke"))
         {
@@ -587,13 +589,6 @@ public partial class Main : Node2D
                 break;
         }
     }
-
-    private Vector2 Map(Vec2 position) =>
-        MapOrigin + new Vector2(position.X * MapScale, position.Y * MapScale);
-
-    private static string SaveAbsolutePath => ProjectSettings.GlobalizePath(SavePath);
-
-    private static Font HudFont => ThemeDB.FallbackFont;
 
     private sealed record TimedEvent(long Tick, SimulationEvent Event);
 }
