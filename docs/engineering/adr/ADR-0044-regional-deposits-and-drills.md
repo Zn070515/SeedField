@@ -53,10 +53,21 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
   `ControllerProgramId = builtin.harvester.v1` 才启用。
 - 初始场景新增一处铜矿与 A 方钻机，演示无玩家代码的采集闭环。
 
+## 4. 观察与 UI
+
+- `ObservedDeposit` 进入 Observation：id、区域、矿种、位置、半径、余量、每 Tick 产出。
+- 文明级观察：只包含**己方拥有实体**的区域中的矿脉。
+- 设备级观察：只包含本区域、且位于 `max(传感器范围, 钻机范围)` 内的矿脉。
+- `ObservedEntity` 新增 `hasDrill` 与 `drillRangeMm`，脚本可据此判断“就地开采”还是“先移动”。
+- `builtin.harvester.v1` 改为：选最近的未耗尽矿脉；在钻机范围内 `mine`，
+  否则有驱动时向矿脉移动。
+- Godot `Main` 绘制矿脉：矿种颜色、范围圈、余量标签；耗尽显示 `DEPLETED`。
+- 完整/紧凑/Jint 对象三套观察序列化与 TypeScript 契约同步；契约漂移测试覆盖新字段。
+
 ## 非目标
 
-- 不做矿床观察/发现（当前脚本不能看到矿脉列表；见“开放问题”）。
-- 不做多资源、冶炼、传送带、钻头磨损、矿脉视觉耗尽状态。
+- 不做矿脉隐藏/侦察发现：当前“己方区域 + 设备视野”即可见。
+- 不做多资源、冶炼、传送带、钻头磨损、矿脉视觉耗尽动画。
 - 不改跨区物流/能源/通信规则；矿脉产出进入所在区域库存，跨区仍需运输。
 - 不把演示数值（5M/tick、5000 余量）写成正式平衡。
 
@@ -64,21 +75,23 @@ M2 要求 M 是“可采集/储存/运输/消耗”的物质资源，但此前 M
 
 - M2 的“采集→本地库存→建造消耗”闭环成立；玩家可在矿脉上部署钻机持续产 M。
 - 矿脉是有限资源，长期工业仍需扩张/跨区运输，避免无限本地供给。
-- 脚本暂时只能“盲采最近矿”；要规划矿点需要后续观察字段与 UI。
+- 脚本可以选择矿点：最近未耗尽矿脉在观察中，harvester 可先移动再开采。
 - 世界存档与哈希变更，旧档迁移为无矿脉；黄金哈希已更新。
 
 ## 验证
 
 - `MiningTests`：最近矿脉、耗尽拒绝、越界拒绝、无钻机拒绝、无能量不产出、
-  距离相同按 id、存档往返、双跑确定性。
+  距离相同按 id、存档往返、双跑确定性、设备/文明观察矿脉范围。
 - `SaveLoadTests.V19SaveWithoutDepositsLoadsEmptyDeposits`。
-- `DeviceProgramsTests.HarvesterTemplateEmitsMineIntent`。
+- `DeviceProgramsTests.HarvesterTemplateEmitsMineIntent` /
+  `HarvesterTemplateMovesTowardAFarDeposit`。
+- `ControllerContractTests`：`hasDrill`/`drillRangeMm`/`deposits` 与 `mine` 契约。
 - `--mining`：`MINING mined=12 stock=12 remaining=0 depleted=True ok=True`。
-- Godot `--save-smoke`：矿区世界保存/读取哈希一致。
+- Godot `--save-smoke`：矿区世界保存/读取哈希一致；`--capture` 显示矿脉余量/耗尽标签。
 - 全量测试与仓库门禁通过。
 
 ## 开放问题
 
-- 矿床是否应进入 Observation（传感器/侦察发现），以及 UI 如何标注已耗尽矿脉。
+- 是否引入矿脉隐藏/侦察发现，而不是当前“己方区域 + 设备视野”可见。
 - 是否引入多资源（Cu/Pb/Ti/C）与冶炼链；需要独立经济 ADR。
 - 钻机是否应有磨损、过热、维护或电力优先级。

@@ -15,7 +15,7 @@ internal static class ObservationJsValue
     {
         "entityId", "civilizationId", "regionId", "x", "y", "health", "maxHealth",
         "isSelf", "hasSensor", "sensorRangeMm", "hasWeapon", "weaponRangeMm",
-        "hasDrive", "hasComm",
+        "hasDrive", "hasComm", "hasDrill", "drillRangeMm",
     });
 
     private static readonly JsObjectLayout MessageLayout = new(new[]
@@ -34,6 +34,12 @@ internal static class ObservationJsValue
     {
         "id", "regionId", "x", "y", "radiusMm", "holdTicksRequired",
         "holdingCivilizationId", "holdTicks", "ownerCivilizationId",
+    });
+
+    private static readonly JsObjectLayout DepositLayout = new(new[]
+    {
+        "depositId", "regionId", "kind", "x", "y", "radiusMm", "remaining",
+        "yieldPerTick",
     });
 
     private static readonly JsObjectLayout MatchLayout = new(new[]
@@ -63,12 +69,13 @@ internal static class ObservationJsValue
     {
         "tick", "civilizationId", "entities", "messages", "shipments",
         "energyShipments", "viewerEntityId", "controlPoints", "match", "treaties",
-        "treatyProposals", "tradeOffers",
+        "treatyProposals", "tradeOffers", "deposits",
     });
 
     // JsObject.Create copies the span into a property slot table. Reusing one
     // scratch buffer per worker keeps the observation graph allocation focused
     // on Jint objects instead of short-lived value arrays.
+    [ThreadStatic] private static JsValue[]? _depositScratch;
     [ThreadStatic] private static JsValue[]? _entityScratch;
     [ThreadStatic] private static JsValue[]? _messageScratch;
     [ThreadStatic] private static JsValue[]? _shipmentScratch;
@@ -84,7 +91,7 @@ internal static class ObservationJsValue
         for (var index = 0; index < entities.Length; index++)
         {
             var entity = observation.Entities[index];
-            var values = _entityScratch ??= new JsValue[14];
+            var values = _entityScratch ??= new JsValue[16];
             values[0] = entity.EntityId;
             values[1] = entity.CivilizationId;
             values[2] = entity.RegionId;
@@ -99,6 +106,8 @@ internal static class ObservationJsValue
             values[11] = entity.WeaponRangeMm;
             values[12] = entity.HasDrive;
             values[13] = entity.HasComm;
+            values[14] = entity.HasDrill;
+            values[15] = entity.DrillRangeMm;
             entities[index] = JsObject.Create(engine, EntityLayout, values);
         }
 
@@ -229,6 +238,23 @@ internal static class ObservationJsValue
             offerValues[index] = JsObject.Create(engine, TradeOfferLayout, values);
         }
 
+        var deposits = observation.Deposits ?? Array.Empty<ObservedDeposit>();
+        var depositValues = new JsValue[deposits.Count];
+        for (var index = 0; index < depositValues.Length; index++)
+        {
+            var deposit = deposits[index];
+            var values = _depositScratch ??= new JsValue[8];
+            values[0] = deposit.DepositId;
+            values[1] = deposit.RegionId;
+            values[2] = deposit.Kind.ToString();
+            values[3] = deposit.Position.X;
+            values[4] = deposit.Position.Y;
+            values[5] = deposit.RadiusMm;
+            values[6] = deposit.Remaining;
+            values[7] = deposit.YieldPerTick;
+            depositValues[index] = JsObject.Create(engine, DepositLayout, values);
+        }
+
         return JsObject.Create(
             engine,
             RootLayout,
@@ -246,6 +272,7 @@ internal static class ObservationJsValue
                 new JsArray(engine, treatyValues),
                 new JsArray(engine, proposalValues),
                 new JsArray(engine, offerValues),
+                new JsArray(engine, depositValues),
             });
     }
 

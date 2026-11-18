@@ -12,6 +12,7 @@ internal static class ObservationExpander
             if (o.s === undefined) { return o; }
             var s = o.s;
             var kinds = ["NonAggression", "Trade"];
+            var ores = ["Copper", "Lead", "Titanium", "Coal"];
             var i, src, out, row;
 
             src = o.entities;
@@ -32,7 +33,9 @@ internal static class ObservationExpander
                     hasWeapon: row[10] === 1,
                     weaponRangeMm: row[11],
                     hasDrive: row[12] === 1,
-                    hasComm: row[13] === 1
+                    hasComm: row[13] === 1,
+                    hasDrill: row[14] === 1,
+                    drillRangeMm: row[15]
                 };
             }
             o.entities = out;
@@ -159,6 +162,23 @@ internal static class ObservationExpander
                 };
             }
             o.tradeOffers = out;
+
+            src = o.deposits;
+            out = new Array(src.length);
+            for (i = 0; i < src.length; i++) {
+                row = src[i];
+                out[i] = {
+                    depositId: row[0],
+                    regionId: s[row[1]],
+                    kind: ores[row[2]],
+                    x: row[3],
+                    y: row[4],
+                    radiusMm: row[5],
+                    remaining: row[6],
+                    yieldPerTick: row[7]
+                };
+            }
+            o.deposits = out;
 
             delete o.s;
             return o;

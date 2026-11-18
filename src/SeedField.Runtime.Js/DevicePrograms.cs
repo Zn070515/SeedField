@@ -206,7 +206,40 @@ public static class DevicePrograms
             if (!me) {
                 return [];
             }
-            return [{ type: "mine", entityId: me.entityId }];
+
+            var deposits = obs.deposits || [];
+            var target = null;
+            var bestDistance = 1e18;
+            for (var i = 0; i < deposits.length; i++) {
+                var deposit = deposits[i];
+                if (deposit.remaining <= 0) {
+                    continue;
+                }
+                var d = __seedfieldDistanceSq(me, deposit);
+                if (d < bestDistance) {
+                    bestDistance = d;
+                    target = deposit;
+                }
+            }
+
+            if (!target) {
+                return [];
+            }
+
+            if (me.hasDrill &&
+                __seedfieldDistance(me, target) <= me.drillRangeMm) {
+                return [{ type: "mine", entityId: me.entityId }];
+            }
+
+            if (me.hasDrive) {
+                return [{
+                    type: "move",
+                    entityId: me.entityId,
+                    target: { x: target.x, y: target.y }
+                }];
+            }
+
+            return [];
         }
         """;
 

@@ -17,7 +17,18 @@ public sealed record ObservedEntity(
     bool HasWeapon,
     int WeaponRangeMm,
     bool HasDrive,
-    bool HasComm);
+    bool HasComm,
+    bool HasDrill = false,
+    int DrillRangeMm = 0);
+
+public sealed record ObservedDeposit(
+    long DepositId,
+    string RegionId,
+    OreKind Kind,
+    Vec2 Position,
+    int RadiusMm,
+    long Remaining,
+    long YieldPerTick);
 
 public sealed record ObservedMessage(
     long MessageId,
@@ -101,4 +112,5 @@ public sealed record Observation(
     ObservedMatch? Match = null,
     IReadOnlyList<ObservedTreaty>? Treaties = null,
     IReadOnlyList<ObservedTreatyProposal>? TreatyProposals = null,
-    IReadOnlyList<ObservedTradeOffer>? TradeOffers = null);
+    IReadOnlyList<ObservedTradeOffer>? TradeOffers = null,
+    IReadOnlyList<ObservedDeposit>? Deposits = null);

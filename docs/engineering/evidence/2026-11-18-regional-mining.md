@@ -7,6 +7,9 @@
 - `MineIntent`：范围内最近未耗尽矿脉，扣能量、产 M、扣余量、发 `MaterialMined`。
 - `MaterialMinedTotal` 统计；日志/事件过滤/颜色接线。
 - Jint `{type:"mine"}`、TypeScript 契约、`builtin.harvester.v1`。
+- 观察：`ObservedDeposit` + `hasDrill`/`drillRangeMm`；文明级按己方区域、
+  设备级按 `max(传感器, 钻机)` 范围过滤；三套序列化与 TS 契约同步。
+- UI：Godot 绘制矿脉颜色/范围/余量标签与 `DEPLETED` 状态。
 - 初始场景：A 方铜矿 + 钻机；黄金哈希按空矿脉/新字段更新。
 
 ## 测试
@@ -15,10 +18,10 @@
 dotnet test SeedField.slnx
 ```
 
-结果：**434 通过 / 0 失败**
+结果：**438 通过 / 0 失败**
 
-- 仿真 285（含 8 个 MiningTests + v19 迁移）
-- Runtime.Js 122（含 harvester 模板）
+- 仿真 288（含 11 个 MiningTests + v19 迁移）
+- Runtime.Js 123（含 harvester 模板与契约）
 - 仓库门禁 19
 - Catalog 8
 
@@ -29,7 +32,10 @@ dotnet test SeedField.slnx
 - `MiningTests.OutOfRangeDepositIsRejected`
 - `MiningTests.NearestTieIsBrokenByStableDepositId`
 - `MiningTests.SaveRoundTripKeepsDepositRemainingAndDrill`
+- `MiningTests.DeviceObservationIncludesDepositsInsideDrillRange`
+- `MiningTests.CivilizationObservationIncludesDepositsInOwnedRegions`
 - `DeviceProgramsTests.HarvesterTemplateEmitsMineIntent`
+- `DeviceProgramsTests.HarvesterTemplateMovesTowardAFarDeposit`
 
 ## Headless
 
@@ -56,9 +62,18 @@ SEEDFIELD_PRERUN tick=34 shots=4 entities=5
 SAVE_SMOKE ok=True before=d13d8d05391ba378 mutated=c48efa96829a51b5 after=d13d8d05391ba378 tick=34 A=v1 B=v1 tutorial=5/5
 ```
 
+## 观察与 UI
+
+```powershell
+godot --path game/SeedField.Game -- --capture
+```
+
+`game/SeedField.Game/screenshots/m0-combat.png` 显示 A 方铜矿圈、剩余量与钻机；
+矿脉耗尽后标签变为 `DEPLETED`。
+
 ## 边界
 
-- 矿脉未进入 Observation；脚本只能盲采范围内最近矿。
+- 矿脉没有隐藏/侦察发现；己方区域与设备视野内即可见。
 - 四类矿统一产 M，无多资源/冶炼。
 - 演示数值 5M/tick、5000 余量不是平衡数据。
 - 矿脉耗尽后仍保留在世界上，但暂无专门的视觉耗尽状态。

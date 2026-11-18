@@ -54,7 +54,7 @@ internal static class Scenarios
             .AddDeposit(
                 OreKind.Copper,
                 "frontier",
-                new Vec2(2_800, 5_600),
+                new Vec2(3_600, 6_000),
                 radiusMm: 900,
                 remaining: 5_000,
                 yieldPerTick: 20)
@@ -186,7 +186,7 @@ internal static class Scenarios
             MaterialCost: 65));
 
         DeploymentService.Deploy(world, scoutV1, "A", "frontier", AStagingPosition);
-        DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(2_800, 5_600));
+        DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

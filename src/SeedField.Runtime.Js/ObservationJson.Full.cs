@@ -47,6 +47,8 @@ internal static partial class ObservationJson
             writer.WriteNumber("weaponRangeMm", entity.WeaponRangeMm);
             writer.WriteBoolean("hasDrive", entity.HasDrive);
             writer.WriteBoolean("hasComm", entity.HasComm);
+            writer.WriteBoolean("hasDrill", entity.HasDrill);
+            writer.WriteNumber("drillRangeMm", entity.DrillRangeMm);
             writer.WriteEndObject();
         }
 
@@ -185,6 +187,23 @@ internal static partial class ObservationJson
             writer.WriteNumber("expiresTick", offer.ExpiresTick);
             writer.WriteNumber("negotiationId", offer.NegotiationId);
             writer.WriteNumber("round", offer.Round);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+
+        writer.WriteStartArray("deposits");
+        foreach (var deposit in observation.Deposits ?? Array.Empty<ObservedDeposit>())
+        {
+            writer.WriteStartObject();
+            writer.WriteNumber("depositId", deposit.DepositId);
+            writer.WriteString("regionId", deposit.RegionId);
+            writer.WriteString("kind", deposit.Kind.ToString());
+            writer.WriteNumber("x", deposit.Position.X);
+            writer.WriteNumber("y", deposit.Position.Y);
+            writer.WriteNumber("radiusMm", deposit.RadiusMm);
+            writer.WriteNumber("remaining", deposit.Remaining);
+            writer.WriteNumber("yieldPerTick", deposit.YieldPerTick);
             writer.WriteEndObject();
         }
 
