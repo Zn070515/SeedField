@@ -103,17 +103,17 @@ public partial class Main
         var viewport = new Rect2(
             Vector2.Zero,
             new Vector2(ViewWidth, ViewHeight)).Grow(64f);
+        if (crowdLod && !_debugVisible && !_tacticalVisible)
+        {
+            _lodBatch.Draw(this, snapshots, Map, FacingFor, viewport);
+            return;
+        }
+
         foreach (var entity in snapshots)
         {
             var position = Map(entity.Position);
             if (!viewport.HasPoint(position))
             {
-                continue;
-            }
-
-            if (crowdLod && !_debugVisible)
-            {
-                _entityVisual.DrawLod(this, entity, position, FacingFor(entity.EntityId));
                 continue;
             }
 

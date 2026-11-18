@@ -48,20 +48,7 @@ public static class ObservationBuilder
             }
         }
 
-        var inbox = world.GetInbox(civilizationId);
-        var messages = inbox
-            .OrderBy(message => message.Id)
-            .Skip(Math.Max(0, inbox.Count - ObservationLimits.MaxMessages))
-            .Select(message => new ObservedMessage(
-                message.Id,
-                message.FromEntityId.Value,
-                message.FromCivilizationId,
-                message.TargetRegionId,
-                message.Topic,
-                message.Payload,
-                message.SentTick,
-                message.DeliveredTick))
-            .ToList();
+        var messages = MessageWindow(world.GetInbox(civilizationId), regionId: null);
 
         var shipments = world.InTransitMaterial
             .Where(shipment => string.Equals(
@@ -160,7 +147,11 @@ public static class ObservationBuilder
         if (viewer.Sensor is { RangeMm: > 0 })
         {
             var candidates = new List<EntityState>();
-            cache.Index(region.Id).Query(viewer.Position, viewer.Sensor.RangeMm, candidates);
+            cache.Index(region.Id).Query(
+                viewer.Position,
+                viewer.Sensor.RangeMm,
+                candidates,
+                viewer.CivilizationId);
             foreach (var candidate in candidates)
             {
                 if (candidate.Id == viewer.Id ||
@@ -205,6 +196,61 @@ public static class ObservationBuilder
             Treaties: treaties,
             TreatyProposals: proposals,
             TradeOffers: tradeOffers);
+    }
+
+    /// <summary>
+    /// Takes the last N messages in delivery order without materializing/sorting the
+    /// whole inbox. A fleet-sized inbox can hold tens of thousands of messages; the
+    /// previous OrderBy+ToList allocated that list for every observation tick.
+    /// </summary>
+    internal static List<ObservedMessage> MessageWindow(
+        IReadOnlyList<DeliveredMessage> inbox,
+        string? regionId)
+    {
+        var matching = 0;
+        foreach (var message in inbox)
+        {
+            if (regionId is null ||
+                string.Equals(
+                    message.TargetRegionId,
+                    regionId,
+                    StringComparison.Ordinal))
+            {
+                matching++;
+            }
+        }
+
+        var skip = Math.Max(0, matching - ObservationLimits.MaxMessages);
+        var result = new List<ObservedMessage>(Math.Min(matching, ObservationLimits.MaxMessages));
+        var seen = 0;
+        foreach (var message in inbox)
+        {
+            if (regionId is not null &&
+                !string.Equals(
+                    message.TargetRegionId,
+                    regionId,
+                    StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (seen++ < skip)
+            {
+                continue;
+            }
+
+            result.Add(new ObservedMessage(
+                message.Id,
+                message.FromEntityId.Value,
+                message.FromCivilizationId,
+                message.TargetRegionId,
+                message.Topic,
+                message.Payload,
+                message.SentTick,
+                message.DeliveredTick));
+        }
+
+        return result;
     }
 
     internal static ObservedControlPoint ToObservedControlPoint(ControlPointState point) =>

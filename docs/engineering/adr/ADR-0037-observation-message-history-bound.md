@@ -29,7 +29,8 @@
 
 1. 新增 `ObservationLimits.MaxMessages = 32`。
 2. `ObservationBuilder.Build`（文明全量观测）与 `ObservationCache.Messages`
-   （设备作用域观测）只暴露**按 MessageId 排序的最后 32 条**消息。
+   （设备作用域观测）只暴露**收件箱投递顺序的最后 32 条**消息；投递顺序由
+   引擎按 `(DeliverTick, MessageId)` 稳定追加，不再对全收件箱排序。
 3. 收件箱本身的容量/过期规则、世界状态、存档、哈希、网络带宽均不变；
    旧消息仍在世界内，只是不再进入观测。
 4. 设备观测先按区域过滤，再取该区域最后 32 条，避免其他区域消息挤掉本区。

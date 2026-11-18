@@ -346,6 +346,7 @@ public partial class Main : Node2D
     {
         var mixedSample = _benchmarkMixed &&
                           _benchmarkMixedElapsed >= MixedWarmupSeconds;
+        var allocStart = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var benchmarkWatch = mixedSample ? Stopwatch.StartNew() : null;
         var observationWatch = mixedSample ? Stopwatch.StartNew() : null;
         var controllers = new List<DeviceControllerSlot>(_deviceControllers.Count);
@@ -365,6 +366,7 @@ public partial class Main : Node2D
             entityIds,
             _controllerBatch.MaxDegreeOfParallelism);
         observationWatch?.Stop();
+        var allocAfterObs = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var decisionWatch = mixedSample ? Stopwatch.StartNew() : null;
         var items = new List<ControllerBatchItem>(controllers.Count);
         for (var index = 0; index < controllers.Count; index++)
@@ -374,6 +376,7 @@ public partial class Main : Node2D
 
         var decisions = _controllerBatch.Run(items);
         decisionWatch?.Stop();
+        var allocAfterDecide = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var stepWatch = mixedSample ? Stopwatch.StartNew() : null;
         var intents = new List<Intent>(decisions.Length);
         foreach (var decision in decisions)
@@ -392,6 +395,7 @@ public partial class Main : Node2D
 
         var result = _engine.Step(intents);
         stepWatch?.Stop();
+        var allocAfterStep = mixedSample ? GC.GetTotalAllocatedBytes(precise: true) : 0;
         var presentationWatch = mixedSample ? Stopwatch.StartNew() : null;
         foreach (var simulationEvent in result.Events)
         {
@@ -414,6 +418,11 @@ public partial class Main : Node2D
         benchmarkWatch?.Stop();
         if (mixedSample)
         {
+            var allocEnd = GC.GetTotalAllocatedBytes(precise: true);
+            _benchmarkAllocObs += allocAfterObs - allocStart;
+            _benchmarkAllocDecide += allocAfterDecide - allocAfterObs;
+            _benchmarkAllocStep += allocAfterStep - allocAfterDecide;
+            _benchmarkAllocPresent += allocEnd - allocAfterStep;
             _benchmarkTickMs.Add(benchmarkWatch!.Elapsed.TotalMilliseconds);
             _benchmarkObsMs.Add(observationWatch!.Elapsed.TotalMilliseconds);
             _benchmarkDecideMs.Add(decisionWatch!.Elapsed.TotalMilliseconds);

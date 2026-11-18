@@ -35,6 +35,54 @@ internal sealed class ObservationCache
 
     public long Tick { get; }
 
+    /// <summary>
+    /// Build every lazily cached section before worker threads start reading this
+    /// cache. The cache is immutable after preparation, so parallel controller
+    /// observations can share one spatial index and observed DTOs instead of
+    /// rebuilding them once per worker.
+    /// </summary>
+    public void PrepareForControllers()
+    {
+        var civilizations = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var region in _regions.Values)
+        {
+            foreach (var entity in region.Entities.Values)
+            {
+                civilizations.Add(entity.CivilizationId);
+            }
+        }
+
+        foreach (var region in _regions.Values)
+        {
+            Index(region.Id);
+            ControlPoints(region.Id);
+            foreach (var civilizationId in civilizations)
+            {
+                foreach (var entity in region.Entities.Values)
+                {
+                    Observe(
+                        entity,
+                        civilizationId,
+                        string.Equals(
+                            entity.CivilizationId,
+                            civilizationId,
+                            StringComparison.Ordinal));
+                }
+
+                Messages(region.Id, civilizationId);
+                Shipments(region.Id, civilizationId);
+                EnergyShipments(region.Id, civilizationId);
+                TradeOffers(region.Id, civilizationId);
+            }
+        }
+
+        foreach (var civilizationId in civilizations)
+        {
+            Treaties(civilizationId);
+            Proposals(civilizationId);
+        }
+    }
+
     public static ObservationCache Build(WorldState world)
     {
         ArgumentNullException.ThrowIfNull(world);
@@ -109,28 +157,9 @@ internal sealed class ObservationCache
 
     public IReadOnlyList<ObservedMessage> Messages(string regionId, string civilizationId) =>
         Cached(_messages, Key(regionId, civilizationId), () =>
-        {
-            var messages = _world
-                .GetInbox(civilizationId)
-                .Where(message => string.Equals(
-                    message.TargetRegionId,
-                    regionId,
-                    StringComparison.Ordinal))
-                .OrderBy(message => message.Id)
-                .ToList();
-            return messages
-                .Skip(Math.Max(0, messages.Count - ObservationLimits.MaxMessages))
-                .Select(message => new ObservedMessage(
-                    message.Id,
-                    message.FromEntityId.Value,
-                    message.FromCivilizationId,
-                    message.TargetRegionId,
-                    message.Topic,
-                    message.Payload,
-                    message.SentTick,
-                    message.DeliveredTick))
-                .ToList();
-        });
+            ObservationBuilder.MessageWindow(
+                _world.GetInbox(civilizationId),
+                regionId));
 
     public IReadOnlyList<ObservedShipment> Shipments(
         string regionId,
