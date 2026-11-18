@@ -37,16 +37,17 @@
 
 | 项目 | 说明 |
 |---|---|
-| 当前里程碑 | **M0 纵切片**：Headless 可复现 + Godot 真实画面，均由同一 C# 仿真与 JS 控制器驱动 |
+| 当前里程碑 | **M0 完成**；M1 工坊/五分支主体已实现，教程与构造挑战进行中；M2–M3 主体已实现 |
 | 仿真核心 | 固定 Tick、意图归属/可见性校验、观察过滤、E/M、通信、直接交火、核心区保护与保底复建 |
 | 程序闭环 | **游戏内编辑 A 方 JavaScript → 热部署 → 观察行为变化**；编译失败保留旧版本 |
 | 成长/工坊 | 五分支最低可用判定、蓝图版本 → 部署实例（扣本地 M）、显式升级、核心区最新产品登记 |
+| M1 教程准入 | 五分支最低可用由仿真事实验证（发电充电/传感器接触/消息送达/State 行动/移动射击）；五步完成即 `PVE READY`，HUD 显示进度 |
 | 多区域 | 显式区域链路、双向 BFS（扩展较小 frontier）、跨区延迟、链路带宽、存档往返 |
 | 跨区物流 | 多跳链路运输 M，途中不可用，按路径总延迟到达；链路物资容量可限制 |
 | 跨区能源 | 区域电网库存；实体可存入/抽取；跨区运输带延迟与链路能源容量 |
 | 区域加载 | 引擎级活动区域：非活动区拒绝意图，被动系统继续运行；活动集不写入存档 |
 | 设备级知识 | 每实体独立观察/控制器；只感知本设备传感器与目标区域消息；不再文明级融合 |
-| 工程收口 | 统一部署/升级命令、存档 schema v2 + v1 迁移、摧毁库存损失审计 |
+| 工程收口 | 统一部署/升级命令、世界存档 schema v19（v1 起逐级迁移）、摧毁库存损失审计 |
 | PvE 目标 | 多控制点：独占驻留、争夺重置、占领数量达到阈值即胜负；HUD 与胜利截图 |
 | 通信/对手 | 跨文明消息要求目标区 Comm 端点 + 目标文明策略允许；内置对手包可选并持久化 |
 | 消息 ACL | 发送方/话题白名单、黑名单优先；引擎派生发送者；重复消息 ID 拒绝；断联不扣能量 |
@@ -56,7 +57,8 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | 177 个仿真测试 + 48 个 Jint 测试通过；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 验证 | **396 个测试通过**（267 仿真 + 102 Jint + 19 仓库门禁 + 8 本地目录）；600 Tick 双跑哈希一致；战斗/编辑器/工坊/外交/电网/胜利截图已提交；CI 构建/测试/提交规范 |
+| 持久化 | 世界存档 schema v19（v1 起逐级迁移）· 游戏存档 v3 · 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -78,6 +80,7 @@ pwsh tools/setup-git-hooks.ps1
 dotnet build SeedField.slnx
 dotnet test SeedField.slnx
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj
+dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --tutorial
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --multi-region
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --logistics
 dotnet run --project src/SeedField.Headless/SeedField.Headless.csproj -- --energy
@@ -192,6 +195,8 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`ruin snapshots`](docs/engineering/evidence/2026-11-17-ruin-snapshots.md) | 本地离线快照、切片/老化/掠夺、数据-only 校验 |
 | [`recovery panel`](docs/engineering/evidence/2026-11-17-recovery-panel.md) | F6 配额/债务/锚点/围困面板、核心维护与 v17 证据 |
 | [`art vertical slice`](docs/engineering/evidence/2026-11-17-art-vertical-slice.md) | A/B 相机、Blender 资产、Godot 层叠/缩放截图与资产门禁 |
+| [`M1 tutorial admission`](docs/engineering/evidence/2026-11-18-m1-tutorial-admission.md) | 五分支事实判定、Headless 演示、HUD 面板与测试证据 |
+| [`ADR-0040`](docs/engineering/adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
 
 ## 工程原则
 

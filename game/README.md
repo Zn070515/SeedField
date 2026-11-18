@@ -10,9 +10,12 @@ godot --path game/SeedField.Game                        # 实时运行
 godot --path game/SeedField.Game -- --capture            # 战斗截图
 godot --path game/SeedField.Game -- --capture-editor     # 编辑器截图
 godot --path game/SeedField.Game -- --capture-workshop   # 工坊截图
+godot --path game/SeedField.Game -- --opponent-turtle    # 使用 Turtle 内置对手
+godot --path game/SeedField.Game -- --benchmark-mixed=1000 --benchmark-mixed-seconds=10
 ```
 
-截图输出：`screenshots/m0-combat.png`、`screenshots/m0-program-editor.png`。
+截图输出：`game/SeedField.Game/screenshots/` 下的 `m0-*` 与 `art-*` 文件。
+正式运行建议用 `pwsh tools/run-game.ps1`（设置 `DOTNET_gcServer=1`）。
 
 ## 结构
 
@@ -22,12 +25,13 @@ godot --path game/SeedField.Game -- --capture-workshop   # 工坊截图
 | `Scripts/Main.cs` | 场景生命周期、仿真步进、事件 HUD、保存/读取、截图 |
 | `Scripts/ProgramEditor.cs` | A 方 JavaScript 编辑器与部署按钮 |
 | `Scripts/WorkshopPanel.cs` | 五分支覆盖、蓝图部署与实例升级 |
+| `Scripts/DiplomacyPanel.cs` / `PowerPanel.cs` / `RecoveryPanel.cs` | F3 外交 / F4 电网 / F6 核心恢复 |
 | `Scripts/Scenarios.cs` | M0/M1 世界、蓝图与两个 JS 控制器脚本 |
 | `screenshots/` | 真实运行截图 |
 
 ## 操作
 
-`SPACE` 暂停 / 继续 · `N` 单 Tick · `R` 重置 · `F1` 程序编辑器 · `F2` 工坊 · `Ctrl+Enter` 部署 · `F5` 保存 · `F9` 读取 · `F12` 截图。
+`SPACE` 暂停 / 继续 · `N` 单 Tick · `R` 重置 · `F1` 程序编辑器 · `F2` 工坊 · `F3` 外交 · `F4` 电网 · `F5` 保存 · `F6` 核心恢复 · `F9` 读取 · `F12` 截图 · 滚轮缩放 · 中键拖拽平移。
 
 ## 程序部署
 
@@ -44,6 +48,13 @@ godot --path game/SeedField.Game -- --capture-workshop   # 工坊截图
 - 五分支覆盖由蓝图注册表计算；`5/5` 时 HUD 显示 `PvE READY`。
 - 部署从区域本地库存扣除蓝图 M 成本；不足时拒绝并显示原因。
 - 收件箱受己方 `StateModule.StorageCapacity` 总和控制，超限时最旧消息过期。
+
+## 教程准入（M1）
+
+- 左下 `TUTORIAL` 面板列出 Energy / Sensing / Communication / State / Execution 五步。
+- 完成条件来自仿真事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），不是蓝图字段或面板勾选。
+- 五步全部完成后显示 `PVE READY · free world unlocked`；右上摘要同步为 `TUTORIAL 5/5`。
+- 进度目前是会话级，重开/读档后重新计算（ADR-0040）。
 
 ## 存档
 

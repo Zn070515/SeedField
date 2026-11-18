@@ -35,6 +35,11 @@ internal static partial class Program
             return RunReplayPlay(replayPlay);
         }
 
+        if (args.Contains("--tutorial"))
+        {
+            return RunTutorialDemo();
+        }
+
         if (args.Contains("--multi-region"))
         {
             return RunMultiRegionDemo();

@@ -1,8 +1,8 @@
 # IMPLEMENTATION BASELINE — Seed Field M0
 
-> 日期：2026-11-16  
+> 日期：2026-11-16（2026-11-18 校准）  
 > 依据：`docs/design-bible/v1.9-rev2/` 与用户当日指令  
-> 状态：第一批 Headless 纵切片已可运行；Godot 客户端受环境阻塞
+> 状态：M0 已完成；M1 工坊/五分支主体已实现，教程与构造挑战未完成；M2–M3 主体已实现；Godot 客户端可构建运行（原型美术）；M4–M7 内容与发行工作未完成
 
 ## 1. 对最终形态的理解
 
@@ -36,16 +36,34 @@
 
 ## 3. 现有工程真实状态
 
+### 3.0 验证快照（2026-11-18）
+
+```text
+dotnet build SeedField.slnx   → 0 warning / 0 error
+dotnet test  SeedField.slnx   → 396 passed / 0 failed
+  仿真 267 · Runtime.Js 102 · 仓库门禁 19 · Catalog 8
+```
+
+- 规模：227 个 `.cs` / 36,605 行；160 个 `.md` / 9,933 行；40 篇 ADR；51 篇证据。
+- M1 教程准入已接入（ADR-0040）：`TutorialProgress` + `--tutorial` + HUD 面板；仿真测试新增 10 项。
+- 分支：`perf/allocation-multimesh` 领先 `main` 2 个提交，PR #20（分配/GC 与 MultiMesh）待合并；CI 绿。
+- 本快照只记录实际运行结果；历史证据文件中的旧哈希保持原样。
+
 ### 已实现并可运行
 
 ```text
 src/SeedField.Simulation/     C# 权威仿真核心
 src/SeedField.Runtime.Js/     Jint 4.18.0 适配
 src/SeedField.Catalog/        本地 SQLite 派生索引（回放/存档/基准）
+src/SeedField.Worker/         隔离工作进程（IPC/Job Object）
+src/SeedField.PackageHost/    签名包验证、信任库与导入同意
+src/SeedField.SandboxLauncher/AppContainer 启动器
 src/SeedField.Headless/       Headless 纵切片 Runner
 game/SeedField.Game/          Godot 4.7.2 Mono 可视切片（net10.0）
 tests/SeedField.Simulation.Tests/
 tests/SeedField.Runtime.Js.Tests/
+tests/SeedField.Catalog.Tests/
+tests/SeedField.Repository.Tests/
 ```
 
 已实现的具体能力：
@@ -115,11 +133,16 @@ tests/SeedField.Runtime.Js.Tests/
 - 确定性战斗随机：`CombatHitChancePercent`/`CombatDamageVariancePercent`/`CombatLootChancePercent`/`CombatLootMaterial` 场景配置；固定抽取顺序命中→伤害→掉落，0%/100% 不消耗随机值；`ShotMissed`/`CombatLootGranted` 事件与 `ShotsMissed`/`MaterialLootedTotal` 统计；存档 v18；`--combat-rng` 演示（ADR-0029）。
 - 并行控制器批处理：`ControllerBatchRunner` 按输入索引并行执行独立 `JsController`，单控制器故障隔离；`BuildControllerObservations` 每 worker 独立观测缓存；Main/Headless 接入；默认 DOF = 逻辑核数；Headless Server GC；`Engine.PrepareScript` 跨引擎复用；进程内 `Decide` 用 `JsObject.Create` + 共享布局直接构造观测对象，worker/IPC 用完整对象 JSON（跨版本兼容），紧凑格式保留给带宽敏感路径/测试；100 台 33.96→1.18 ms/tick、1000 台 180.36→7.9 ms/tick（3000 Tick 稳态），1000 台启动 205→127 ms；`--benchmark-jint-parallel`、`--benchmark-jint-preserialized`、`--benchmark-startup`、`--ticks`、`--chunk-size` 与 `--budget-ms` 门禁（ADR-0028）。
 
+- M1 教程准入：`TutorialProgress` 从世界与事件派生五分支最低可用事实（发电充电、传感器看到外国实体、消息送达、带 State 的设备行动、移动/射击），效率不参与判定；五步完成即 `PveUnlocked`；Godot HUD 教程面板与 `--tutorial` 演示；不新增世界状态/hash（ADR-0040）。
+- README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
+
 ### 尚未实现
 
+- **M1 剩余**：教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略（scout/sentry/relay 模板）、教程进度持久化到 GameSave。
+- 客户端产品外壳：主菜单、新游戏/读档流程、设置、暂停菜单、音频与本地化。
 - 离屏区域性能优化（当前 active 仅做意图 gating）、混合资源反提议与完整议价记忆、维护时长、多电压/潮流方程。
-- 存档迁移（v1 → 后续）、完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
-- 废墟实体/占领/清理、快照签名/来源认证、Workshop 流程、残骸老化/掠夺。
+- 跨发行版本的存档迁移验收与存档浏览器；完整离线文明包（可执行 AI/脚本）、回放压缩/分片与签名。
+- 废墟实体/清理、快照签名/来源认证、Workshop 流程、残骸老化/掠夺。
 - 离线包隔离剩余门禁：OS 磁盘配额（当前无可写文件面）、完整 fuzz/红队、发布签名密钥/Workshop、独立安全审查、正式安装 profile/ACL 流程；第三方 JS 导入仍关闭。
 - 正式平衡数值、掉落表/经济上限、暴击/穿甲等扩展。
 - PvE 对手、教程/科技树/终局与正式美术。
@@ -425,9 +448,11 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0037](adr/ADR-0037-observation-message-history-bound.md) | 观测消息历史确定性上限 |
 | [ADR-0038](adr/ADR-0038-client-lod-and-message-delivery-cache.md) | 客户端人群 LOD 与消息投递批缓存 |
 | [ADR-0039](adr/ADR-0039-mixed-load-allocation-and-multimesh.md) | 混合客户端分配/GC 优化与 MultiMesh 批处理 |
+| [ADR-0040](adr/ADR-0040-tutorial-admission-from-simulation-facts.md) | 用仿真事实验证五分支教程准入 |
 
 ## 8. 下一步（按依赖顺序）
 
+0. **完成 M1**：教程准入事实与 HUD 面板已实现（ADR-0040）；剩余教程文案/引导编排、带目标与 AND/OR 前置的构造关卡目录、非程序员默认策略、进度持久化；只读 `Observation`、命令走宿主入口。
 1. 离线包隔离剩余门禁：OS 磁盘配额（若开放文件 API）、完整 fuzz/红队、发布签名密钥、独立安全审查、正式安装 profile/ACL（仍不开放导入）；独立废墟美术/老化掠夺；清理文明级 legacy 观察 API。
 2. 混合资源反提议、议价记忆/信誉；关税/跨区贸易与消息签名单独立 ADR。
 3. 电网后续：维护时长、多电压/潮流方程与断路器自动化策略。

@@ -378,15 +378,8 @@ public partial class Main : Node2D
                 match.IsFinished ? Green : Amber);
         }
 
-        var ready = _world.Workshop.IsMinimumUsable;
-        DrawString(
-            HudFont,
-            new Vector2(1_120, 82),
-            ready ? "BRANCHES 5/5 · PvE READY" : "BRANCHES INCOMPLETE",
-            HorizontalAlignment.Left,
-            -1,
-            10,
-            ready ? Green : Amber);
+        DrawTutorialSummary();
+        DrawTutorialPanel();
 
         if (_tacticalVisible || _debugVisible)
         {
