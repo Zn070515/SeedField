@@ -159,6 +159,22 @@ Godot 4.7.2、1280×720、vsync off、Server GC、真实 `program.scout.v1` +
 60 FPS 上限（1000 台 3 s）：7.22 ms/Tick、p95 11.31 ms、p99 帧 16.74 ms、
 32.2 MB/Tick、GC 暂停 64 ms/3 s。quiet 1000 台约 5.2 ms/Tick 作为对照。
 
+### 4.2 topdown 客户端 A/B（2026-11-19）
+
+同机（Ryzen 9 9950X / RTX 4090 / Windows 11 / Godot 4.7.2 / Server GC / Debug）
+1000 设备、10 s、6 Tick/s：
+
+| 实体目录 | avgTick | p95Tick | FPS | drawCalls | alloc/Tick | peak | faults |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| oblique（迁移前） | 10.25 ms | 19.23 | 487.5 | 268 | 26.58 MB | 623.9 MB | 1 |
+| **topdown（迁移后）** | **8.58 ms** | **15.22** | **507.8** | **269** | **26.69 MB** | **594.3 MB** | **0** |
+
+相对变化：avgTick **−16%**、p95 **−21%**、FPS **+4%**、draw calls +1、峰值 −4.7%。
+topdown 还多 2 个实体（维修坞/护盾发生器），所以不是靠更少实体取胜。
+
+> Debug 构建、单次 10 s；绝对值不与 4.1 的 Release/9950X 表直接比较。
+> 详细日志与复现见 `docs/engineering/evidence/2026-11-19-topdown-benchmark.md`。
+
 ## 5. GC 发行要求
 
 Godot 宿主使用自己的 runtimeconfig，项目里的
