@@ -12,6 +12,7 @@ public partial class MindustryStyle
     private EntityId _supportA1;
     private EntityId _supportA2;
     private EntityId _supportB;
+    private readonly Dictionary<long, string> _supportLabels = new();
     private readonly List<SimulationEvent> _supportEvents = new();
     private double _supportAccumulator;
     private int _supportTicks;
@@ -64,14 +65,25 @@ public partial class MindustryStyle
             Sensor: new SensorModule(5_000),
             Weapon: new WeaponModule(5_000, Damage: 20, EnergyCost: 0, CooldownTicks: 0)));
 
-        DeploymentService.Deploy(world, repairBlueprint, "A", "demo", new Vec2(400, 600));
-        DeploymentService.Deploy(world, shieldBlueprint, "A", "demo", new Vec2(800, 600));
-        _supportA1 = DeploymentService
-            .Deploy(world, unitBlueprint, "A", "demo", new Vec2(700, 450)).Id;
-        _supportA2 = DeploymentService
-            .Deploy(world, unitBlueprint, "A", "demo", new Vec2(900, 750)).Id;
-        _supportB = DeploymentService
-            .Deploy(world, attackerBlueprint, "B", "demo", new Vec2(1_700, 600)).Id;
+        var repair = DeploymentService
+            .Deploy(world, repairBlueprint, "A", "demo", new Vec2(400, 600));
+        var shield = DeploymentService
+            .Deploy(world, shieldBlueprint, "A", "demo", new Vec2(800, 600));
+        var first = DeploymentService
+            .Deploy(world, unitBlueprint, "A", "demo", new Vec2(700, 450));
+        var second = DeploymentService
+            .Deploy(world, unitBlueprint, "A", "demo", new Vec2(900, 750));
+        var raider = DeploymentService
+            .Deploy(world, attackerBlueprint, "B", "demo", new Vec2(1_700, 600));
+
+        _supportA1 = first.Id;
+        _supportA2 = second.Id;
+        _supportB = raider.Id;
+        _supportLabels[repair.Id.Value] = "REPAIR";
+        _supportLabels[shield.Id.Value] = "SHIELD";
+        _supportLabels[first.Id.Value] = "A1";
+        _supportLabels[second.Id.Value] = "A2";
+        _supportLabels[raider.Id.Value] = "B";
 
         _supportWorld = world;
         _supportEngine = new SimulationEngine(world);
@@ -123,19 +135,224 @@ public partial class MindustryStyle
     private void DrawSupportDemo()
     {
         DrawRect(new Rect2(0, 0, 1280, 720), new Color("100e0b"));
+        DrawSupportTerrain();
+        DrawSupportProps();
+        DrawSupportRange(new Vec2(400, 600), 1_500, new Color("f2a33a"));
+        DrawSupportRange(new Vec2(800, 600), 1_800, new Color("7fe0cf"));
+        DrawSupportBeams();
 
-        var terrain = Tex("terrain_dirt");
-        if (terrain is not null)
+        if (_supportWorld is not null)
         {
-            for (var y = 0; y < 720; y += 64)
+            foreach (var entity in _supportWorld.EnumerateEntities())
             {
-                for (var x = 0; x < 1280; x += 64)
+                DrawSupportEntity(entity);
+            }
+        }
+
+        DrawSupportHud();
+        DrawEventLog();
+    }
+
+    private void DrawSupportTerrain()
+    {
+        for (var y = -64; y < 720; y += 64)
+        {
+            for (var x = -64; x < 1280; x += 64)
+            {
+                var tileX = x / 64;
+                var tileY = y / 64;
+                var asset = ((tileX * 7) + (tileY * 5)) % 13 == 0
+                    ? "terrain_rust"
+                    : ((tileX * 3) + (tileY * 11)) % 17 == 0
+                        ? "terrain_sand"
+                        : "terrain_dirt";
+                var terrain = Tex(asset);
+                if (terrain is not null)
                 {
                     DrawTextureRect(terrain, new Rect2(x, y, 64, 64), false);
                 }
             }
         }
 
+        for (var x = 0; x <= 1280; x += 64)
+        {
+            DrawLine(
+                new Vector2(x, 0),
+                new Vector2(x, 720),
+                new Color(0, 0, 0, 0.10f),
+                1f);
+        }
+
+        for (var y = 0; y <= 720; y += 64)
+        {
+            DrawLine(
+                new Vector2(0, y),
+                new Vector2(1280, y),
+                new Color(0, 0, 0, 0.10f),
+                1f);
+        }
+    }
+
+    private void DrawSupportProps()
+    {
+        var props = new (string Asset, float X, float Y, float Size)[]
+        {
+            ("prop_scrap", 205, 292, 52),
+            ("prop_barrels", 292, 468, 48),
+            ("prop_sandbags", 690, 536, 56),
+            ("ruin_block", 1_006, 246, 70),
+            ("pipe_junction", 438, 248, 48),
+            ("prop_scrap", 1_082, 522, 46),
+            ("ore_copper", 1_078, 214, 52),
+            ("ore_lead", 962, 566, 44),
+        };
+        foreach (var (asset, x, y, size) in props)
+        {
+            DrawWorldSprite(asset, new Vector2(x, y), size);
+        }
+    }
+
+    private void DrawSupportRange(Vec2 center, int rangeMm, Color color)
+    {
+        var screen = ToScreen(center);
+        var radius = rangeMm * 0.62f;
+        DrawCircle(screen, radius, new Color(color, 0.030f));
+        for (var index = 0; index < 48; index += 2)
+        {
+            DrawArc(
+                screen,
+                radius,
+                Mathf.Tau * index / 48f,
+                Mathf.Tau * (index + 1) / 48f,
+                4,
+                new Color(color, 0.34f),
+                1.5f,
+                true);
+        }
+    }
+
+    private void DrawSupportBeams()
+    {
+        if (_supportWorld is null)
+        {
+            return;
+        }
+
+        foreach (var simulationEvent in _supportEvents)
+        {
+            if (simulationEvent.Tick < _supportTicks - 1)
+            {
+                continue;
+            }
+
+            switch (simulationEvent)
+            {
+                case EntityRepaired repaired:
+                    DrawBeam(repaired.RepairerId, repaired.TargetId, new Color("f2a33a"));
+                    break;
+                case ShieldProjected projected:
+                    DrawBeam(projected.ProjectorId, projected.TargetId, new Color("7fe0cf"));
+                    break;
+            }
+        }
+    }
+
+    private void DrawBeam(EntityId fromId, EntityId toId, Color color)
+    {
+        var from = _supportWorld?.FindEntity(fromId);
+        var to = _supportWorld?.FindEntity(toId);
+        if (from is null || to is null)
+        {
+            return;
+        }
+
+        var start = ToScreen(from.Position);
+        var end = ToScreen(to.Position);
+        DrawLine(start, end, new Color(color, 0.62f), 2f, true);
+        DrawCircle(end, 7, new Color(color, 0.22f));
+    }
+
+    private void DrawSupportEntity(EntityState entity)
+    {
+        var (asset, size) = entity.BlueprintId switch
+        {
+            "repair_bay_demo" => ("waste_repair_bay", 190f),
+            "shield_demo" => ("waste_shield_generator", 190f),
+            "attacker_demo" => ("waste_sentry", 80f),
+            _ => ("waste_scout", 80f),
+        };
+        var center = ToScreen(entity.Position);
+        DrawWorldSprite(asset, center, size);
+
+        var barWidth = size * 0.55f;
+        var barX = center.X - (barWidth * 0.5f);
+        var barY = center.Y - (size * 0.5f) - 16;
+        DrawRect(new Rect2(barX - 1, barY - 1, barWidth + 2, 7), new Color("05070a"));
+        DrawRect(
+            new Rect2(
+                barX,
+                barY,
+                barWidth * Mathf.Clamp(entity.Health / (float)entity.MaxHealth, 0, 1),
+                5),
+            new Color("b5543f"));
+        if (entity.Shield is not null)
+        {
+            DrawRect(new Rect2(barX - 1, barY - 10, barWidth + 2, 6), new Color("05070a"));
+            DrawRect(
+                new Rect2(
+                    barX,
+                    barY - 9,
+                    barWidth * Mathf.Clamp(
+                        entity.ShieldEnergy / (float)entity.Shield.Capacity,
+                        0,
+                        1),
+                    4),
+                new Color("7fe0cf"));
+        }
+
+        DrawLabelPill(
+            new Vector2(center.X, center.Y + (size * 0.5f) + 8),
+            Label(entity.Id),
+            entity.CivilizationId == "A" ? new Color("7fe0cf") : new Color("f2a33a"));
+    }
+
+    private void DrawWorldSprite(string asset, Vector2 center, float size)
+    {
+        var texture = Tex(asset);
+        if (texture is null)
+        {
+            return;
+        }
+
+        var rect = new Rect2(
+            center - new Vector2(size * 0.5f, size * 0.5f),
+            new Vector2(size, size));
+        DrawTextureRect(
+            texture,
+            new Rect2(rect.Position + new Vector2(4, 6), rect.Size),
+            false,
+            new Color(0, 0, 0, 0.35f));
+        DrawTextureRect(texture, rect, false);
+    }
+
+    private void DrawLabelPill(Vector2 center, string text, Color color)
+    {
+        var width = (text.Length * 6.5f) + 16;
+        var rect = new Rect2(center.X - (width * 0.5f), center.Y, width, 17);
+        DrawRect(rect, new Color(0.02f, 0.03f, 0.05f, 0.78f));
+        DrawRect(rect, new Color(color, 0.35f), false, 1f);
+        DrawString(
+            ThemeDB.FallbackFont,
+            new Vector2(rect.Position.X + 8, rect.Position.Y + 13),
+            text,
+            HorizontalAlignment.Left,
+            -1,
+            10,
+            color);
+    }
+
+    private void DrawSupportHud()
+    {
         DrawRect(new Rect2(0, 0, 1280, 56), new Color("0b0f12"));
         DrawString(
             ThemeDB.FallbackFont,
@@ -153,135 +370,76 @@ public partial class MindustryStyle
             -1,
             11,
             new Color("9fb3c8"));
-
-        DrawArc(
-            ToScreen(new Vec2(400, 600)),
-            1_500 * 0.55f,
-            0,
-            Mathf.Tau,
-            96,
-            new Color("f2a33a", 0.16f),
-            2f,
-            true);
-        DrawArc(
-            ToScreen(new Vec2(800, 600)),
-            1_800 * 0.55f,
-            0,
-            Mathf.Tau,
-            96,
-            new Color("7fe0cf", 0.16f),
-            2f,
-            true);
-
-        if (_supportWorld is not null)
-        {
-            foreach (var entity in _supportWorld.EnumerateEntities())
-            {
-                DrawSupportEntity(entity);
-            }
-        }
-
-        DrawEventLog();
-    }
-
-    private void DrawSupportEntity(EntityState entity)
-    {
-        var (asset, size, label) = entity.BlueprintId switch
-        {
-            "repair_bay_demo" => ("waste_repair_bay", 170f, "REPAIR"),
-            "shield_demo" => ("waste_shield_generator", 170f, "SHIELD"),
-            "attacker_demo" => ("waste_sentry", 70f, "B"),
-            _ => ("waste_scout", 70f, entity.Id == _supportA1 ? "A1" : "A2"),
-        };
-        var texture = Tex(asset);
-        var center = ToScreen(entity.Position);
-        var rect = new Rect2(
-            center - new Vector2(size * 0.5f, size * 0.5f),
-            new Vector2(size, size));
-        if (texture is not null)
-        {
-            DrawTextureRect(
-                texture,
-                new Rect2(rect.Position + new Vector2(4, 6), rect.Size),
-                false,
-                new Color(0, 0, 0, 0.35f));
-            DrawTextureRect(texture, rect, false);
-        }
-
-        var barWidth = size * 0.55f;
-        var barX = center.X - (barWidth * 0.5f);
-        var barY = center.Y - (size * 0.5f) - 14;
-        DrawRect(new Rect2(barX, barY, barWidth, 5), new Color("1a1a1a"));
-        DrawRect(
-            new Rect2(barX, barY, barWidth * Mathf.Clamp(
-                entity.Health / (float)entity.MaxHealth,
-                0,
-                1),
-                5),
-            new Color("b5543f"));
-        if (entity.Shield is not null)
-        {
-            DrawRect(new Rect2(barX, barY - 7, barWidth, 4), new Color("1a1a1a"));
-            DrawRect(
-                new Rect2(barX, barY - 7, barWidth * Mathf.Clamp(
-                    entity.ShieldEnergy / (float)entity.Shield.Capacity,
-                    0,
-                    1),
-                    4),
-                new Color("7fe0cf"));
-        }
-
+        DrawRect(new Rect2(1_030, 15, 10, 10), new Color("7fe0cf"));
         DrawString(
             ThemeDB.FallbackFont,
-            new Vector2(center.X - 26, center.Y + (size * 0.5f) + 14),
-            label,
+            new Vector2(1_046, 24),
+            "A SUPPORT",
             HorizontalAlignment.Left,
             -1,
             10,
-            entity.CivilizationId == "A" ? new Color("7fe0cf") : new Color("f2a33a"));
+            new Color("7fe0cf"));
+        DrawRect(new Rect2(1_146, 15, 10, 10), new Color("f2a33a"));
+        DrawString(
+            ThemeDB.FallbackFont,
+            new Vector2(1_162, 24),
+            "B RAIDER",
+            HorizontalAlignment.Left,
+            -1,
+            10,
+            new Color("f2a33a"));
     }
 
     private void DrawEventLog()
     {
-        var y = 600;
+        DrawRect(new Rect2(18, 548, 560, 160), new Color(0.02f, 0.03f, 0.05f, 0.78f));
+        DrawRect(new Rect2(18, 548, 560, 160), new Color("2f4a63"), false, 1f);
         DrawString(
             ThemeDB.FallbackFont,
-            new Vector2(24, y - 20),
-            "EVENTS",
+            new Vector2(30, 568),
+            "SUPPORT EVENTS",
             HorizontalAlignment.Left,
             -1,
             11,
             new Color("9fb3c8"));
+        var y = 586;
         foreach (var simulationEvent in _supportEvents)
         {
             DrawString(
                 ThemeDB.FallbackFont,
-                new Vector2(24, y),
+                new Vector2(30, y),
                 DescribeSupportEvent(simulationEvent),
                 HorizontalAlignment.Left,
                 -1,
-                11,
+                10,
                 new Color("d7e6f5"));
-            y += 16;
+            y += 14;
         }
     }
 
-    private static string DescribeSupportEvent(SimulationEvent simulationEvent) =>
+    private string DescribeSupportEvent(SimulationEvent simulationEvent) =>
         simulationEvent switch
         {
+            ShotFired shot =>
+                $"T{shot.Tick,2}  {Label(shot.AttackerId)} → {Label(shot.TargetId)} " +
+                $"HIT -{shot.Damage}",
             EntityDamaged damaged =>
-                $"T{damaged.Tick,2}  HIT {damaged.EntityId} -{damaged.Damage} HP " +
+                $"T{damaged.Tick,2}  HIT {Label(damaged.EntityId)} -{damaged.Damage} HP " +
                 $"(shield -{damaged.ShieldAbsorbed})",
             EntityRepaired repaired =>
-                $"T{repaired.Tick,2}  REPAIR {repaired.TargetId} +{repaired.Amount} HP",
+                $"T{repaired.Tick,2}  {Label(repaired.RepairerId)} → " +
+                $"{Label(repaired.TargetId)} +{repaired.Amount} HP",
             ShieldProjected projected =>
-                $"T{projected.Tick,2}  SHIELD {projected.TargetId} +{projected.Amount} " +
-                $"({projected.TargetShield} total)",
+                $"T{projected.Tick,2}  {Label(projected.ProjectorId)} → " +
+                $"{Label(projected.TargetId)} +{projected.Amount} SH",
             _ => $"T{simulationEvent.Tick,2}  {simulationEvent.GetType().Name}",
         };
 
+    private string Label(EntityId id) =>
+        _supportLabels.TryGetValue(id.Value, out var label) ? label : id.ToString();
+
     private static Vector2 ToScreen(Vec2 position) =>
-        new(90 + (position.X * 0.55f), 40 + (position.Y * 0.55f));
+        new(80 + (position.X * 0.62f), 30 + (position.Y * 0.62f));
 
     private void CaptureSupportDemo()
     {
