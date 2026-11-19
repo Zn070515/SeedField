@@ -82,6 +82,32 @@ art/workflow/out/<assetId>/
    dotnet test tests/SeedField.Repository.Tests --filter ArtAssetTests
    ```
 
+## Flavor pass
+
+只放在深蓝透明背景上看不算通过。新资产默认叠一层 flavor pass：
+
+- 至少一个偏心附件（控制舱 / 吊臂 / 卷缆盘 / 桶 / 补丁）；
+- 暖金属主体 70–80%，青色/琥珀功能光 5–10%；
+- 暗金属环壳 + 断续发光弧 + 内环 + 核心，至少一段损坏；
+- 成簇的使用痕迹：焦痕、油污、断环、拖出基地的电缆、散落件；
+- 阵营色正确：A 青、B 琥珀；支援建筑用青/象牙；
+- 在真实地形上过 256/128/64px 对照。
+
+基线 brief：
+
+- `briefs/waste_shield_generator_hybrid.json`
+- `briefs/waste_repair_bay_flavor.json`
+
+游戏内尺度对照：
+
+```powershell
+python art/workflow/make_context_sheet.py `
+  --terrain game/SeedField.Game/Art/style_topdown/terrain_dirt_topdown_000.png `
+  --entries "SHIELD=art/workflow/out/waste_shield_generator_hybrid/waste_shield_generator_hybrid_topdown_000.png" `
+            "REPAIR=art/workflow/out/waste_repair_bay_flavor/waste_repair_bay_flavor_topdown_000.png" `
+  --output art/workflow/out/context_review.png
+```
+
 ## 评审标准
 
 - 128px 缩略图仍能区分：核心 / 能源 / 感知 / 通信 / 状态 / 执行 / 护盾。
@@ -89,6 +115,7 @@ art/workflow/out/<assetId>/
 - 发光面积 5–10%，只用于状态。
 - 颜色不是唯一通道：故障/断供/过载同时有形状或图标。
 - 固定正交镜头，不引入透视或屏幕空间缩放。
+- 评审必须包含 in-world 256/128/64px 对照，不能只看透明底。
 
 ## 许可
 

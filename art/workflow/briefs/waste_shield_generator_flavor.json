@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_shield_generator_flavor",
+  "displayName": "Shield Generator (flavor pass)",
+  "category": "building",
+  "branch": "execution/support",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.3,
+  "targetZ": 0.55,
+  "silhouette": "dark segmented ring, offset control annex, cable spool, two barrels, four uneven pylons",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "teal_soft", "paint_cyan", "hazard", "copper", "rubber", "amber"],
+  "emissive": ["segmented cyan lamp ring", "small emitter orb", "pylon lamps"],
+  "readsAt30Percent": "asymmetric annex and spool break the circle; dark housing keeps the ring from becoming a white icon",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}
