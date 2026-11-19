@@ -175,6 +175,11 @@ topdown 还多 2 个实体（维修坞/护盾发生器），所以不是靠更�
 > Debug 构建、单次 10 s；绝对值不与 4.1 的 Release/9950X 表直接比较。
 > 详细日志与复现见 `docs/engineering/evidence/2026-11-19-topdown-benchmark.md`。
 
+**Release 近似注意（2026-11-19）**：导出模板未安装，无法生成真实 Release 导出包；
+用 Release 程序集替换 Debug bin 的近似测量落在 12.88–13.94 ms avg / 22.6–40.1 ms
+p95，Debug 背靠背 11.94 ms；机器同时有 Steam 下载/编辑器负载，差异在噪声内。
+正式发行数值必须在空闲机或 CI perf runner 上用真实导出包复测。
+
 ## 5. GC 发行要求
 
 Godot 宿主使用自己的 runtimeconfig，项目里的

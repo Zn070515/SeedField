@@ -42,15 +42,36 @@
 - oblique 基线出现 1 次 `SCRIPT_TIMEOUT`（宿主安全阀，不参与确定性算力），
   topdown 为 0；单次 10 s 采样，不能当作严格统计结论。
 
+## 3.1 Release 近似（2026-11-19）
+
+Godot 导出模板未安装，无法生成真正的 Windows Release 导出包；本轮用
+`dotnet build -c Release` 的 `SeedField.Game/Simulation/Runtime.Js` 程序集替换
+Godot 的 Debug bin 做近似测量（跑完已恢复 Debug 程序集）。
+
+同一时段机器存在 Steam 后台下载、VS Code、Claude 等负载，Release 三次结果：
+
+| 采样 | avgTick | p95Tick | FPS | faults |
+|---|---:|---:|---:|---:|
+| Release #1 | 13.31 ms | 40.07 | 364.0 | 1 |
+| Release #2 | 12.88 ms | 22.64 | 383.0 | 0 |
+| Release #3 | 13.94 ms | 33.06 | 312.3 | 0 |
+| Debug 背靠背 | 11.94 ms | 21.06 | 365.8 | 3 |
+| 早前较空闲 Debug | 8.58 ms | 15.22 | 507.8 | 0 |
+
+结论：**Release 近似值与 Debug 的差异落在当前机器噪声内**；不能据此宣称
+Release 更快或更慢，也不能作为发行验收。正式 Release/Steam 数值必须在空闲机
+或 CI perf runner 上、用真实导出包复测。
+
 ## 4. 方法说明 / 局限
 
-- **Debug 构建**：对比的是 Godot 默认游戏程序集，不是 Release 发行包；绝对值
-  不能直接与 PERFORMANCE_GUIDE 的 9950X Release Headless 表比较，但 A/B 相对
-  结论成立。
+- **Debug 构建**：A/B 表比的是 Godot 默认游戏程序集，不是 Release 导出包；
+  绝对值不能直接与 PERFORMANCE_GUIDE 的 9950X Release Headless 表比较，但 A/B
+  相对结论成立。
+- Release 近似见 §3.1；当前机器负载导致 8.58–13.94 ms 的跨采样波动。
 - 单次 10 s、6 Tick/s；不是 60 Hz 或最低配置验收。
 - oblique 基线来自 `a2c298b` 工作树，临时给 `barricade` 补了 `Power(0,0)` 以
   通过蓝图分支校验；该改动未提交。
-- 未覆盖 Steam 包、Fixed/Release 导出、4/6/8 核实机分档与 30 min 浸泡。
+- 未覆盖 Steam 包、真实 Release 导出、4/6/8 核实机分档与 30 min 浸泡。
 
 ## 5. 复现
 
