@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_shield_generator",
+  "displayName": "Shield Generator",
+  "category": "building",
+  "branch": "execution/support",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.0,
+  "targetZ": 0.55,
+  "silhouette": "octagonal pad, central emitter drum, four anchor pylons, three concentric ground rings",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "teal", "hazard", "copper", "rubber"],
+  "emissive": ["teal ground ring", "emitter halo", "orb", "pylon lamps"],
+  "readsAt30Percent": "wide octagon + four pylons distinguish it from generator/turret at 128px",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}
