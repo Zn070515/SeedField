@@ -281,8 +281,8 @@ internal static class Scenarios
         DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
         DeploymentService.Deploy(world, smelter, "A", "frontier", new Vec2(4_200, 6_000));
         DeploymentService.Deploy(world, leadSmelter, "A", "frontier", new Vec2(5_000, 6_000));
-        DeploymentService.Deploy(world, repairBay, "A", "frontier", new Vec2(3_200, 4_600));
-        DeploymentService.Deploy(world, shieldGenerator, "A", "frontier", new Vec2(3_200, 3_400));
+        DeploymentService.Deploy(world, repairBay, "A", "frontier", new Vec2(2_800, 4_800));
+        DeploymentService.Deploy(world, shieldGenerator, "A", "frontier", new Vec2(3_600, 3_200));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

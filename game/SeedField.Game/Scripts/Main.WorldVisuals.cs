@@ -137,6 +137,42 @@ public partial class Main
         }
     }
 
+    private void DrawCaptureSupportLabels()
+    {
+        foreach (var entity in _visibleEntities)
+        {
+            var label = entity.BlueprintId switch
+            {
+                "repair_bay" => "REPAIR",
+                "shield_generator" => "SHIELD",
+                _ => null,
+            };
+            if (label is null)
+            {
+                continue;
+            }
+
+            var position = Map(entity.Position) + new Vector2(-30, -56);
+            var color = entity.BlueprintId == "repair_bay" ? Amber : Cyan;
+            DrawRect(
+                new Rect2(position - new Vector2(7, 13), new Vector2(74, 19)),
+                new Color(0.02f, 0.03f, 0.05f, 0.82f));
+            DrawRect(
+                new Rect2(position - new Vector2(7, 13), new Vector2(74, 19)),
+                new Color(color, 0.35f),
+                false,
+                1f);
+            DrawString(
+                ThemeDB.FallbackFont,
+                position,
+                label,
+                HorizontalAlignment.Left,
+                -1,
+                11,
+                color);
+        }
+    }
+
     private void DrawPresentationCore()
     {
         var snapshot = CoreRecoveryDiagnosticsBuilder.Build(_world, "A");

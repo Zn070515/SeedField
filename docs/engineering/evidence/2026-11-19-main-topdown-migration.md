@@ -10,7 +10,12 @@
 godot --path game/SeedField.Game res://Scenes/Main.tscn -- --capture-main-topdown
 ```
 
-新增 `--capture-main-topdown` 只用于截图，不改变正常启动流程。
+新增 `--capture-main-topdown` 只用于截图，不改变正常启动流程。截图模式额外做：
+
+- 相机 `zoom 1.25`，聚焦 `(3000,4000)`，让 A 支援区与 B staging 同屏；
+- 隐藏教程面板与底部控制条，保留顶部 HUD、比赛信息与左侧核心区面板；
+- 给 Repair Bay / Shield Generator 画 `REPAIR` / `SHIELD` 标签；
+- 支援建筑位置调整为 `(2800,4800)` 与 `(3600,3200)`，避免压在矿脉标签上。
 
 ## 改动
 
