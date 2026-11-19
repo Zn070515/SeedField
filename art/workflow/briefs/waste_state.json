@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_state",
+  "displayName": "State Core",
+  "category": "building",
+  "branch": "state",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "targetZ": 0.55,
+  "orthoScale": 3.8,
+  "silhouette": "stacked cube heat sink with glow seams, four side fins and a side panel",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "teal_focus", "amber", "copper", "hazard", "rubber"],
+  "emissive": ["three glow seams", "state lamps"],
+  "readsAt30Percent": "stacked squares + fins read as compute/state, not production",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

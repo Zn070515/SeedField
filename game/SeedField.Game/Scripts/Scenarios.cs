@@ -49,7 +49,7 @@ internal static class Scenarios
                     SiegeRecoveryCostPercent: 100,
                     SiegeQuotaPenalty: 1,
                     RecoveryMaintenanceMaterialCost: 20))
-            .AddStock("frontier", "A", 500)
+            .AddStock("frontier", "A", 900)
             .AddStock("frontier", "B", 500)
             .AddDeposit(
                 OreKind.Copper,
@@ -122,17 +122,17 @@ internal static class Scenarios
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 20,
             BuildTicks: 2));
-        workshop.Publish(new DeviceBlueprint(
+        var sensing = workshop.Publish(new DeviceBlueprint(
             "sensing", 0, "Sensor Suite", 60, 0,
             Sensor: new SensorModule(5_000),
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 30));
-        workshop.Publish(new DeviceBlueprint(
+        var comm = workshop.Publish(new DeviceBlueprint(
             "comm", 0, "Comm Relay", 60, 0,
             Comm: new CommModule(1, 1, BandwidthPerTick: 1),
             ControllerProgramId: DevicePrograms.RelayId,
             MaterialCost: 30));
-        workshop.Publish(new DeviceBlueprint(
+        var state = workshop.Publish(new DeviceBlueprint(
             "state", 0, "State Core", 60, 0,
             State: new StateModule(ComputePerTick: 2, StorageCapacity: 64),
             ControllerProgramId: DevicePrograms.IdleId,
@@ -283,6 +283,9 @@ internal static class Scenarios
         DeploymentService.Deploy(world, leadSmelter, "A", "frontier", new Vec2(5_000, 6_000));
         DeploymentService.Deploy(world, repairBay, "A", "frontier", new Vec2(2_800, 4_800));
         DeploymentService.Deploy(world, shieldGenerator, "A", "frontier", new Vec2(3_600, 3_200));
+        DeploymentService.Deploy(world, sensing, "A", "frontier", new Vec2(2_200, 3_200));
+        DeploymentService.Deploy(world, comm, "A", "frontier", new Vec2(2_200, 5_000));
+        DeploymentService.Deploy(world, state, "A", "frontier", new Vec2(4_400, 5_400));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

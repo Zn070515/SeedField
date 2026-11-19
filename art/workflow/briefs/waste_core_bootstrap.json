@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_core_bootstrap",
+  "displayName": "Waste Core · Bootstrap",
+  "category": "building",
+  "branch": "core",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.1,
+  "targetZ": 0.60,
+  "silhouette": "waste core cradle with amber scaffolding, crossbeam and bootstrap ring",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "amber", "hazard", "copper"],
+  "emissive": ["bootstrap ring", "scaffold arms"],
+  "readsAt30Percent": "amber scaffold cage + ring reads as temporary bootstrap",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

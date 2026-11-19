@@ -842,6 +842,376 @@ def build_barricade(m: dict) -> None:
     wl.rubble("BarrRubble", -1.45, 0.55, 0.30, 6, m, 907, 0.05)
 
 
+def ensure_comm_materials(m: dict) -> None:
+    if "purple_soft" not in m:
+        m["purple_soft"] = wl.wasteland_material(
+            "PurpleSoft",
+            (0.16, 0.10, 0.28),
+            0.2,
+            0.35,
+            grime=(0.06, 0.04, 0.10),
+            scale=6.0,
+            emission=(0.55, 0.30, 0.95),
+            strength=1.0,
+        )
+    if "paint_purple" not in m:
+        m["paint_purple"] = wl.wasteland_material(
+            "PaintPurple",
+            (0.24, 0.16, 0.40),
+            0.15,
+            0.55,
+            grime=(0.08, 0.05, 0.14),
+            scale=9.0,
+            grime_strength=0.35,
+        )
+
+
+def build_sensor_array(m: dict) -> None:
+    """Sensor array: offset dish, scan arm, four pods, side cabinet."""
+    ensure_flavor_materials(m)
+    art.cylinder("SensorPad", 1.18, 0.16, (0, 0, 0.08), 8, m["concrete"])
+    art.cylinder("SensorDeck", 0.98, 0.10, (0, 0, 0.20), 8, m["steel_dark"])
+    art.cylinder("SensorMast", 0.16, 0.88, (0, 0, 0.62), 10, m["steel"])
+    art.cylinder("SensorMastBase", 0.26, 0.14, (0, 0, 0.32), 8, m["rust"])
+    art.torus("SensorMastRing", 0.20, 0.025, (0, 0, 0.98), m["copper"], 24)
+    art.cylinder("SensorDish", 0.42, 0.06, (0.72, -0.30, 1.02), 24, m["steel"])
+    art.torus("SensorDishRim", 0.42, 0.035, (0.72, -0.30, 1.05), m["steel_dark"], 32)
+    art.cylinder("SensorDishFace", 0.30, 0.03, (0.72, -0.30, 1.06), 24, m["rubber"])
+    art.box(
+        "SensorArm",
+        (1.05, 0.10, 0.10),
+        (0.48, -0.20, 1.02),
+        (0, 0, math.radians(-18)),
+        m["steel_dark"],
+    )
+    art.cylinder("SensorLens", 0.10, 0.05, (1.22, -0.40, 1.02), 12, m["teal_focus"])
+    wl.tube(
+        "SensorDishSupport",
+        (0.20, 0.0, 0.85),
+        (0.72, -0.30, 0.95),
+        0.03,
+        m["steel"],
+        6,
+    )
+    art.box(
+        "SensorCabinet",
+        (0.55, 0.40, 0.35),
+        (-0.70, 0.55, 0.38),
+        (0, 0, math.radians(15)),
+        m["steel_dark"],
+    )
+    art.box(
+        "SensorCabinetTop",
+        (0.48, 0.34, 0.05),
+        (-0.70, 0.55, 0.58),
+        (0, 0, math.radians(15)),
+        m["rust"],
+    )
+    art.box(
+        "SensorWindow",
+        (0.26, 0.14, 0.04),
+        (-0.66, 0.52, 0.60),
+        (0, 0, math.radians(15)),
+        m["rubber"],
+    )
+    for index in range(3):
+        art.box(
+            f"SensorStencil{index}",
+            (0.04, 0.12, 0.02),
+            (-0.82 + index * 0.07, 0.50, 0.61),
+            (0, 0, math.radians(15)),
+            m["paint_cyan"],
+        )
+    for index in range(4):
+        angle = math.tau * index / 4 + math.pi / 4
+        x = math.cos(angle) * 0.82
+        y = math.sin(angle) * 0.82
+        art.cylinder(f"SensorPod{index}", 0.16, 0.22, (x, y, 0.36), 8, m["steel"])
+        art.cylinder(
+            f"SensorPodLens{index}",
+            0.06,
+            0.03,
+            (x, y, 0.49),
+            8,
+            m["teal_soft"],
+        )
+        wl.tube(
+            f"SensorPodCable{index}",
+            (x * 0.75, y * 0.75, 0.28),
+            (0.0, 0.0, 0.35),
+            0.025,
+            m["copper"],
+            6,
+        )
+    art.torus("SensorScanRing", 1.05, 0.018, (0, 0, 0.30), m["teal_soft"], 64)
+    wl.hazard_strip("SensorHazard", 0, -1.02, 0.20, 1.2, 0.08, 0.0, m, 5)
+    wl.bolt_ring("SensorBolts", 0, 0, 0.20, 0.92, 0.92, 12, m["steel"])
+    wl.grate("SensorGrate", -0.55, -0.55, 0.20, 0.45, 0.24, m["steel_dark"], m["steel"], 6)
+    art.cylinder("SensorScorch", 0.24, 0.01, (0.45, 0.45, 0.30), 10, m["slag"])
+    wl.rubble("SensorRubble", 0.75, -0.65, 0.32, 6, m, 1201, 0.06)
+
+
+def build_comm_relay(m: dict) -> None:
+    """Comm relay: truss mast, crossarms, large offset dish, purple info lights."""
+    ensure_flavor_materials(m)
+    ensure_comm_materials(m)
+    art.box("CommPad", (1.80, 1.80, 0.16), (0, 0, 0.08), mat=m["concrete"])
+    art.box("CommDeck", (1.50, 1.50, 0.10), (0, 0, 0.21), mat=m["steel_dark"])
+    for index, (x, y) in enumerate(
+        ((-0.55, -0.55), (0.55, -0.55), (-0.55, 0.55), (0.55, 0.55))
+    ):
+        art.box(f"CommLeg{index}", (0.10, 0.10, 0.95), (x, y, 0.62), mat=m["steel"])
+        art.box(f"CommFoot{index}", (0.22, 0.22, 0.10), (x, y, 0.25), mat=m["rust"])
+    art.cylinder("CommMast", 0.12, 1.20, (0, 0, 0.80), 10, m["steel_dark"])
+    for index, angle in enumerate((0.0, math.pi / 2)):
+        art.box(
+            f"CommArm{index}",
+            (1.50, 0.10, 0.10),
+            (0, 0, 1.15),
+            (0, 0, angle),
+            m["steel"],
+        )
+        for side, sign in enumerate((-1, 1)):
+            x = math.cos(angle) * 0.70 * sign
+            y = math.sin(angle) * 0.70 * sign
+            art.cylinder(f"CommDishSmall{index}{side}", 0.16, 0.05, (x, y, 1.18), 16, m["steel"])
+            art.cylinder(
+                f"CommDishSmallFace{index}{side}",
+                0.11,
+                0.02,
+                (x, y, 1.21),
+                16,
+                m["purple_soft"],
+            )
+    art.cylinder("CommDishLarge", 0.48, 0.06, (0.85, -0.35, 0.95), 24, m["steel"])
+    art.torus("CommDishRim", 0.48, 0.035, (0.85, -0.35, 0.99), m["steel_dark"], 32)
+    art.cylinder("CommDishFace", 0.34, 0.02, (0.85, -0.35, 1.00), 24, m["purple_soft"])
+    art.box(
+        "CommDishArm",
+        (0.65, 0.10, 0.10),
+        (0.45, -0.20, 0.92),
+        (0, 0, math.radians(-25)),
+        m["steel_dark"],
+    )
+    art.box(
+        "CommCabin",
+        (0.55, 0.42, 0.38),
+        (-0.75, 0.55, 0.40),
+        (0, 0, math.radians(15)),
+        m["steel_dark"],
+    )
+    art.box(
+        "CommCabinTop",
+        (0.48, 0.36, 0.06),
+        (-0.75, 0.55, 0.62),
+        (0, 0, math.radians(15)),
+        m["rust"],
+    )
+    art.box(
+        "CommWindow",
+        (0.26, 0.14, 0.04),
+        (-0.70, 0.52, 0.64),
+        (0, 0, math.radians(15)),
+        m["rubber"],
+    )
+    for index in range(3):
+        art.box(
+            f"CommStencil{index}",
+            (0.04, 0.12, 0.02),
+            (-0.86 + index * 0.07, 0.50, 0.65),
+            (0, 0, math.radians(15)),
+            m["paint_purple"],
+        )
+    art.cylinder("CommSpool", 0.22, 0.24, (0.95, 0.55, 0.30), 12, m["rust_dark"])
+    art.cylinder("CommSpoolHub", 0.07, 0.28, (0.95, 0.55, 0.30), 8, m["steel_dark"])
+    wl.tube("CommCable", (0.95, 0.55, 0.28), (-1.55, 0.90, 0.14), 0.03, m["rubber"], 6)
+    wl.hazard_strip("CommHazard", 0, -1.12, 0.22, 1.2, 0.08, 0.0, m, 5)
+    wl.bolt_ring("CommBolts", 0, 0, 0.22, 1.00, 1.00, 12, m["steel"])
+    wl.grate("CommGrate", 0.55, 0.55, 0.22, 0.40, 0.22, m["steel_dark"], m["steel"], 6)
+    wl.rubble("CommRubble", -0.90, -0.75, 0.30, 6, m, 1301, 0.06)
+
+
+def build_state_core(m: dict) -> None:
+    """State core: stacked cube heat sink, glow seams, side fins, control panel."""
+    ensure_flavor_materials(m)
+    art.box("StatePad", (1.90, 1.90, 0.16), (0, 0, 0.08), mat=m["concrete"])
+    art.box("StateDeck", (1.60, 1.60, 0.10), (0, 0, 0.21), mat=m["steel_dark"])
+    art.box("StateBase", (1.15, 1.15, 0.26), (0, 0, 0.39), mat=m["steel_dark"])
+    art.box("StateMid", (0.92, 0.92, 0.22), (0, 0, 0.63), mat=m["steel"])
+    art.box("StateTop", (0.70, 0.70, 0.20), (0, 0, 0.84), mat=m["steel_dark"])
+    art.box("StateCap", (0.50, 0.50, 0.16), (0, 0, 1.02), mat=m["rust"])
+    for index, z in enumerate((0.54, 0.76, 0.96)):
+        art.box(f"StateGlow{index}", (0.62, 0.62, 0.018), (0, 0, z), mat=m["teal_soft"])
+    art.cylinder("StateRadiator", 0.24, 0.55, (-1.00, 0.50, 0.48), 12, m["rust"])
+    art.torus("StateRadiatorRing", 0.25, 0.03, (-1.00, 0.50, 0.66), m["steel_dark"], 20)
+    art.cylinder("StateRadiatorCap", 0.20, 0.06, (-1.00, 0.50, 0.78), 12, m["slag"])
+    wl.tube(
+        "StatePipe",
+        (-0.70, 0.45, 0.45),
+        (-0.90, 0.50, 0.55),
+        0.04,
+        m["copper"],
+        6,
+    )
+    art.box(
+        "StateCabin",
+        (0.45, 0.35, 0.34),
+        (0.98, -0.55, 0.38),
+        (0, 0, math.radians(10)),
+        m["steel_dark"],
+    )
+    art.box(
+        "StateCabinTop",
+        (0.40, 0.30, 0.05),
+        (0.98, -0.55, 0.57),
+        (0, 0, math.radians(10)),
+        m["rust"],
+    )
+    art.box(
+        "StateWindow",
+        (0.22, 0.12, 0.03),
+        (1.02, -0.55, 0.59),
+        (0, 0, math.radians(10)),
+        m["rubber"],
+    )
+    for index in range(4):
+        angle = math.tau * index / 4 + math.pi / 4
+        art.box(
+            f"StateFin{index}",
+            (0.50, 0.12, 0.50),
+            (math.cos(angle) * 0.78, math.sin(angle) * 0.78, 0.48),
+            (0, 0, angle),
+            m["rust"] if index % 2 else m["steel"],
+        )
+        art.cylinder(
+            f"StateFinBolt{index}",
+            0.04,
+            0.06,
+            (math.cos(angle) * 0.98, math.sin(angle) * 0.98, 0.48),
+            6,
+            m["copper"],
+        )
+    art.box(
+        "StatePanel",
+        (0.40, 0.24, 0.28),
+        (-0.65, 0.55, 0.36),
+        (0, 0, math.radians(12)),
+        m["steel_dark"],
+    )
+    for index in range(3):
+        art.cylinder(
+            f"StateLamp{index}",
+            0.04,
+            0.03,
+            (-0.72 + index * 0.08, 0.55, 0.51),
+            8,
+            m["teal_focus"] if index == 0 else m["amber"],
+        )
+    wl.hazard_strip("StateHazard", 0, -1.06, 0.22, 1.2, 0.08, 0.0, m, 5)
+    wl.bolt_ring("StateBolts", 0, 0, 0.22, 1.0, 1.0, 12, m["steel"])
+    wl.grate("StateGrate", 0.55, -0.55, 0.22, 0.40, 0.22, m["steel_dark"], m["steel"], 6)
+    art.cylinder("StateScorch", 0.26, 0.01, (0.52, 0.52, 0.30), 10, m["slag"])
+    wl.rubble("StateRubble", -0.80, -0.68, 0.30, 6, m, 1501, 0.06)
+
+
+def build_core_state(m: dict, state: str) -> None:
+    ensure_flavor_materials(m)
+    wl.build_core(m)
+    rng = random.Random(1401)
+    if state == "regenerating":
+        for index in range(3):
+            art.torus(
+                f"CoreRegenRing{index}",
+                0.72 + index * 0.16,
+                0.02,
+                (0, 0, 0.95 + index * 0.10),
+                m["teal_focus"],
+                48,
+            )
+        for index in range(6):
+            angle = math.tau * index / 6
+            wl.tube(
+                f"CoreRegenBeam{index}",
+                (math.cos(angle) * 0.34, math.sin(angle) * 0.34, 0.95),
+                (math.cos(angle) * 0.34, math.sin(angle) * 0.34, 1.30),
+                0.02,
+                m["teal_focus"],
+                6,
+            )
+        art.torus("CoreRegenBaseRing", 0.95, 0.025, (0, 0, 0.60), m["teal_soft"], 48)
+    elif state == "bootstrap":
+        for index in range(4):
+            angle = math.tau * index / 4 + math.pi / 4
+            art.box(
+                f"CoreScaffold{index}",
+                (0.12, 0.12, 0.75),
+                (math.cos(angle) * 0.55, math.sin(angle) * 0.55, 0.75),
+                (0, 0, angle),
+                m["hazard"],
+            )
+            art.box(
+                f"CoreScaffoldArm{index}",
+                (0.45, 0.10, 0.10),
+                (math.cos(angle) * 0.42, math.sin(angle) * 0.42, 1.12),
+                (0, 0, angle),
+                m["amber"],
+            )
+        art.torus("CoreBootstrapRing", 0.74, 0.03, (0, 0, 1.18), m["amber"], 40)
+        art.box(
+            "CoreBootstrapBeam",
+            (0.90, 0.08, 0.08),
+            (0, 0, 1.22),
+            (0, 0, math.pi / 4),
+            m["hazard"],
+        )
+    elif state == "besieged":
+        for index in range(6):
+            angle = math.tau * index / 6
+            art.cylinder(
+                f"CoreRedLamp{index}",
+                0.06,
+                0.04,
+                (math.cos(angle) * 1.18, math.sin(angle) * 1.18, 0.55),
+                8,
+                m["red"],
+            )
+        art.torus("CoreRedRing", 0.96, 0.025, (0, 0, 0.98), m["red"], 40)
+        art.box(
+            "CoreScorchA",
+            (0.75, 0.40, 0.02),
+            (0.55, -0.40, 0.48),
+            (0, 0, 0.4),
+            m["slag"],
+        )
+        for index in range(5):
+            art.box(
+                f"CoreDebris{index}",
+                (rng.uniform(0.10, 0.22), rng.uniform(0.08, 0.16), 0.05),
+                (rng.uniform(-1.0, 1.0), rng.uniform(-1.0, 1.0), 0.48),
+                (0, 0, rng.uniform(0, math.tau)),
+                m["slag"],
+            )
+        art.box(
+            "CoreBentPlate",
+            (0.50, 0.25, 0.04),
+            (-0.70, 0.50, 0.55),
+            (0, 0, 0.7),
+            m["slag"],
+        )
+
+
+def build_waste_core_regenerating(m: dict) -> None:
+    build_core_state(m, "regenerating")
+
+
+def build_waste_core_bootstrap(m: dict) -> None:
+    build_core_state(m, "bootstrap")
+
+
+def build_waste_core_besieged(m: dict) -> None:
+    build_core_state(m, "besieged")
+
+
 BUILDERS = {
     "waste_shield_generator": (build_shield_generator, 4.0, 0.55),
     "waste_shield_generator_flavor": (build_shield_generator_flavor, 4.3, 0.55),
@@ -850,6 +1220,12 @@ BUILDERS = {
     "waste_repair_bay_flavor": (build_repair_bay_flavor, 4.6, 0.55),
     "waste_smelter": (build_smelter, 4.8, 0.55),
     "waste_barricade": (build_barricade, 4.4, 0.50),
+    "waste_sensor": (build_sensor_array, 3.8, 0.55),
+    "waste_comm": (build_comm_relay, 4.2, 0.55),
+    "waste_state": (build_state_core, 3.8, 0.55),
+    "waste_core_regenerating": (build_waste_core_regenerating, 4.1, 0.60),
+    "waste_core_bootstrap": (build_waste_core_bootstrap, 4.1, 0.60),
+    "waste_core_besieged": (build_waste_core_besieged, 4.1, 0.60),
 }
 
 

@@ -233,6 +233,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`support demo`](docs/engineering/evidence/2026-11-19-support-buildings-demo.md) | 真实 Godot 场景中的维修/补盾/受击事件与截图 |
 | [`main topdown`](docs/engineering/evidence/2026-11-19-main-topdown-migration.md) | Main 客户端实体视觉切到 topdown catalog、映射与截图 |
 | [`topdown benchmark`](docs/engineering/evidence/2026-11-19-topdown-benchmark.md) | 同机 oblique vs topdown 1000 设备混合负载 A/B |
+| [`dedicated topdown set`](docs/engineering/evidence/2026-11-20-topdown-dedicated-assets.md) | sensing/comm/state 与 core 四态专用资产、映射与场景验证 |
 
 ## 工程原则
 

@@ -1207,7 +1207,8 @@
             470
           ]
         }
-      ]
+      ],
+      "state": "idle"
     },
     {
       "assetId": "waste_generator.topdown.v0",
@@ -1568,6 +1569,189 @@
           ]
         }
       ]
+    },
+    {
+      "assetId": "waste_sensor.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 320,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_sensor_topdown_000.png",
+          "sha256": "7be721e1d23caa8a6bcdcd1cec5877dd6531e4aaf429f27840b9ac830145a575",
+          "alphaBBox": [
+            97,
+            97,
+            433,
+            414
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_comm.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 340,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_comm_topdown_000.png",
+          "sha256": "f4c684c22a32829151e30076d7d849437a77092c50a6b75c36ee4e94ad1c1d89",
+          "alphaBBox": [
+            66,
+            130,
+            422,
+            397
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_state.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 320,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_state_topdown_000.png",
+          "sha256": "58b59762dfdb89880bba5465affc3b170adaa710769d5d18d72fe0439a0b708d",
+          "alphaBBox": [
+            83,
+            117,
+            421,
+            404
+          ]
+        }
+      ]
+    },
+    {
+      "assetId": "waste_core_regenerating.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 420,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_core_regenerating_topdown_000.png",
+          "sha256": "385d1dfab707cd5c94f19ac112e7a8ff9b6519b0c83488e4f63e0e4a907c6982",
+          "alphaBBox": [
+            41,
+            41,
+            470,
+            470
+          ]
+        }
+      ],
+      "state": "regenerating"
+    },
+    {
+      "assetId": "waste_core_bootstrap.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 420,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_core_bootstrap_topdown_000.png",
+          "sha256": "c3be2ca9f4695a566d29ed58e1b41706d97132eb6ef8da4668d396f390903589",
+          "alphaBBox": [
+            41,
+            41,
+            470,
+            470
+          ]
+        }
+      ],
+      "state": "bootstrap"
+    },
+    {
+      "assetId": "waste_core_besieged.topdown.v0",
+      "kind": "style-test",
+      "route": "topdown",
+      "directions": 1,
+      "resolutionPx": [
+        512,
+        512
+      ],
+      "footprintPx": 420,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "source": "art/blender/render_brief_asset.py",
+      "license": "original-procedural-source",
+      "status": "style-test-not-final",
+      "files": [
+        {
+          "path": "style_topdown/waste_core_besieged_topdown_000.png",
+          "sha256": "713c5f7cd04a7d8eb741a6fbcb9c7fe904b098ac7301a3c01002b6407b025c7b",
+          "alphaBBox": [
+            41,
+            41,
+            470,
+            470
+          ]
+        }
+      ],
+      "state": "besieged"
     },
     {
       "assetId": "prop_barrels.topdown.v0",

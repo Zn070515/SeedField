@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_sensor",
+  "displayName": "Sensor Array",
+  "category": "building",
+  "branch": "sensing",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 3.8,
+  "targetZ": 0.55,
+  "silhouette": "offset dish and scan arm on a mast, four pods, side cabinet",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "teal_soft", "teal_focus", "copper", "hazard", "rubber"],
+  "emissive": ["dish lens", "pod lenses", "scan ring"],
+  "readsAt30Percent": "dish + arm + cabinet break the circular mast; distinct from sentry/turret",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

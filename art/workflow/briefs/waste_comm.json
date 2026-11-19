@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_comm",
+  "displayName": "Comm Relay",
+  "category": "building",
+  "branch": "communication",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.2,
+  "targetZ": 0.55,
+  "silhouette": "truss mast with crossarms, large offset dish, side cabin and cable spool",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "purple_soft", "paint_purple", "rubber", "copper", "hazard"],
+  "emissive": ["large dish face", "small dish faces", "cabin stencil"],
+  "readsAt30Percent": "crossarm truss + offset dish reads as communications, not sensing",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

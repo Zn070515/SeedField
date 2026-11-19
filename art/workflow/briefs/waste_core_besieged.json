@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_core_besieged",
+  "displayName": "Waste Core · Besieged",
+  "category": "building",
+  "branch": "core",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.1,
+  "targetZ": 0.60,
+  "silhouette": "waste core cradle with red warning ring, scorch, debris and bent plates",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "red", "slag", "copper"],
+  "emissive": ["red warning ring", "six red lamps"],
+  "readsAt30Percent": "red ring + damaged plates read as besieged, not idle",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

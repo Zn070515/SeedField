@@ -147,6 +147,7 @@ tests/SeedField.Repository.Tests/
 - 支援建筑/被动维修（ADR-0050）：`RepairModule` 每 Tick 维修同区域最近受损友军，扣本地 E + 区域 M；Critical 停止、等距按 EntityId 决胜；`EntityRepaired`/`HealthRepairedTotal`、观察三字段、TypeScript 契约、世界存档 **v26**；新增 `repair_bay`/`barricade`/`shield_generator` 蓝图。
 - 护盾投射（ADR-0051）：`ShieldProjectorModule` 为同区域范围内带 `ShieldModule` 的友军补盾，按 EntityId 顺序每目标扣 E，绕过目标自身 regen 延迟；`ShieldProjected`/`ShieldProjectedTotal`、观察三字段、TypeScript 契约、世界存档 **v27**；`shield_generator` 蓝图升级为友军光环。
 - Main 客户端 topdown 迁移（对齐 ADR-0041）：实体目录切到 `VisualAssetCatalog.Load("topdown")`；`VisualEntitySnapshot` 统一 blueprint→waste_* 映射；核心缺 state 变体时回退 `waste_core`；工坊预览同步；新增 `--capture-main-topdown` 截图 `screenshots/main-topdown.png`。
+- topdown 专用资产（2026-11-20）：`waste_sensor`、`waste_comm`、`waste_state`、`waste_core_regenerating/bootstrap/besieged`；sensing/comm/state 映射与核心四态优先路径；`Scenarios` 部署三件支援/分支建筑并调整 A 初始 M=900（场景值）；manifest/ArtAssetTests 通过。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
