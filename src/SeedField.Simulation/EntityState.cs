@@ -27,7 +27,8 @@ public sealed record EntityDefinition(
     ArmorModule? Armor = null,
     ShieldModule? Shield = null,
     SmelterModule? Smelter = null,
-    FabricatorModule? Fabricator = null);
+    FabricatorModule? Fabricator = null,
+    RepairModule? Repair = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -62,6 +63,7 @@ public sealed class EntityState
         ShieldEnergy = definition.Shield?.Capacity ?? 0;
         Smelter = definition.Smelter;
         Fabricator = definition.Fabricator;
+        Repair = definition.Repair;
     }
 
     public EntityId Id { get; }
@@ -125,6 +127,9 @@ public sealed class EntityState
 
     /// <summary>Optional material→components conversion.</summary>
     public FabricatorModule? Fabricator { get; internal set; }
+
+    /// <summary>Optional passive repair projector.</summary>
+    public RepairModule? Repair { get; internal set; }
 
     /// <summary>Scripts may pause passive smelting/fabrication for this device.</summary>
     public bool ProductionEnabled { get; internal set; } = true;

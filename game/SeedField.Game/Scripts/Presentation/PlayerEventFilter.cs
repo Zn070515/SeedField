@@ -30,6 +30,9 @@ public static class PlayerEventFilter
                 loot.CivilizationId == "A" ||
                 visibleEntityIds.Contains(loot.SourceEntityId.Value),
             EntityDamaged damaged => visibleEntityIds.Contains(damaged.EntityId.Value),
+            EntityRepaired repaired =>
+                visibleEntityIds.Contains(repaired.RepairerId.Value) ||
+                visibleEntityIds.Contains(repaired.TargetId.Value),
             EntityDestroyed destroyed => visibleEntityIds.Contains(destroyed.EntityId.Value),
             EntityMoved moved => visibleEntityIds.Contains(moved.EntityId.Value),
             EntityInventoryLost lost => visibleEntityIds.Contains(lost.EntityId.Value),

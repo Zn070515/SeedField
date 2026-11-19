@@ -172,6 +172,36 @@ internal static class Scenarios
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 50,
             BuildTicks: 3));
+        workshop.Publish(new DeviceBlueprint(
+            "repair_bay", 0, "Repair Bay", 160, 2_000,
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 2_000),
+            Armor: new ArmorModule(FlatReduction: 2),
+            Repair: new RepairModule(
+                RangeMm: 2_500,
+                HealthPerTick: 5,
+                EnergyCostPerTick: 2,
+                MaterialPerTick: 1),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 80,
+            BuildTicks: 4));
+        workshop.Publish(new DeviceBlueprint(
+            "barricade", 0, "Barricade", 240, 0,
+            Armor: new ArmorModule(FlatReduction: 6),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 25,
+            BuildTicks: 1));
+        workshop.Publish(new DeviceBlueprint(
+            "shield_generator", 0, "Shield Generator", 140, 1_000,
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 1_000),
+            Armor: new ArmorModule(FlatReduction: 2),
+            Shield: new ShieldModule(
+                Capacity: 60,
+                RegenPerTick: 3,
+                RegenDelayTicks: 4,
+                EnergyCostPerRegen: 1),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 90,
+            BuildTicks: 4));
 
         var strike = workshop.Publish(new DeviceBlueprint(
             "strike", 0, "Strike Frame", 150, 5_000,

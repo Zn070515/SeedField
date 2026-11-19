@@ -28,6 +28,9 @@ export interface ObservedEntity {
   hasSmelter: boolean;
   hasFabricator: boolean;
   productionEnabled: boolean;
+  hasRepair: boolean;
+  repairRangeMm: number;
+  repairHealthPerTick: number;
 }
 
 export type OreKind = "Copper" | "Lead" | "Titanium" | "Coal";

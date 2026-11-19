@@ -149,7 +149,8 @@ public static class DeploymentService
             blueprint.Armor,
             blueprint.Shield,
             blueprint.Smelter,
-            blueprint.Fabricator);
+            blueprint.Fabricator,
+            Repair: blueprint.Repair);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
@@ -197,6 +198,7 @@ public static class DeploymentService
         entity.Drill = blueprint.Drill;
         entity.Smelter = blueprint.Smelter;
         entity.Fabricator = blueprint.Fabricator;
+        entity.Repair = blueprint.Repair;
         var hadShield = entity.Shield is not null;
         entity.Armor = blueprint.Armor;
         entity.Shield = blueprint.Shield;

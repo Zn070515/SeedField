@@ -260,6 +260,7 @@ public sealed partial class SimulationEngine
         FlowPower(tick, events);
         UpdatePowerBreakers(tick, events);
         RegenerateShields(tick);
+        RepairEntities(tick, events);
         ProduceMaterials(tick, events);
         DiscoverDeposits();
 

@@ -65,7 +65,8 @@ public static partial class WorldSaveSerializer
                 world.Statistics.OreSmeltedTotal,
                 world.Statistics.ComponentsFabricatedTotal,
                 world.Statistics.ComponentsRefundedTotal,
-                world.Statistics.ByproductProducedTotal),
+                world.Statistics.ByproductProducedTotal,
+                world.Statistics.HealthRepairedTotal),
             world.Workshop.GetAllVersions().Select(ToBlueprintSave).ToArray(),
             world.Links.Values
                 .Select(link => new LinkSaveData(

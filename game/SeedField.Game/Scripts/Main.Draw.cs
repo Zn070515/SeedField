@@ -501,6 +501,7 @@ public partial class Main : Node2D
             or EnergyArrived
             or IntentRejected
             or EntityDamaged
+            or EntityRepaired
             or EntityDestroyed
             or MessageDelivered
             or MessageQueued

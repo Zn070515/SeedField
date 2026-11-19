@@ -27,6 +27,10 @@ public partial class Main
                 $"t{damaged.Tick,4}  {damaged.EntityId} -{damaged.Damage} HP" +
                 (damaged.ShieldAbsorbed > 0 ? $" (shield -{damaged.ShieldAbsorbed})" : string.Empty) +
                 (damaged.ArmorAbsorbed > 0 ? $" (armor -{damaged.ArmorAbsorbed})" : string.Empty),
+            EntityRepaired repaired =>
+                $"t{repaired.Tick,4}  {repaired.RepairerId} repaired {repaired.TargetId} " +
+                $"+{repaired.Amount} HP" +
+                (repaired.MaterialSpent > 0 ? $" (−{repaired.MaterialSpent}M)" : string.Empty),
             EntityDestroyed destroyed => $"t{destroyed.Tick,4}  {destroyed.EntityId} destroyed",
             MessageDelivered delivered =>
                 $"t{delivered.Tick,4}  message {delivered.MessageId} delivered to {delivered.ToCivilizationId}",

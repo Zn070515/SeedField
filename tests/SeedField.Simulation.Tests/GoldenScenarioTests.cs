@@ -10,8 +10,9 @@ public sealed class GoldenScenarioTests
 {
     // Updated intentionally with behavior changes; see docs/engineering/TESTING.md.
     // v25 splits ore into per-kind stocks and applies recipes; the scenario's copper
-    // smelting uses the 1:1 copper recipe.
-    private const ulong ExpectedHash = 0xc834ab16690d8572UL;
+    // smelting uses the 1:1 copper recipe. v26 adds the repair module fields and
+    // HealthRepairedTotal to the state hash.
+    private const ulong ExpectedHash = 17155118593632489458UL;
 
     [Fact]
     public void GoldenScenarioHashIsStable()

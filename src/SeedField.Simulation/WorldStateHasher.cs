@@ -82,6 +82,7 @@ public static partial class WorldStateHasher
         Append(ref hash, world.Statistics.ShieldAbsorbedTotal);
         Append(ref hash, world.Statistics.ArmorAbsorbedTotal);
         Append(ref hash, world.Statistics.ShieldRegeneratedTotal);
+        Append(ref hash, world.Statistics.HealthRepairedTotal);
         Append(ref hash, world.Statistics.OreSmeltedTotal);
         Append(ref hash, world.Statistics.ComponentsFabricatedTotal);
         Append(ref hash, world.Statistics.ComponentsRefundedTotal);
@@ -205,6 +206,15 @@ public static partial class WorldStateHasher
                     Append(ref hash, entity.Fabricator.MaterialPerComponent);
                     Append(ref hash, entity.Fabricator.EnergyCostPerTick);
                     Append(ref hash, entity.Fabricator.MaxComponents);
+                }
+
+                Append(ref hash, entity.Repair is not null);
+                if (entity.Repair is not null)
+                {
+                    Append(ref hash, entity.Repair.RangeMm);
+                    Append(ref hash, entity.Repair.HealthPerTick);
+                    Append(ref hash, entity.Repair.EnergyCostPerTick);
+                    Append(ref hash, entity.Repair.MaterialPerTick);
                 }
 
                 Append(ref hash, entity.ProductionEnabled);

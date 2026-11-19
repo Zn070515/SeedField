@@ -38,6 +38,7 @@
 - 测试体系加强：经济 golden fixture、经济不变量 fuzz、损坏存档矩阵、事件展示/意图契约/ADR 验证段门禁（ADR-0049）。
 - 教程进度写入游戏存档 v4（完成步骤 + Tick），旧 v1–v3 存档按空进度读取。
 - M1 完成：内置 idle/scout/sentry/relay 策略模板、AND/OR 构造挑战目录、正常启动从 Tick 0 开始（ADR-0042）。
+- Repair Bay 被动维修：`RepairModule` 维修同区域最近受损友军，扣 E/M；`EntityRepaired`、`HealthRepairedTotal`、观察/契约字段与世界存档 v26；新增 repair_bay/barricade/shield_generator 蓝图（ADR-0050）。
 
 ### Changed
 
