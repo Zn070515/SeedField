@@ -111,7 +111,14 @@ public sealed class VisualAssetCatalog
             return null;
         }
 
-        var name = state switch
+        var wasteland = state switch
+        {
+            CoreVisualState.Regenerating => "waste_core_regenerating",
+            CoreVisualState.Bootstrap => "waste_core_bootstrap",
+            CoreVisualState.Besieged => "waste_core_besieged",
+            _ => "waste_core",
+        };
+        var legacy = state switch
         {
             CoreVisualState.Regenerating => "seed_core_regenerating",
             CoreVisualState.Bootstrap => "seed_core_bootstrap",
@@ -119,7 +126,7 @@ public sealed class VisualAssetCatalog
             _ => "seed_core",
         };
 
-        return Get(name) ?? Get("waste_core") ?? Get("seed_core");
+        return Get(wasteland) ?? Get(legacy) ?? Get("seed_core");
     }
 
     private static Texture2D? LoadPass(JsonElement file, string passName)

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_core_regenerating",
+  "displayName": "Waste Core · Regenerating",
+  "category": "building",
+  "branch": "core",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.1,
+  "targetZ": 0.60,
+  "silhouette": "waste core cradle with cyan energy rings and vertical regen beams",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "teal_soft", "teal_focus", "copper", "hazard"],
+  "emissive": ["three cyan rings", "six vertical beams", "base ring"],
+  "readsAt30Percent": "cyan concentric rings + beams read as active regeneration",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

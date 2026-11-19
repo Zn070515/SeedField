@@ -72,9 +72,9 @@ public readonly record struct VisualEntitySnapshot(
         blueprintId switch
         {
             "power" => "waste_generator",
-            "sensing" => "waste_sentry",
-            "comm" => "waste_relay",
-            "state" => "waste_relay",
+            "sensing" => "waste_sensor",
+            "comm" => "waste_comm",
+            "state" => "waste_state",
             "drill" => "waste_drill",
             "smelter" or "smelter-lead" => "waste_smelter",
             "fabricator" => "waste_foundry",

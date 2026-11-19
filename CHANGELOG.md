@@ -41,6 +41,7 @@
 - Repair Bay 被动维修：`RepairModule` 维修同区域最近受损友军，扣 E/M；`EntityRepaired`、`HealthRepairedTotal`、观察/契约字段与世界存档 v26；新增 repair_bay/barricade/shield_generator 蓝图（ADR-0050）。
 - Shield Generator 友军护盾投射：`ShieldProjectorModule` 为范围内带盾友军补盾，按 EntityId 顺序每目标扣 E；`ShieldProjected`、`ShieldProjectedTotal`、观察/契约字段与世界存档 v27（ADR-0051）。
 - Main 客户端实体视觉迁移到 topdown catalog：power/sensing/comm/state/drill/smelter/fabricator/repair/shield/barricade/unit 统一映射；核心回退 `waste_core`；工坊预览同步；新增 `--capture-main-topdown`。
+- topdown 专用资产：`waste_sensor`、`waste_comm`、`waste_state` 与 `waste_core_regenerating/bootstrap/besieged`；sensing/comm/state 映射、核心状态回退、manifest/ArtAssetTests 与主场景部署同步。
 
 ### Changed
 
