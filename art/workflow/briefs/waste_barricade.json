@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_barricade",
+  "displayName": "Barricade",
+  "category": "building",
+  "branch": "execution/defense",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.4,
+  "targetZ": 0.50,
+  "silhouette": "long armored wall, east watchtower, west breach, south spike row, north sandbags",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "sand", "slag", "hazard", "copper", "red"],
+  "emissive": ["tower lamp", "red breach lamp"],
+  "readsAt30Percent": "long wall + tower + breach reads as a defensive line, not a building block",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

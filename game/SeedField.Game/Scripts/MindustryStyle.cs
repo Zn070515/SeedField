@@ -67,6 +67,10 @@ public partial class MindustryStyle : Node2D
         new(9, 6, 1, 1, "RELAY", "waste_relay", new Color("2b2a24"), new Color("7fa9a0")),
         new(13, 4, 2, 2, "HOSTILE", "waste_hostile", new Color("301f1a"), new Color("b5543f")),
         new(17, 5, 1, 1, "FOUNDRY", "waste_foundry", new Color("2e2a22"), new Color("a89a85")),
+        new(11, 1, 2, 2, "SHIELD", "waste_shield_generator", new Color("1f2a2a"), new Color("7fe0cf")),
+        new(18, 1, 2, 2, "BARRICADE", "waste_barricade", new Color("2e2a22"), new Color("b5543f")),
+        new(0, 7, 2, 2, "REPAIR", "waste_repair_bay", new Color("2e2a22"), new Color("7fe0cf")),
+        new(7, 8, 1, 1, "SMELTER", "waste_smelter", new Color("33291f"), new Color("c47a45")),
     };
 
     private readonly record struct Unit(

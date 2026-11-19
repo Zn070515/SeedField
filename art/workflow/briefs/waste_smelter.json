@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_smelter",
+  "displayName": "Smelter",
+  "category": "building",
+  "branch": "execution/production",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.8,
+  "targetZ": 0.55,
+  "silhouette": "round furnace with offset chimney, east conveyor, west cabin and slag pile",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "slag", "amber", "copper", "lead", "hazard", "rubber"],
+  "emissive": ["molten tap", "chimney spark", "cabin lamp"],
+  "readsAt30Percent": "chimney and conveyor break the round furnace; amber tap is the focal point at 64px",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}
