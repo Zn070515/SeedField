@@ -230,6 +230,7 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`repair bay`](docs/engineering/evidence/2026-11-19-repair-bay.md) | 最近友军维修、E/M 成本、14 项测试与 514 全量门禁证据 |
 | [`ADR-0051`](docs/engineering/adr/ADR-0051-shield-generator-friendly-projector.md) | Shield Generator 友军护盾投射、观察/存档 v27 |
 | [`shield projector`](docs/engineering/evidence/2026-11-19-shield-projector.md) | 范围内友军补盾、能量成本、12 项测试与 526 全量门禁证据 |
+| [`support demo`](docs/engineering/evidence/2026-11-19-support-buildings-demo.md) | 真实 Godot 场景中的维修/补盾/受击事件与截图 |
 
 ## 工程原则
 

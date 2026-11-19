@@ -102,12 +102,24 @@ public partial class MindustryStyle : Node2D
 
     public override void _Ready()
     {
+        if (StartSupportDemo())
+        {
+            QueueRedraw();
+            return;
+        }
+
         _capture = OS.GetCmdlineUserArgs().Contains("--capture-art");
         QueueRedraw();
     }
 
     public override void _Process(double delta)
     {
+        if (_supportDemo)
+        {
+            StepSupportDemo(delta);
+            return;
+        }
+
         if (!_capture)
         {
             return;
@@ -131,6 +143,12 @@ public partial class MindustryStyle : Node2D
 
     public override void _Draw()
     {
+        if (_supportDemo)
+        {
+            DrawSupportDemo();
+            return;
+        }
+
         DrawRect(new Rect2(0, 0, 1280, 720), new Color("100e0b"));
 
         DrawTileMap();
