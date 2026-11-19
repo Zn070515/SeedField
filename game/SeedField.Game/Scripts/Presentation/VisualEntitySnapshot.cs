@@ -57,14 +57,36 @@ public readonly record struct VisualEntitySnapshot(
         entity.Drive is not null,
         entity.Comm is not null);
 
-    public string VisualAssetName =>
-        string.Equals(BlueprintId, "power", StringComparison.Ordinal)
-            ? "power_node"
-            : HasWeapon
-                ? "worker_frame_weapon"
-                : BlueprintId is { } id && id.Contains("drill", StringComparison.Ordinal)
-                    ? "worker_frame_drill"
-                    : HasSensor
-                        ? "worker_frame_sensor"
-                        : "worker_frame";
+    public string VisualAssetName => AssetFor(BlueprintId, HasWeapon, HasSensor);
+
+    public static string AssetForBlueprint(DeviceBlueprint blueprint) =>
+        AssetFor(
+            blueprint.BlueprintId,
+            blueprint.Weapon is not null,
+            blueprint.Sensor is not null);
+
+    public static string AssetFor(
+        string? blueprintId,
+        bool hasWeapon,
+        bool hasSensor) =>
+        blueprintId switch
+        {
+            "power" => "waste_generator",
+            "sensing" => "waste_sentry",
+            "comm" => "waste_relay",
+            "state" => "waste_relay",
+            "drill" => "waste_drill",
+            "smelter" or "smelter-lead" => "waste_smelter",
+            "fabricator" => "waste_foundry",
+            "repair_bay" => "waste_repair_bay",
+            "shield_generator" => "waste_shield_generator",
+            "barricade" => "waste_barricade",
+            "scout" => hasWeapon ? "waste_sentry" : "waste_scout",
+            "strike" or "beam" => "waste_sentry",
+            _ => hasWeapon
+                ? "waste_sentry"
+                : hasSensor
+                    ? "waste_scout"
+                    : "worker_frame",
+        };
 }

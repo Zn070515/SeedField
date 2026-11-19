@@ -86,6 +86,7 @@ public partial class Main : Node2D
     private bool _captureDebug;
     private bool _captureOmniscient;
     private bool _captureView;
+    private bool _captureMainTopdown;
     private int _frame;
     private int _faultCount;
     private string _status = "booting";
@@ -234,6 +235,7 @@ public partial class Main : Node2D
         _captureDebug = arguments.Contains("--capture-debug");
         _captureOmniscient = arguments.Contains("--capture-omniscient");
         _captureView = arguments.Contains("--capture-view");
+        _captureMainTopdown = arguments.Contains("--capture-main-topdown");
         _tacticalVisible = _captureTactical;
         _debugVisible = _captureDebug || _captureOmniscient;
         _omniscientDebug |= _captureOmniscient;
@@ -249,9 +251,12 @@ public partial class Main : Node2D
                   _captureTactical ||
                   _captureDebug ||
                   _captureOmniscient ||
-                  _captureView;
+                  _captureView ||
+                  _captureMainTopdown;
         _captureRequested = _paused;
-        _capturePath = _captureEditor
+        _capturePath = _captureMainTopdown
+            ? "res://screenshots/main-topdown.png"
+            : _captureEditor
             ? "res://screenshots/m0-program-editor.png"
             : _captureWorkshop
                 ? "res://screenshots/m0-workshop.png"

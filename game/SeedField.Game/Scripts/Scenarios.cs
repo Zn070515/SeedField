@@ -172,7 +172,7 @@ internal static class Scenarios
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 50,
             BuildTicks: 3));
-        workshop.Publish(new DeviceBlueprint(
+        var repairBay = workshop.Publish(new DeviceBlueprint(
             "repair_bay", 0, "Repair Bay", 160, 2_000,
             Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 2_000),
             Armor: new ArmorModule(FlatReduction: 2),
@@ -186,11 +186,12 @@ internal static class Scenarios
             BuildTicks: 4));
         workshop.Publish(new DeviceBlueprint(
             "barricade", 0, "Barricade", 240, 0,
+            Power: new PowerModule(EnergyPerTick: 0, StorageCapacity: 0),
             Armor: new ArmorModule(FlatReduction: 6),
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 25,
             BuildTicks: 1));
-        workshop.Publish(new DeviceBlueprint(
+        var shieldGenerator = workshop.Publish(new DeviceBlueprint(
             "shield_generator", 0, "Shield Generator", 140, 1_000,
             Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 1_000),
             Armor: new ArmorModule(FlatReduction: 2),
@@ -280,6 +281,8 @@ internal static class Scenarios
         DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
         DeploymentService.Deploy(world, smelter, "A", "frontier", new Vec2(4_200, 6_000));
         DeploymentService.Deploy(world, leadSmelter, "A", "frontier", new Vec2(5_000, 6_000));
+        DeploymentService.Deploy(world, repairBay, "A", "frontier", new Vec2(3_200, 4_600));
+        DeploymentService.Deploy(world, shieldGenerator, "A", "frontier", new Vec2(3_200, 3_400));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

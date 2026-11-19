@@ -104,14 +104,23 @@ public sealed class VisualAssetCatalog
         return frames[index];
     }
 
-    public VisualAssetFrame? GetCore(CoreVisualState state) => state switch
+    public VisualAssetFrame? GetCore(CoreVisualState state)
     {
-        CoreVisualState.Absent => null,
-        CoreVisualState.Regenerating => Get("seed_core_regenerating"),
-        CoreVisualState.Bootstrap => Get("seed_core_bootstrap"),
-        CoreVisualState.Besieged => Get("seed_core_besieged"),
-        _ => Get("seed_core"),
-    };
+        if (state == CoreVisualState.Absent)
+        {
+            return null;
+        }
+
+        var name = state switch
+        {
+            CoreVisualState.Regenerating => "seed_core_regenerating",
+            CoreVisualState.Bootstrap => "seed_core_bootstrap",
+            CoreVisualState.Besieged => "seed_core_besieged",
+            _ => "seed_core",
+        };
+
+        return Get(name) ?? Get("waste_core") ?? Get("seed_core");
+    }
 
     private static Texture2D? LoadPass(JsonElement file, string passName)
     {

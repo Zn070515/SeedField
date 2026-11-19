@@ -94,7 +94,7 @@ public partial class WorkshopPanel : PanelContainer
         designRow.AddChild(_blueprints);
         designRow.AddChild(previewBox);
         box.AddChild(designRow);
-        _catalog = VisualAssetCatalog.Load();
+        _catalog = VisualAssetCatalog.Load("topdown");
 
         var deployRow = new HBoxContainer();
         deployRow.AddThemeConstantOverride("separation", 12);
@@ -265,15 +265,7 @@ public partial class WorkshopPanel : PanelContainer
             return;
         }
 
-        var asset = blueprint.Weapon is not null
-            ? "worker_frame_weapon"
-            : blueprint.Sensor is not null
-                ? "worker_frame_sensor"
-                : blueprintId.Contains("drill", StringComparison.Ordinal)
-                    ? "worker_frame_drill"
-                    : blueprint.BlueprintId == "power"
-                        ? "power_node"
-                        : "worker_frame";
+        var asset = VisualEntitySnapshot.AssetForBlueprint(blueprint);
         var frame = _catalog.Get(asset);
         if (frame is null)
         {
