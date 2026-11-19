@@ -39,6 +39,11 @@ public partial class Main : Node2D
         {
             DrawPresentationCore();
             DrawPresentationEntities();
+            if (_captureMainTopdown)
+            {
+                DrawCaptureSupportLabels();
+            }
+
             DrawTracers();
             DrawMessages();
             DrawPresentationEffects();
@@ -389,8 +394,12 @@ public partial class Main : Node2D
                 match.IsFinished ? Green : Amber);
         }
 
-        DrawTutorialSummary();
-        DrawTutorialPanel();
+        if (!_captureMainTopdown)
+        {
+            DrawTutorialSummary();
+            DrawTutorialPanel();
+            DrawControls();
+        }
 
         if (_tacticalVisible || _debugVisible)
         {
@@ -401,8 +410,6 @@ public partial class Main : Node2D
         {
             DrawEventLog();
         }
-
-        DrawControls();
     }
 
     private void DrawLegend()
@@ -501,6 +508,8 @@ public partial class Main : Node2D
             or EnergyArrived
             or IntentRejected
             or EntityDamaged
+            or EntityRepaired
+            or ShieldProjected
             or EntityDestroyed
             or MessageDelivered
             or MessageQueued

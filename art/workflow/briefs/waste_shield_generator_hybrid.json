@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_shield_generator_hybrid",
+  "displayName": "Shield Generator (hybrid pass)",
+  "category": "building",
+  "branch": "execution/support",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.3,
+  "targetZ": 0.55,
+  "silhouette": "dark segmented ring with four cyan arcs, offset control annex, cable spool, barrels, four uneven pylons",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "teal_focus", "paint_cyan", "hazard", "copper", "rubber"],
+  "emissive": ["four cyan outer arcs", "inner cyan ring", "central core disc", "pylon lamps"],
+  "readsAt30Percent": "asymmetric annex/spool give story; four cyan arcs and a bright central disc keep the shield identity at 64px",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

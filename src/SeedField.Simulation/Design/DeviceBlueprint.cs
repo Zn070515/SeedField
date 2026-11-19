@@ -37,7 +37,9 @@ public sealed record DeviceBlueprint(
     ShieldModule? Shield = null,
     SmelterModule? Smelter = null,
     FabricatorModule? Fabricator = null,
-    long ComponentCost = 0)
+    long ComponentCost = 0,
+    RepairModule? Repair = null,
+    ShieldProjectorModule? ShieldProjector = null)
 {
     public DeviceBranch Branches
     {

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_repair_bay",
+  "displayName": "Repair Bay",
+  "category": "building",
+  "branch": "support",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.2,
+  "targetZ": 0.50,
+  "silhouette": "rectangular gantry frame, two toothed rails, open center, circular lift",
+  "palette": ["steel", "steel_dark", "rust", "concrete", "olive", "hazard", "copper", "amber"],
+  "emissive": ["amber lift ring", "four corner lamps"],
+  "readsAt30Percent": "rectangular frame with an open center reads differently from the round shield and blocky production buildings",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

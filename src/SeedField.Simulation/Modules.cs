@@ -55,6 +55,27 @@ public sealed record FabricatorModule(
     long EnergyCostPerTick,
     long MaxComponents = 100);
 
+/// <summary>
+/// Passive repair projector. Repairs the nearest damaged friendly entity in the same
+/// region once per tick, spending local energy and regional material. Range, amount
+/// and costs are scenario data, not frozen balance rules.
+/// </summary>
+public sealed record RepairModule(
+    int RangeMm,
+    int HealthPerTick,
+    long EnergyCostPerTick,
+    long MaterialPerTick = 0);
+
+/// <summary>
+/// Projects shield recharge to friendly shielded entities in range. Targets must
+/// already have a <see cref="ShieldModule"/>; the projector spends local energy per
+/// target and bypasses the target's own regen delay. Values are scenario data.
+/// </summary>
+public sealed record ShieldProjectorModule(
+    int RangeMm,
+    long RechargePerTick,
+    long EnergyCostPerTarget);
+
 /// <summary>Minimal drive. A move action costs a flat amount of local energy.</summary>
 public sealed record DriveModule(int SpeedMmPerTick, long EnergyCostPerMove);
 

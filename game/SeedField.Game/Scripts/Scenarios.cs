@@ -172,6 +172,41 @@ internal static class Scenarios
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 50,
             BuildTicks: 3));
+        var repairBay = workshop.Publish(new DeviceBlueprint(
+            "repair_bay", 0, "Repair Bay", 160, 2_000,
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 2_000),
+            Armor: new ArmorModule(FlatReduction: 2),
+            Repair: new RepairModule(
+                RangeMm: 2_500,
+                HealthPerTick: 5,
+                EnergyCostPerTick: 2,
+                MaterialPerTick: 1),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 80,
+            BuildTicks: 4));
+        workshop.Publish(new DeviceBlueprint(
+            "barricade", 0, "Barricade", 240, 0,
+            Power: new PowerModule(EnergyPerTick: 0, StorageCapacity: 0),
+            Armor: new ArmorModule(FlatReduction: 6),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 25,
+            BuildTicks: 1));
+        var shieldGenerator = workshop.Publish(new DeviceBlueprint(
+            "shield_generator", 0, "Shield Generator", 140, 1_000,
+            Power: new PowerModule(EnergyPerTick: 2, StorageCapacity: 1_000),
+            Armor: new ArmorModule(FlatReduction: 2),
+            Shield: new ShieldModule(
+                Capacity: 60,
+                RegenPerTick: 3,
+                RegenDelayTicks: 4,
+                EnergyCostPerRegen: 1),
+            ShieldProjector: new ShieldProjectorModule(
+                RangeMm: 2_500,
+                RechargePerTick: 3,
+                EnergyCostPerTarget: 1),
+            ControllerProgramId: DevicePrograms.IdleId,
+            MaterialCost: 90,
+            BuildTicks: 4));
 
         var strike = workshop.Publish(new DeviceBlueprint(
             "strike", 0, "Strike Frame", 150, 5_000,
@@ -246,6 +281,8 @@ internal static class Scenarios
         DeploymentService.Deploy(world, oreDrill, "A", "frontier", new Vec2(3_600, 6_000));
         DeploymentService.Deploy(world, smelter, "A", "frontier", new Vec2(4_200, 6_000));
         DeploymentService.Deploy(world, leadSmelter, "A", "frontier", new Vec2(5_000, 6_000));
+        DeploymentService.Deploy(world, repairBay, "A", "frontier", new Vec2(2_800, 4_800));
+        DeploymentService.Deploy(world, shieldGenerator, "A", "frontier", new Vec2(3_600, 3_200));
         DeploymentService.Deploy(world, strike, "A", "frontier", new Vec2(4_000, 4_000));
         if (!peaceful)
         {

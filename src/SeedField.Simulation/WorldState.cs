@@ -79,6 +79,10 @@ public sealed class SimulationStatistics
 
     public long ShieldRegeneratedTotal { get; internal set; }
 
+    public long HealthRepairedTotal { get; internal set; }
+
+    public long ShieldProjectedTotal { get; internal set; }
+
     public long ShotsMissed { get; internal set; }
 
     public long MaterialLootedTotal { get; internal set; }

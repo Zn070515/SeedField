@@ -45,6 +45,23 @@ public sealed record EntityDamaged(
     long ShieldAbsorbed = 0,
     int ArmorAbsorbed = 0) : SimulationEvent(Tick);
 
+public sealed record EntityRepaired(
+    long Tick,
+    EntityId RepairerId,
+    EntityId TargetId,
+    int Amount,
+    int TargetHealth,
+    long EnergySpent,
+    long MaterialSpent) : SimulationEvent(Tick);
+
+public sealed record ShieldProjected(
+    long Tick,
+    EntityId ProjectorId,
+    EntityId TargetId,
+    long Amount,
+    long TargetShield,
+    long EnergySpent) : SimulationEvent(Tick);
+
 public sealed record EntityDestroyed(long Tick, EntityId EntityId) : SimulationEvent(Tick);
 
 public sealed record EntityInventoryLost(

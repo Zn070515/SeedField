@@ -45,7 +45,7 @@ public partial class Main
             return;
         }
 
-        _visualCatalog = VisualAssetCatalog.Load();
+        _visualCatalog = VisualAssetCatalog.Load("topdown");
         _worldCatalog = VisualAssetCatalog.Load(
             "topdown",
             new HashSet<string>(StringComparer.Ordinal)
@@ -342,8 +342,8 @@ public partial class Main
             ? VisualEntitySnapshot.From(upgraded).VisualAssetName
             : "<destroyed>";
         var ok = result.Success &&
-                 before == "worker_frame_sensor" &&
-                 after == "worker_frame_weapon";
+                 before == "waste_scout" &&
+                 after == "waste_sentry";
         GD.Print(
             $"MODULE_SWAP_SMOKE before={before} after={after} " +
             $"version={latest.Version} ok={ok}");

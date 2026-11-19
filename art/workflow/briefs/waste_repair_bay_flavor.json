@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "assetId": "waste_repair_bay_flavor",
+  "displayName": "Repair Bay (flavor pass)",
+  "category": "building",
+  "branch": "support",
+  "camera": "topdown-90",
+  "resolution": 512,
+  "directions": 1,
+  "orthoScale": 4.6,
+  "targetZ": 0.55,
+  "silhouette": "asymmetric open frame, east control cabin, crane arm over the lift, cable spool, damaged corner",
+  "palette": ["steel", "steel_dark", "rust", "rust_dark", "concrete", "olive", "teal_focus", "paint_cyan", "hazard", "copper", "rubber"],
+  "emissive": ["cyan lift ring and core", "amber corner warnings", "red damaged-corner lamp"],
+  "readsAt30Percent": "crane arm and side cabin break the rectangle; cyan lift stays the focal point at 64px",
+  "references": [],
+  "license": "original-procedural-source",
+  "status": "style-test-not-final"
+}

@@ -359,7 +359,13 @@ public static class ObservationBuilder
             (entity.Weapon?.Kind ?? WeaponKind.Direct).ToString(),
             entity.Smelter is not null,
             entity.Fabricator is not null,
-            entity.ProductionEnabled);
+            entity.ProductionEnabled,
+            entity.Repair is not null,
+            entity.Repair?.RangeMm ?? 0,
+            entity.Repair?.HealthPerTick ?? 0,
+            entity.ShieldProjector is not null,
+            entity.ShieldProjector?.RangeMm ?? 0,
+            entity.ShieldProjector?.RechargePerTick ?? 0);
 
     internal static ObservedDeposit ToObserved(ResourceDepositState deposit) =>
         new(

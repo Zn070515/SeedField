@@ -64,8 +64,8 @@
 | 建造/恢复 | `BuildTicks` 队列、工坊 UI、取消/失败退款；核心区恢复统一命令入口 |
 | 区域加载 | 非活动区跳过发电并在激活/保存前补算；消息/物流/核心再生继续 |
 | 客户端 | **Godot 4.7.2 Mono 可视切片 + 程序编辑器 + 工坊 + 外交/电网面板（net10.0）** |
-| 验证 | **500 个测试通过**（346 仿真 + 124 Jint + 22 仓库门禁 + 8 本地目录）；经济 golden fixture、事件/意图契约门禁、经济 fuzz 与损坏存档矩阵已接入；CI 构建/测试/提交规范 |
-| 持久化 | 世界存档 schema v25（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
+| 验证 | **526 个测试通过**（372 仿真 + 124 Jint + 22 仓库门禁 + 8 本地目录）；经济 golden fixture、事件/意图契约门禁、经济 fuzz 与损坏存档矩阵已接入；CI 构建/测试/提交规范 |
+| 持久化 | 世界存档 schema v27（v1 起逐级迁移）· 游戏存档 v4（含教程进度）· 回放格式 v1 · 本地 SQLite 目录为派生索引 |
 | 技术栈 | .NET 10.0 / C# / JavaScript + Jint 4.18.0 / Microsoft.Data.Sqlite 11.0.0（本地派生目录） / Godot 4.7.2 .NET |
 
 ## 工程结构
@@ -226,6 +226,13 @@ Headless Runner 运行 600 Tick 双文明对战并验证哈希；Godot 切片渲
 | [`multi-ore recipes`](docs/engineering/evidence/2026-11-18-multi-ore-recipes.md) | 按矿种库存/配方/副产物与 466 测试证据 |
 | [`ADR-0049`](docs/engineering/adr/ADR-0049-test-system-hardening-artflow-inspired.md) | 测试体系加强：经济 golden/fuzz、事件与意图门禁 |
 | [`test hardening`](docs/engineering/evidence/2026-11-18-test-hardening.md) | golden/fuzz/损坏存档/事件与意图门禁及负向探针证据 |
+| [`ADR-0050`](docs/engineering/adr/ADR-0050-repair-bay-passive-repair.md) | Repair Bay 被动维修模块、观察/存档 v26 与维修坞/路障蓝图 |
+| [`repair bay`](docs/engineering/evidence/2026-11-19-repair-bay.md) | 最近友军维修、E/M 成本、14 项测试与 514 全量门禁证据 |
+| [`ADR-0051`](docs/engineering/adr/ADR-0051-shield-generator-friendly-projector.md) | Shield Generator 友军护盾投射、观察/存档 v27 |
+| [`shield projector`](docs/engineering/evidence/2026-11-19-shield-projector.md) | 范围内友军补盾、能量成本、12 项测试与 526 全量门禁证据 |
+| [`support demo`](docs/engineering/evidence/2026-11-19-support-buildings-demo.md) | 真实 Godot 场景中的维修/补盾/受击事件与截图 |
+| [`main topdown`](docs/engineering/evidence/2026-11-19-main-topdown-migration.md) | Main 客户端实体视觉切到 topdown catalog、映射与截图 |
+| [`topdown benchmark`](docs/engineering/evidence/2026-11-19-topdown-benchmark.md) | 同机 oblique vs topdown 1000 设备混合负载 A/B |
 
 ## 工程原则
 

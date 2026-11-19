@@ -26,7 +26,13 @@ public sealed record ObservedEntity(
     string WeaponKind = "Direct",
     bool HasSmelter = false,
     bool HasFabricator = false,
-    bool ProductionEnabled = true);
+    bool ProductionEnabled = true,
+    bool HasRepair = false,
+    int RepairRangeMm = 0,
+    int RepairHealthPerTick = 0,
+    bool HasShieldProjector = false,
+    int ShieldProjectorRangeMm = 0,
+    long ShieldProjectorRechargePerTick = 0);
 
 public sealed record ObservedDeposit(
     long DepositId,

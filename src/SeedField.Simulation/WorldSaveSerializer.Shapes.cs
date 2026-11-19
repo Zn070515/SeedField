@@ -73,7 +73,20 @@ public static partial class WorldSaveSerializer
                     blueprint.Fabricator.MaterialPerComponent,
                     blueprint.Fabricator.EnergyCostPerTick,
                     blueprint.Fabricator.MaxComponents),
-            blueprint.ComponentCost);
+            blueprint.ComponentCost,
+            blueprint.Repair is null
+                ? null
+                : new RepairSaveData(
+                    blueprint.Repair.RangeMm,
+                    blueprint.Repair.HealthPerTick,
+                    blueprint.Repair.EnergyCostPerTick,
+                    blueprint.Repair.MaterialPerTick),
+            blueprint.ShieldProjector is null
+                ? null
+                : new ShieldProjectorSaveData(
+                    blueprint.ShieldProjector.RangeMm,
+                    blueprint.ShieldProjector.RechargePerTick,
+                    blueprint.ShieldProjector.EnergyCostPerTarget));
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -146,7 +159,20 @@ public static partial class WorldSaveSerializer
                     blueprint.Fabricator.MaterialPerComponent,
                     blueprint.Fabricator.EnergyCostPerTick,
                     blueprint.Fabricator.MaxComponents),
-            blueprint.ComponentCost);
+            blueprint.ComponentCost,
+            blueprint.Repair is null
+                ? null
+                : new RepairModule(
+                    blueprint.Repair.RangeMm,
+                    blueprint.Repair.HealthPerTick,
+                    blueprint.Repair.EnergyCostPerTick,
+                    blueprint.Repair.MaterialPerTick),
+            blueprint.ShieldProjector is null
+                ? null
+                : new ShieldProjectorModule(
+                    blueprint.ShieldProjector.RangeMm,
+                    blueprint.ShieldProjector.RechargePerTick,
+                    blueprint.ShieldProjector.EnergyCostPerTarget));
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -247,7 +273,20 @@ public static partial class WorldSaveSerializer
                     entity.Fabricator.MaterialPerComponent,
                     entity.Fabricator.EnergyCostPerTick,
                     entity.Fabricator.MaxComponents),
-            entity.ProductionEnabled);
+            entity.ProductionEnabled,
+            entity.Repair is null
+                ? null
+                : new RepairSaveData(
+                    entity.Repair.RangeMm,
+                    entity.Repair.HealthPerTick,
+                    entity.Repair.EnergyCostPerTick,
+                    entity.Repair.MaterialPerTick),
+            entity.ShieldProjector is null
+                ? null
+                : new ShieldProjectorSaveData(
+                    entity.ShieldProjector.RangeMm,
+                    entity.ShieldProjector.RechargePerTick,
+                    entity.ShieldProjector.EnergyCostPerTarget));
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(
