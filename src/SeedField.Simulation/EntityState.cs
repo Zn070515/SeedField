@@ -28,7 +28,8 @@ public sealed record EntityDefinition(
     ShieldModule? Shield = null,
     SmelterModule? Smelter = null,
     FabricatorModule? Fabricator = null,
-    RepairModule? Repair = null);
+    RepairModule? Repair = null,
+    ShieldProjectorModule? ShieldProjector = null);
 
 /// <summary>
 /// Authoritative runtime state for one deployed entity. Only the simulation core may
@@ -64,6 +65,7 @@ public sealed class EntityState
         Smelter = definition.Smelter;
         Fabricator = definition.Fabricator;
         Repair = definition.Repair;
+        ShieldProjector = definition.ShieldProjector;
     }
 
     public EntityId Id { get; }
@@ -130,6 +132,9 @@ public sealed class EntityState
 
     /// <summary>Optional passive repair projector.</summary>
     public RepairModule? Repair { get; internal set; }
+
+    /// <summary>Optional friendly shield recharge projector.</summary>
+    public ShieldProjectorModule? ShieldProjector { get; internal set; }
 
     /// <summary>Scripts may pause passive smelting/fabrication for this device.</summary>
     public bool ProductionEnabled { get; internal set; } = true;

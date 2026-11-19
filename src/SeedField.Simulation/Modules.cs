@@ -66,6 +66,16 @@ public sealed record RepairModule(
     long EnergyCostPerTick,
     long MaterialPerTick = 0);
 
+/// <summary>
+/// Projects shield recharge to friendly shielded entities in range. Targets must
+/// already have a <see cref="ShieldModule"/>; the projector spends local energy per
+/// target and bypasses the target's own regen delay. Values are scenario data.
+/// </summary>
+public sealed record ShieldProjectorModule(
+    int RangeMm,
+    long RechargePerTick,
+    long EnergyCostPerTarget);
+
 /// <summary>Minimal drive. A move action costs a flat amount of local energy.</summary>
 public sealed record DriveModule(int SpeedMmPerTick, long EnergyCostPerMove);
 

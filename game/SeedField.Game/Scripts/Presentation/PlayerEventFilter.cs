@@ -33,6 +33,9 @@ public static class PlayerEventFilter
             EntityRepaired repaired =>
                 visibleEntityIds.Contains(repaired.RepairerId.Value) ||
                 visibleEntityIds.Contains(repaired.TargetId.Value),
+            ShieldProjected projected =>
+                visibleEntityIds.Contains(projected.ProjectorId.Value) ||
+                visibleEntityIds.Contains(projected.TargetId.Value),
             EntityDestroyed destroyed => visibleEntityIds.Contains(destroyed.EntityId.Value),
             EntityMoved moved => visibleEntityIds.Contains(moved.EntityId.Value),
             EntityInventoryLost lost => visibleEntityIds.Contains(lost.EntityId.Value),

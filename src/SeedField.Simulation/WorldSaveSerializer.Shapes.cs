@@ -80,7 +80,13 @@ public static partial class WorldSaveSerializer
                     blueprint.Repair.RangeMm,
                     blueprint.Repair.HealthPerTick,
                     blueprint.Repair.EnergyCostPerTick,
-                    blueprint.Repair.MaterialPerTick));
+                    blueprint.Repair.MaterialPerTick),
+            blueprint.ShieldProjector is null
+                ? null
+                : new ShieldProjectorSaveData(
+                    blueprint.ShieldProjector.RangeMm,
+                    blueprint.ShieldProjector.RechargePerTick,
+                    blueprint.ShieldProjector.EnergyCostPerTarget));
 
     private static DeviceBlueprint ToBlueprint(BlueprintSaveData blueprint) =>
         new(
@@ -160,7 +166,13 @@ public static partial class WorldSaveSerializer
                     blueprint.Repair.RangeMm,
                     blueprint.Repair.HealthPerTick,
                     blueprint.Repair.EnergyCostPerTick,
-                    blueprint.Repair.MaterialPerTick));
+                    blueprint.Repair.MaterialPerTick),
+            blueprint.ShieldProjector is null
+                ? null
+                : new ShieldProjectorModule(
+                    blueprint.ShieldProjector.RangeMm,
+                    blueprint.ShieldProjector.RechargePerTick,
+                    blueprint.ShieldProjector.EnergyCostPerTarget));
 
     private static RegionSaveData ToRegion(RegionState region) =>
         new(
@@ -268,7 +280,13 @@ public static partial class WorldSaveSerializer
                     entity.Repair.RangeMm,
                     entity.Repair.HealthPerTick,
                     entity.Repair.EnergyCostPerTick,
-                    entity.Repair.MaterialPerTick));
+                    entity.Repair.MaterialPerTick),
+            entity.ShieldProjector is null
+                ? null
+                : new ShieldProjectorSaveData(
+                    entity.ShieldProjector.RangeMm,
+                    entity.ShieldProjector.RechargePerTick,
+                    entity.ShieldProjector.EnergyCostPerTarget));
 
     private static CoreSaveData ToCore(SeedCoreState core) =>
         new(

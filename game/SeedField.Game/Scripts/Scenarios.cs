@@ -199,6 +199,10 @@ internal static class Scenarios
                 RegenPerTick: 3,
                 RegenDelayTicks: 4,
                 EnergyCostPerRegen: 1),
+            ShieldProjector: new ShieldProjectorModule(
+                RangeMm: 2_500,
+                RechargePerTick: 3,
+                EnergyCostPerTarget: 1),
             ControllerProgramId: DevicePrograms.IdleId,
             MaterialCost: 90,
             BuildTicks: 4));

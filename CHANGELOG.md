@@ -39,6 +39,7 @@
 - 教程进度写入游戏存档 v4（完成步骤 + Tick），旧 v1–v3 存档按空进度读取。
 - M1 完成：内置 idle/scout/sentry/relay 策略模板、AND/OR 构造挑战目录、正常启动从 Tick 0 开始（ADR-0042）。
 - Repair Bay 被动维修：`RepairModule` 维修同区域最近受损友军，扣 E/M；`EntityRepaired`、`HealthRepairedTotal`、观察/契约字段与世界存档 v26；新增 repair_bay/barricade/shield_generator 蓝图（ADR-0050）。
+- Shield Generator 友军护盾投射：`ShieldProjectorModule` 为范围内带盾友军补盾，按 EntityId 顺序每目标扣 E；`ShieldProjected`、`ShieldProjectedTotal`、观察/契约字段与世界存档 v27（ADR-0051）。
 
 ### Changed
 

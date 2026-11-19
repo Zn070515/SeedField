@@ -29,7 +29,10 @@ public sealed record ObservedEntity(
     bool ProductionEnabled = true,
     bool HasRepair = false,
     int RepairRangeMm = 0,
-    int RepairHealthPerTick = 0);
+    int RepairHealthPerTick = 0,
+    bool HasShieldProjector = false,
+    int ShieldProjectorRangeMm = 0,
+    long ShieldProjectorRechargePerTick = 0);
 
 public sealed record ObservedDeposit(
     long DepositId,

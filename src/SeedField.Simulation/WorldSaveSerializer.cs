@@ -8,7 +8,7 @@ namespace SeedField.Simulation;
 /// </summary>
 public static partial class WorldSaveSerializer
 {
-    public const int CurrentSchemaVersion = 26;
+    public const int CurrentSchemaVersion = 27;
     public const int OldestSupportedSchemaVersion = 1;
     public const string GameVersion = "0.1.0-m0";
 
@@ -152,6 +152,7 @@ public static partial class WorldSaveSerializer
         world.Statistics.ArmorAbsorbedTotal = statistics.ArmorAbsorbedTotal;
         world.Statistics.ShieldRegeneratedTotal = statistics.ShieldRegeneratedTotal;
         world.Statistics.HealthRepairedTotal = statistics.HealthRepairedTotal;
+        world.Statistics.ShieldProjectedTotal = statistics.ShieldProjectedTotal;
         world.Statistics.OreSmeltedTotal = statistics.OreSmeltedTotal;
         world.Statistics.ComponentsFabricatedTotal = statistics.ComponentsFabricatedTotal;
         world.Statistics.ComponentsRefundedTotal = statistics.ComponentsRefundedTotal;

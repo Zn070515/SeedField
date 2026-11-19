@@ -119,7 +119,13 @@ public static partial class WorldSaveSerializer
                     entityData.Repair.RangeMm,
                     entityData.Repair.HealthPerTick,
                     entityData.Repair.EnergyCostPerTick,
-                    entityData.Repair.MaterialPerTick));
+                    entityData.Repair.MaterialPerTick),
+            entityData.ShieldProjector is null
+                ? null
+                : new ShieldProjectorModule(
+                    entityData.ShieldProjector.RangeMm,
+                    entityData.ShieldProjector.RechargePerTick,
+                    entityData.ShieldProjector.EnergyCostPerTarget));
 
         var entity = new EntityState(definition)
         {
@@ -171,6 +177,15 @@ public static partial class WorldSaveSerializer
             throw Invalid(
                 "INVALID_REPAIR",
                 $"Entity '{entityId}' has an invalid repair module.");
+        }
+
+        if (entityData.ShieldProjector is { RangeMm: < 1 } or
+            { RechargePerTick: < 0 } or
+            { EnergyCostPerTarget: < 0 })
+        {
+            throw Invalid(
+                "INVALID_SHIELD_PROJECTOR",
+                $"Entity '{entityId}' has an invalid shield projector module.");
         }
 
         if (entityData.Armor is { FlatReduction: < 0 })

@@ -40,7 +40,7 @@
 
 ```text
 dotnet build SeedField.slnx   → 0 warning / 0 error
-dotnet test  SeedField.slnx   → 514 passed / 0 failed
+dotnet test  SeedField.slnx   → 526 passed / 0 failed
   仿真 346 · Runtime.Js 124 · 仓库门禁 22 · Catalog 8
 ```
 
@@ -145,6 +145,7 @@ tests/SeedField.Repository.Tests/
 - 多矿种配方（ADR-0048）：Ore 按 Copper/Lead/Titanium/Coal 分库存；钻机按矿脉矿种入库；`SmeltingRecipes` 铜 1→1M、铅 2→1M+1 构件、钛 2→3M、煤 2→1M+4 能源；`PreferredOre` 或库存最多者选择；观察新增四种矿库存；世界存档 v25 与 v24 单 Ore 迁移。
 - 测试体系加强（ADR-0049）：经济 golden fixture + 20 种子经济不变量 fuzz + 损坏存档矩阵；展示覆盖门禁（每个事件必须有 filter/日志决策，白名单只减不增）；意图契约门禁（IntentKind ↔ Jint ↔ TypeScript）；ADR-0040+ 必须有验证/回滚段。
 - 支援建筑/被动维修（ADR-0050）：`RepairModule` 每 Tick 维修同区域最近受损友军，扣本地 E + 区域 M；Critical 停止、等距按 EntityId 决胜；`EntityRepaired`/`HealthRepairedTotal`、观察三字段、TypeScript 契约、世界存档 **v26**；新增 `repair_bay`/`barricade`/`shield_generator` 蓝图。
+- 护盾投射（ADR-0051）：`ShieldProjectorModule` 为同区域范围内带 `ShieldModule` 的友军补盾，按 EntityId 顺序每目标扣 E，绕过目标自身 regen 延迟；`ShieldProjected`/`ShieldProjectedTotal`、观察三字段、TypeScript 契约、世界存档 **v27**；`shield_generator` 蓝图升级为友军光环。
 - README/实现基线校准：测试数、里程碑、项目清单与 Godot 面板说明同步到实际代码状态（2026-11-18）。
 
 ### 尚未实现
@@ -470,6 +471,7 @@ Godot 内按 `F1` 打开 A 方 JavaScript 编辑器，修改后 `Ctrl+Enter` 部
 | [ADR-0048](adr/ADR-0048-multi-ore-recipes-and-byproducts.md) | 多矿种配方与副产物 |
 | [ADR-0049](adr/ADR-0049-test-system-hardening-artflow-inspired.md) | 测试体系加强：经济 golden/fuzz、事件与意图门禁 |
 | [ADR-0050](adr/ADR-0050-repair-bay-passive-repair.md) | Repair Bay 被动维修模块、观察/存档 v26 与支援建筑蓝图 |
+| [ADR-0051](adr/ADR-0051-shield-generator-friendly-projector.md) | Shield Generator 友军护盾投射、观察/存档 v27 |
 
 ## 8. 下一步（按依赖顺序）
 

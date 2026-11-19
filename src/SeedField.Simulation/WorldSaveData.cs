@@ -234,6 +234,11 @@ public sealed record RepairSaveData(
     long EnergyCostPerTick,
     long MaterialPerTick);
 
+public sealed record ShieldProjectorSaveData(
+    int RangeMm,
+    long RechargePerTick,
+    long EnergyCostPerTarget);
+
 public sealed record DrillSaveData(long RatePerTick, int RangeMm, long EnergyCostPerTick);
 
 public sealed record EntitySaveData(
@@ -266,7 +271,8 @@ public sealed record EntitySaveData(
     SmelterSaveData? Smelter = null,
     FabricatorSaveData? Fabricator = null,
     bool ProductionEnabled = true,
-    RepairSaveData? Repair = null);
+    RepairSaveData? Repair = null,
+    ShieldProjectorSaveData? ShieldProjector = null);
 
 public sealed record SensorSaveData(int RangeMm);
 
@@ -321,7 +327,8 @@ public sealed record BlueprintSaveData(
     SmelterSaveData? Smelter = null,
     FabricatorSaveData? Fabricator = null,
     long ComponentCost = 0,
-    RepairSaveData? Repair = null);
+    RepairSaveData? Repair = null,
+    ShieldProjectorSaveData? ShieldProjector = null);
 
 public sealed record WreckSaveData(
     long Id,
@@ -432,7 +439,8 @@ public sealed record StatisticsSaveData(
     long ComponentsFabricatedTotal = 0,
     long ComponentsRefundedTotal = 0,
     long ByproductProducedTotal = 0,
-    long HealthRepairedTotal = 0);
+    long HealthRepairedTotal = 0,
+    long ShieldProjectedTotal = 0);
 
 public sealed class SaveFormatException : Exception
 {

@@ -54,6 +54,14 @@ public sealed record EntityRepaired(
     long EnergySpent,
     long MaterialSpent) : SimulationEvent(Tick);
 
+public sealed record ShieldProjected(
+    long Tick,
+    EntityId ProjectorId,
+    EntityId TargetId,
+    long Amount,
+    long TargetShield,
+    long EnergySpent) : SimulationEvent(Tick);
+
 public sealed record EntityDestroyed(long Tick, EntityId EntityId) : SimulationEvent(Tick);
 
 public sealed record EntityInventoryLost(

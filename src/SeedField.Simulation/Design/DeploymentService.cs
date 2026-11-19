@@ -150,7 +150,8 @@ public static class DeploymentService
             blueprint.Shield,
             blueprint.Smelter,
             blueprint.Fabricator,
-            Repair: blueprint.Repair);
+            Repair: blueprint.Repair,
+            ShieldProjector: blueprint.ShieldProjector);
 
         var entity = new EntityState(definition);
         region.Entities.Add(entity.Id, entity);
@@ -199,6 +200,7 @@ public static class DeploymentService
         entity.Smelter = blueprint.Smelter;
         entity.Fabricator = blueprint.Fabricator;
         entity.Repair = blueprint.Repair;
+        entity.ShieldProjector = blueprint.ShieldProjector;
         var hadShield = entity.Shield is not null;
         entity.Armor = blueprint.Armor;
         entity.Shield = blueprint.Shield;

@@ -31,6 +31,10 @@ public partial class Main
                 $"t{repaired.Tick,4}  {repaired.RepairerId} repaired {repaired.TargetId} " +
                 $"+{repaired.Amount} HP" +
                 (repaired.MaterialSpent > 0 ? $" (−{repaired.MaterialSpent}M)" : string.Empty),
+            ShieldProjected projected =>
+                $"t{projected.Tick,4}  {projected.ProjectorId} projected " +
+                $"+{projected.Amount} shield to {projected.TargetId} " +
+                $"({projected.TargetShield} total)",
             EntityDestroyed destroyed => $"t{destroyed.Tick,4}  {destroyed.EntityId} destroyed",
             MessageDelivered delivered =>
                 $"t{delivered.Tick,4}  message {delivered.MessageId} delivered to {delivered.ToCivilizationId}",

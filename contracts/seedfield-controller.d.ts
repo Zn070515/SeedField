@@ -31,6 +31,9 @@ export interface ObservedEntity {
   hasRepair: boolean;
   repairRangeMm: number;
   repairHealthPerTick: number;
+  hasShieldProjector: boolean;
+  shieldProjectorRangeMm: number;
+  shieldProjectorRechargePerTick: number;
 }
 
 export type OreKind = "Copper" | "Lead" | "Titanium" | "Coal";
